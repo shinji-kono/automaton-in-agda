@@ -23,6 +23,13 @@ data  _∨_  {n m : Level} (A  : Set n) ( B : Set m ) : Set (n ⊔ m) where
 _⇔_ : {n m : Level } → ( A : Set n ) ( B : Set m )  → Set (n ⊔ m)
 _⇔_ A B =  ( A → B ) ∧ ( B → A )
 
+∧-exch : {n m : Level} {A  : Set n} { B : Set m } → A ∧ B → B ∧ A
+∧-exch p = ⟪ _∧_.proj2 p , _∧_.proj1 p ⟫
+
+∨-exch : {n m : Level} {A  : Set n} { B : Set m } → A ∨ B → B ∨ A
+∨-exch (case1 x) = case2 x
+∨-exch (case2 x) = case1 x
+
 contra-position : {n m : Level } {A : Set n} {B : Set m} → (A → B) → ¬ B → ¬ A
 contra-position {n} {m} {A} {B}  f ¬b a = ¬b ( f a )
 
@@ -43,7 +50,6 @@ dont-or {A} {B} (case2 b) ¬A = b
 dont-orb :　{n m : Level} {A  : Set n} { B : Set m } →  A ∨ B → ¬ B → A
 dont-orb {A} {B} (case2 b) ¬B = ⊥-elim ( ¬B b )
 dont-orb {A} {B} (case1 a) ¬B = a
-
 
 infixr  130 _∧_
 infixr  140 _∨_

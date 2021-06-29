@@ -11,90 +11,68 @@ open import Relation.Binary.Definitions
 open import gcd
 open import even
 open import nat
+open import logic
 
 record Rational : Set where
   field
     i j : ℕ
     coprime : gcd i j ≡ 1
 
-even→gcd=2 : {n : ℕ} → even n → n > 0 → gcd n 2 ≡ 2
-even→gcd=2 {suc (suc zero)} en (s≤s z≤n) = refl
-even→gcd=2 {suc (suc (suc (suc n)))} en (s≤s z≤n) = begin
-       gcd (suc (suc (suc (suc n)))) 2 ≡⟨⟩
-       gcd (suc (suc n)) 2 ≡⟨ even→gcd=2 {suc (suc n)} en (s≤s z≤n) ⟩
-       2 ∎ where open ≡-Reasoning
+open _∧_
 
-even^2 : {n : ℕ} → even ( n * n ) → even n
-even^2 {n} en with even? n
+open import prime
+
+-- equlid : ( n m k : ℕ ) → 1 < k → 1 < n → Prime k → Dividable k ( n * m ) → Dividable k n ∨ Dividable k m
+-- equlid = {!!}
+
+divdable^2 : ( n k : ℕ ) → 1 < k → 1 < n → Prime k → Dividable k ( n * n ) → Dividable k n
+divdable^2 zero zero () 1<n pk dn2
+divdable^2 (suc n) (suc k) 1<k 1<n pk dn2 with decD {suc k} {suc n} 1<k
 ... | yes y = y
-... | no ne = ⊥-elim ( odd4 ((2 * m) + 2 * m * suc (2 * m)) (n+even {2 * m} {2 * m * suc (2 * m)} ee3 ee4) (subst (λ k → even k) ee2 en )) where
-    m : ℕ
-    m = Odd.j ( odd3 n ne )
-    ee3 : even (2 * m)
-    ee3 = subst (λ k → even k ) (*-comm m 2) (n*even {m} {2} tt )
-    ee4 : even ((2 * m) * suc (2 * m))
-    ee4 = even*n {(2 * m)} {suc (2 * m)} (even*n {2} {m} tt )
-    ee2 : n * n ≡ suc (2 * m) + ((2 * m) * (suc (2 * m) ))
-    ee2 = begin n * n ≡⟨ cong ( λ k → k * k) (Odd.is-twice (odd3 n ne)) ⟩
-       suc (2 * m) * suc (2 * m) ≡⟨ *-distribʳ-+ (suc (2 * m)) 1 ((2 * m) ) ⟩
-        (1 * suc (2 * m)) + 2 * m * suc (2 * m) ≡⟨ cong (λ k → k + 2 * m * suc (2 * m)) (begin
-        suc m + 1 * m + 0 * (suc m + 1 * m ) ≡⟨ +-comm (suc m + 1 * m) 0 ⟩
-        suc m + 1 * m  ≡⟨⟩
-        suc (2 * m)
-        ∎) ⟩ suc (2 * m)  + 2 * m * suc (2 * m) ∎ where open ≡-Reasoning
+... | no non with gcd-euclid (suc k) (suc n) (suc n) 1<k (<-trans a<sa 1<n) (<-trans a<sa 1<n) (Prime.isPrime pk) dn2 
+... | case1 dn = dn
+... | case2 dm = dm
 
-e3 : {i j : ℕ } → 2 * i ≡ 2 * j →  i ≡ j
-e3 {zero} {zero} refl = refl
-e3 {suc x} {suc y} eq with <-cmp x y
-... | tri< a ¬b ¬c = ⊥-elim ( nat-≡< eq (s≤s (<-trans (<-plus a) (<-plus-0 (s≤s (<-plus a ))))))
-... | tri≈ ¬a b ¬c = cong suc b
-... | tri> ¬a ¬b c = ⊥-elim ( nat-≡< (sym eq) (s≤s (<-trans (<-plus c) (<-plus-0 (s≤s (<-plus c ))))))
+p2 : Prime 2
+p2 = record { p>1 = a<sa ; isPrime = p22 } where
+   p22 : (j : ℕ) → j < 2 → 0 < j → gcd 2 j ≡ 1
+   p22 1 (s≤s (s≤s z≤n)) (s≤s 0<j) = refl
 
-open Factor
+-- gcd-div : ( i j k : ℕ ) → (if : Dividable k i) (jf : Dividable k j )
+--    → Dividable k ( gcd i  j )
 
 root2-irrational : ( n m : ℕ ) → n > 1 → m > 1  →  2 * n * n ≡ m * m  → ¬ (gcd n m ≡ 1)
-root2-irrational n m n>1 m>1 2nm = rot13 ( gcd-gt n n m m 2 f2 f2 f2 fm {!!} {!!} {!!} {!!}) where 
+root2-irrational n m n>1 m>1 2nm = rot13 ( gcd-div n m 2 (s≤s (s≤s z≤n)) dn dm ) where 
     rot13 : {m : ℕ } → Dividable 2 m →  m ≡ 1 → ⊥
-    rot13 d refl with Dividable.is-factor d
-    ... | t = {!!}
-    rot11 : {m : ℕ } → even m → Factor 2 m 
-    rot11 {zero} em = record { factor = 0 ; remain = 0 ; is-factor = refl }
-    rot11 {suc zero} ()
-    rot11 {suc (suc m) } em = record { factor = suc (factor fc ) ; remain = remain fc ; is-factor = isfc } where
-       fc : Factor 2 m
-       fc = rot11 {m} em
-       isfc : suc (factor fc) * 2 + remain fc ≡ suc (suc m)
-       isfc = begin
-          suc (factor fc) * 2 + remain fc ≡⟨ cong (λ k →  k + remain fc) (*-distribʳ-+ 2 1 (factor fc)) ⟩
-          ((1 * 2) +  (factor fc)* 2 ) + remain fc ≡⟨⟩
-          ((1 + 1) +  (factor fc)* 2 ) + remain fc ≡⟨ cong (λ k → k + remain fc) (+-assoc 1  1 _ ) ⟩
-          (1 + (1 +  (factor fc)* 2 )) + remain fc ≡⟨⟩
-          suc (suc ((factor fc * 2) + remain fc )) ≡⟨ cong (λ x → suc (suc x)) (is-factor fc) ⟩
-          suc (suc m) ∎ where open ≡-Reasoning
-    rot5 : {n : ℕ} → n > 1 → n > 0
-    rot5 {n} lt = <-trans a<sa lt 
-    rot1 : even ( m * m )
-    rot1 = subst (λ k → even k ) rot4 (n*even {n * n} {2} tt ) where
-       rot4 : (n * n) * 2 ≡ m * m  
-       rot4 = begin
-          (n * n) * 2     ≡⟨ *-comm (n * n) 2 ⟩
-          2 * ( n * n )   ≡⟨ sym (*-assoc 2 n n) ⟩
-          2 *  n * n      ≡⟨ 2nm ⟩
-          m * m           ∎ where open ≡-Reasoning
-    E : Even m
-    E = e2 m ( even^2 {m} ( rot1 ))
-    rot2 : 2 * n * n ≡ 2 * Even.j E * m
-    rot2 = subst (λ k → 2 * n * n ≡ k * m ) (Even.is-twice E) 2nm
-    rot3 : n * n ≡ Even.j E * m
-    rot3 = e3 ( begin
-          2 * (n * n)   ≡⟨ sym (*-assoc 2 n _) ⟩
-          2 *  n * n    ≡⟨ rot2 ⟩
-          2 * Even.j E * m ≡⟨  *-assoc 2 (Even.j E)  m  ⟩
-          2 * (Even.j E * m)  ∎ ) where open ≡-Reasoning
-    rot7 : even n  
-    rot7 =  even^2 {n} (subst (λ k → even k) (sym rot3) ((n*even {Even.j E} {m} ( even^2 {m} ( rot1 )))))
-    f2 : Factor 2 n
-    f2 = rot11 rot7
-    fm : Factor 2 m
-    fm = record { factor = Even.j E ; remain = 0 ; is-factor = {!!} }
+    rot13 d refl with Dividable.factor d | Dividable.is-factor d
+    ... | zero | ()
+    ... | suc n | ()
+    dm : Dividable 2 m
+    dm = divdable^2 m 2 a<sa m>1 p2 record { factor = n * n ; is-factor = begin
+       (n * n) * 2 + 0 ≡⟨  +-comm _ 0 ⟩
+       (n * n) * 2  ≡⟨ *-comm (n * n) 2 ⟩
+       2 * (n * n)  ≡⟨ sym (*-assoc 2 n n)  ⟩
+       (2 * n) * n ≡⟨ 2nm  ⟩
+       m * m ∎ }  where open ≡-Reasoning
+     -- 2 * n * n = 2m' 2m'
+     --  n * n = m' 2m'
+    df = Dividable.factor dm
+    dn : Dividable 2 n
+    dn = divdable^2 n 2 a<sa n>1 p2 record { factor = df * df  ; is-factor = begin
+        df * df * 2 + 0  ≡⟨ *-cancelʳ-≡ _ _ {1} ( begin 
+          (df * df * 2 + 0) * 2 ≡⟨  cong (λ k → k * 2)  (+-comm (df * df * 2) 0)  ⟩
+          ((df * df) * 2) * 2 ≡⟨ cong (λ k → k * 2) (*-assoc df df 2 ) ⟩
+          (df * (df * 2)) * 2 ≡⟨ cong (λ k → (df * k ) * 2) (*-comm df 2)  ⟩
+          (df * (2 * df)) * 2 ≡⟨ sym ( cong (λ k → k * 2) (*-assoc df 2 df ) ) ⟩
+          ((df * 2) * df) * 2 ≡⟨ *-assoc (df * 2) df 2  ⟩
+          (df * 2) * (df * 2) ≡⟨ cong₂ (λ j k → j * k ) (+-comm 0 (df * 2)) (+-comm 0 _) ⟩
+          (df * 2 + 0) * (df * 2 + 0)   ≡⟨ cong₂ (λ j k → j * k) (Dividable.is-factor dm ) (Dividable.is-factor dm )⟩
+          m * m   ≡⟨ sym 2nm ⟩
+          2 * n * n   ≡⟨ cong (λ k → k * n) (*-comm 2 n) ⟩
+          n * 2 * n   ≡⟨ *-assoc n 2 n ⟩
+          n * (2 * n)   ≡⟨ cong (λ k → n * k) (*-comm 2 n) ⟩
+          n * (n * 2)   ≡⟨ sym (*-assoc n n 2) ⟩
+          n * n * 2 ∎  ) ⟩
+       n * n ∎ }  where open ≡-Reasoning
+
 

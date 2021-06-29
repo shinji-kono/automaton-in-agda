@@ -9,7 +9,7 @@ open import  Relation.Binary.PropositionalEquality
 open import  Relation.Binary.Core
 open import  Relation.Binary.Definitions
 open import  logic
-
+open import Level hiding ( zero ; suc ) 
 
 nat-<> : { x y : ℕ } → x < y → y < x → ⊥
 nat-<>  (s≤s x<y) (s≤s y<x) = nat-<> x<y y<x
@@ -144,6 +144,9 @@ x≤x+y : {z y : ℕ } → z ≤ z + y
 x≤x+y {zero} {y} = z≤n
 x≤x+y {suc z} {y} = s≤s  (x≤x+y {z} {y})
 
+x≤y+x : {z y : ℕ } → z ≤ y + z
+x≤y+x {z} {y} = subst (λ k → z ≤ k ) (+-comm _ y ) x≤x+y
+
 <-plus : {x y z : ℕ } → x < y → x + z < y + z 
 <-plus {zero} {suc y} {z} (s≤s z≤n) = s≤s (subst (λ k → z ≤ k ) (+-comm z _ ) x≤x+y  )
 <-plus {suc x} {suc y} {z} (s≤s lt) = s≤s (<-plus {x} {y} {z} lt)
@@ -179,19 +182,41 @@ x+y<z→x<z {suc x} {y} {suc z} (s≤s lt1) = s≤s ( x+y<z→x<z {x} {y} {z} lt
 <tos<s {zero} {suc y} (s≤s z≤n) = s≤s (s≤s z≤n)
 <tos<s {suc x} {suc y} (s≤s lt) = s≤s (<tos<s {x} {y} lt)
 
-≤to< : {x y  : ℕ } → x < y → x ≤ y 
-≤to< {zero} {suc y} (s≤s z≤n) = z≤n
-≤to< {suc x} {suc y} (s≤s lt) = s≤s (≤to< {x} {y}  lt)
+<to≤ : {x y  : ℕ } → x < y → x ≤ y 
+<to≤ {zero} {suc y} (s≤s z≤n) = z≤n
+<to≤ {suc x} {suc y} (s≤s lt) = s≤s (<to≤ {x} {y}  lt)
 
 refl-≤s : {x : ℕ } → x ≤ suc x
 refl-≤s {zero} = z≤n
 refl-≤s {suc x} = s≤s (refl-≤s {x})
+
+refl-≤ : {x : ℕ } → x ≤ x
+refl-≤ {zero} = z≤n
+refl-≤ {suc x} = s≤s (refl-≤ {x})
 
 x<y→≤ : {x y : ℕ } → x < y →  x ≤ suc y
 x<y→≤ {zero} {.(suc _)} (s≤s z≤n) = z≤n
 x<y→≤ {suc x} {suc y} (s≤s lt) = s≤s (x<y→≤ {x} {y} lt)
 
 open import Data.Product
+
+i-j=0→i=j : {i j  : ℕ } → j ≤ i  → i - j ≡ 0 → i ≡ j
+i-j=0→i=j {zero} {zero} _ refl = refl
+i-j=0→i=j {zero} {suc j} () refl
+i-j=0→i=j {suc i} {zero} z≤n ()
+i-j=0→i=j {suc i} {suc j} (s≤s lt) eq = cong suc (i-j=0→i=j {i} {j} lt eq)
+
+minus+1 : {x y  : ℕ } → y ≤ x  → suc (minus x y)  ≡ minus (suc x) y 
+minus+1 {zero} {zero} y≤x = refl
+minus+1 {suc x} {zero} y≤x = refl
+minus+1 {suc x} {suc y} (s≤s y≤x) = minus+1 {x} {y} y≤x 
+
+minus+yz : {x y z : ℕ } → z ≤ y  → x + minus y z  ≡ minus (x + y) z
+minus+yz {zero} {y} {z} _ = refl
+minus+yz {suc x} {y} {z} z≤y = begin
+         suc x + minus y z ≡⟨ cong suc ( minus+yz z≤y ) ⟩
+         suc (minus (x + y) z) ≡⟨ minus+1 {x + y} {z} (≤-trans z≤y (subst (λ g → y ≤ g) (+-comm y x) x≤x+y) ) ⟩
+         minus (suc x + y) z ∎  where open ≡-Reasoning
 
 minus<=0 : {x y : ℕ } → x ≤ y → minus x y ≡ 0
 minus<=0 {0} {zero} z≤n = refl
@@ -201,6 +226,36 @@ minus<=0 {suc x} {suc y} (s≤s le) = minus<=0 {x} {y} le
 minus>0 : {x y : ℕ } → x < y → 0 < minus y x 
 minus>0 {zero} {suc _} (s≤s z≤n) = s≤s z≤n
 minus>0 {suc x} {suc y} (s≤s lt) = minus>0 {x} {y} lt
+
+minus>0→x<y : {x y : ℕ } → 0 < minus y x  → x < y
+minus>0→x<y {x} {y} lt with <-cmp x y
+... | tri< a ¬b ¬c = a
+... | tri≈ ¬a refl ¬c = ⊥-elim ( nat-≡< (sym (minus<=0 {x} ≤-refl)) lt )
+... | tri> ¬a ¬b c = ⊥-elim ( nat-≡< (sym (minus<=0 {y} (≤-trans refl-≤s c ))) lt )
+
+minus+y-y : {x y : ℕ } → (x + y) - y  ≡ x
+minus+y-y {zero} {y} = minus<=0 {zero + y} {y} ≤-refl 
+minus+y-y {suc x} {y} = begin
+         (suc x + y) - y ≡⟨ sym (minus+1 {_} {y} x≤y+x) ⟩
+         suc ((x + y) - y) ≡⟨ cong suc (minus+y-y {x} {y}) ⟩
+         suc x ∎  where open ≡-Reasoning
+
+minus+yx-yz : {x y z : ℕ } → (y + x) - (y + z)  ≡ x - z
+minus+yx-yz {x} {zero} {z} = refl
+minus+yx-yz {x} {suc y} {z} = minus+yx-yz {x} {y} {z} 
+
+minus+xy-zy : {x y z : ℕ } → (x + y) - (z + y)  ≡ x - z
+minus+xy-zy {x} {y} {z} = subst₂ (λ j k → j - k ≡ x - z  ) (+-comm y x) (+-comm y z) (minus+yx-yz {x} {y} {z})
+
+y-x<y : {x y : ℕ } → 0 < x → 0 < y  → y - x  <  y
+y-x<y {x} {y} 0<x 0<y with <-cmp x (suc y)
+... | tri< a ¬b ¬c = +-cancelʳ-< {x} (y - x) y ( begin
+         suc ((y - x) + x) ≡⟨ cong suc (minus+n {y} {x} a ) ⟩
+         suc y  ≡⟨ +-comm 1 _ ⟩
+         y + suc 0  ≤⟨ +-mono-≤ ≤-refl 0<x ⟩
+         y + x ∎ )  where open ≤-Reasoning
+... | tri≈ ¬a refl ¬c = subst ( λ k → k < y ) (sym (minus<=0 {y} {x} refl-≤s )) 0<y
+... | tri> ¬a ¬b c = subst ( λ k → k < y ) (sym (minus<=0 {y} {x} (≤-trans (≤-trans refl-≤s refl-≤s) c))) 0<y -- suc (suc y) ≤ x → y ≤ x
 
 open import Relation.Binary.Definitions
 
@@ -218,7 +273,7 @@ distr-minus-* {x} {suc y} {z} | tri< a ¬b ¬c = begin
             le : x * z ≤ z + y * z
             le  = ≤-trans lemma (subst (λ k → y * z ≤ k ) (+-comm _ z ) (x≤x+y {y * z} {z} ) ) where
                lemma : x * z ≤ y * z
-               lemma = *≤ {x} {y} {z} (≤to< a)
+               lemma = *≤ {x} {y} {z} (<to≤ a)
 distr-minus-* {x} {suc y} {z} | tri≈ ¬a refl ¬c = begin
           minus x (suc y) * z
         ≡⟨ cong (λ k → k * z ) (minus<=0 {x} {suc y} refl-≤s ) ⟩
@@ -245,6 +300,13 @@ distr-minus-* {x} {suc y} {z} | tri> ¬a ¬b c = +m= {_} {_} {suc y * z} ( begin
             open ≡-Reasoning
             lt : {x y z : ℕ } → suc y ≤ x → z + y * z ≤ x * z
             lt {x} {y} {z} le = *≤ le 
+
+distr-minus-*' : {z x y : ℕ } → z * (minus x y)  ≡ minus (z * x) (z * y) 
+distr-minus-*' {z} {x} {y} = begin
+        z * (minus x y) ≡⟨ *-comm _ (x - y) ⟩
+        (minus x y) * z ≡⟨ distr-minus-* {x} {y} {z} ⟩
+        minus (x * z) (y * z) ≡⟨ cong₂ (λ j k → j - k ) (*-comm x z ) (*-comm y z) ⟩
+        minus (z * x) (z * y) ∎  where open ≡-Reasoning
 
 minus- : {x y z : ℕ } → suc x > z + y → minus (minus x y) z ≡ minus x (y + z)
 minus- {x} {y} {z} gt = +m= {_} {_} {z} ( begin
@@ -311,3 +373,80 @@ minus-* {suc m} {k} {n} lt | tri> ¬a ¬b c = begin
                          suc (suc k * suc m)
                       ∎   where open ≤-Reasoning
              open ≡-Reasoning
+
+x=y+z→x-z=y : {x y z : ℕ } → x ≡ y + z → x - z ≡ y
+x=y+z→x-z=y {x} {zero} {.x} refl = minus<=0 {x} {x} refl-≤ -- x ≡ suc (y + z) → (x ≡ y + z → x - z ≡ y)   → (x - z) ≡ suc y
+x=y+z→x-z=y {suc x} {suc y} {zero} eq = begin -- suc x ≡ suc (y + zero) → (suc x - zero) ≡ suc y
+       suc x - zero ≡⟨ refl ⟩
+       suc x  ≡⟨ eq ⟩
+       suc y + zero ≡⟨ +-comm _ zero ⟩
+       suc y ∎  where open ≡-Reasoning
+x=y+z→x-z=y {suc x} {suc y} {suc z} eq = x=y+z→x-z=y {x} {suc y} {z} ( begin
+       x ≡⟨ cong pred eq ⟩
+       pred (suc y + suc z) ≡⟨ +-comm _ (suc z)  ⟩
+       suc z + y ≡⟨ cong suc ( +-comm _ y ) ⟩
+       suc y + z ∎  ) where open ≡-Reasoning
+
+m*1=m : {m : ℕ } → m * 1 ≡ m
+m*1=m {zero} = refl
+m*1=m {suc m} = cong suc m*1=m
+
+record Finduction {n m : Level} (P : Set n ) (Q : P → Set m ) (f : P → ℕ) : Set  (n Level.⊔ m) where
+  field
+    fzero   : {p : P} → f p ≡ zero → Q p
+    pnext : (p : P ) → P
+    decline : {p : P} → 0 < f p  → f (pnext p) < f p
+    ind : {p : P} → Q (pnext p) → Q p
+
+y<sx→y≤x : {x y : ℕ} → y < suc x → y ≤ x
+y<sx→y≤x (s≤s lt) = lt 
+
+fi0 : (x : ℕ) → x ≤ zero → x ≡ zero
+fi0 .0 z≤n = refl
+
+f-induction : {n m : Level} {P : Set n } → {Q : P → Set m }
+  → (f : P → ℕ) 
+  → Finduction P Q f
+  → (p : P ) → Q p
+f-induction {n} {m} {P} {Q} f I p with <-cmp 0 (f p)
+... | tri> ¬a ¬b ()
+... | tri≈ ¬a b ¬c = Finduction.fzero I (sym b) 
+... | tri< lt _ _ = f-induction0 p (f p) (<to≤ (Finduction.decline I lt)) where 
+   f-induction0 : (p : P) → (x : ℕ) → (f (Finduction.pnext I p)) ≤ x → Q p
+   f-induction0 p zero le = Finduction.ind I (Finduction.fzero I (fi0 _ le)) where
+   f-induction0 p (suc x) le with <-cmp (f (Finduction.pnext I p)) (suc x)
+   ... | tri< (s≤s a) ¬b ¬c = f-induction0 p x a 
+   ... | tri≈ ¬a b ¬c = Finduction.ind I (f-induction0 (Finduction.pnext I p) x (y<sx→y≤x f1)) where
+       f1 : f (Finduction.pnext I (Finduction.pnext I p)) < suc x
+       f1 = subst (λ k → f (Finduction.pnext I (Finduction.pnext I p)) < k ) b ( Finduction.decline I {Finduction.pnext I p}
+         (subst (λ k → 0 < k ) (sym b) (s≤s z≤n ) ))
+   ... | tri> ¬a ¬b c = ⊥-elim ( nat-≤> le c ) 
+
+
+record Ninduction {n m : Level} (P : Set n ) (Q : P → Set m ) (f : P → ℕ) : Set  (n Level.⊔ m) where
+  field
+    pnext : (p : P ) → P
+    fzero   : {p : P} → f (pnext p) ≡ zero → Q p
+    decline : {p : P} → 0 < f p  → f (pnext p) < f p
+    ind : {p : P} → Q (pnext p) → Q p
+
+s≤s→≤ : { i j : ℕ} → suc i ≤ suc j → i ≤ j
+s≤s→≤ (s≤s lt) = lt
+
+n-induction : {n m : Level} {P : Set n } → {Q : P → Set m }
+  → (f : P → ℕ) 
+  → Ninduction P Q f
+  → (p : P ) → Q p
+n-induction {n} {m} {P} {Q} f I p  = f-induction0 p (f (Ninduction.pnext I p)) ≤-refl where 
+   f-induction0 : (p : P) → (x : ℕ) → (f (Ninduction.pnext I p)) ≤ x  →  Q p
+   f-induction0 p zero lt = Ninduction.fzero I {p} (fi0 _ lt) 
+   f-induction0 p (suc x) le with <-cmp (f (Ninduction.pnext I p)) (suc x) 
+   ... | tri< (s≤s a)  ¬b ¬c = f-induction0 p x a
+   ... | tri≈ ¬a b ¬c = Ninduction.ind I (f-induction0 (Ninduction.pnext I p) x (s≤s→≤ nle) ) where
+      f>0 :  0 < f (Ninduction.pnext I p)
+      f>0 = subst (λ k → 0 < k ) (sym b) ( s≤s z≤n ) 
+      nle : suc (f (Ninduction.pnext I (Ninduction.pnext I p))) ≤ suc x
+      nle = subst (λ k → suc (f (Ninduction.pnext I (Ninduction.pnext I p))) ≤ k) b (Ninduction.decline I {Ninduction.pnext I p} f>0 ) 
+   ... | tri> ¬a ¬b c = ⊥-elim ( nat-≤> le c )  
+
+
