@@ -33,46 +33,53 @@ divdable^2 (suc n) (suc k) 1<k 1<n pk dn2 with decD {suc k} {suc n} 1<k
 ... | case1 dn = dn
 ... | case2 dm = dm
 
-p2 : Prime 2
-p2 = record { p>1 = a<sa ; isPrime = p22 } where
-   p22 : (j : ℕ) → j < 2 → 0 < j → gcd 2 j ≡ 1
-   p22 1 (s≤s (s≤s z≤n)) (s≤s 0<j) = refl
-
 -- gcd-div : ( i j k : ℕ ) → (if : Dividable k i) (jf : Dividable k j )
 --    → Dividable k ( gcd i  j )
 
-root2-irrational : ( n m : ℕ ) → n > 1 → m > 1  →  2 * n * n ≡ m * m  → ¬ (gcd n m ≡ 1)
-root2-irrational n m n>1 m>1 2nm = rot13 ( gcd-div n m 2 (s≤s (s≤s z≤n)) dn dm ) where 
-    rot13 : {m : ℕ } → Dividable 2 m →  m ≡ 1 → ⊥
+root-prime-irrational : ( n m p : ℕ ) → n > 1 → Prime p → m > 1  →  p * n * n ≡ m * m  → ¬ (gcd n m ≡ 1)
+root-prime-irrational n m 0 n>1 pn m>1 pnm = ⊥-elim ( nat-≡< refl (<-trans a<sa (Prime.p>1 pn))) 
+root-prime-irrational n m (suc p0) n>1 pn m>1 pnm = rot13 ( gcd-div n m (suc p0) 1<sp dn dm ) where 
+    p = suc (p0)
+    1<sp : 1 < p
+    1<sp = Prime.p>1 pn
+    rot13 : {m : ℕ } → Dividable p m →  m ≡ 1 → ⊥
     rot13 d refl with Dividable.factor d | Dividable.is-factor d
-    ... | zero | ()
-    ... | suc n | ()
-    dm : Dividable 2 m
-    dm = divdable^2 m 2 a<sa m>1 p2 record { factor = n * n ; is-factor = begin
-       (n * n) * 2 + 0 ≡⟨  +-comm _ 0 ⟩
-       (n * n) * 2  ≡⟨ *-comm (n * n) 2 ⟩
-       2 * (n * n)  ≡⟨ sym (*-assoc 2 n n)  ⟩
-       (2 * n) * n ≡⟨ 2nm  ⟩
+    ... | zero | ()   -- gcd 0 m ≡ 1
+    ... | suc n | x = ⊥-elim ( nat-≡< (sym x) rot17 ) where -- x : (suc n * p + 0) ≡ 1 
+        rot17 : suc n * p + 0 > 1
+        rot17 = begin
+           2 ≡⟨ refl ⟩
+           suc (1 * 1 ) ≤⟨ 1<sp  ⟩
+           suc p0  ≡⟨ cong suc (+-comm 0 _) ⟩ 
+           suc (p0 + 0) ≤⟨ s≤s (+-monoʳ-≤ p0 z≤n) ⟩ 
+           suc (p0 + n * p )  ≡⟨ +-comm 0 _ ⟩
+           suc n * p + 0 ∎   where open ≤-Reasoning
+    dm : Dividable p m
+    dm = divdable^2 m p 1<sp m>1 pn record { factor = n * n ; is-factor = begin
+       (n * n) * p + 0 ≡⟨  +-comm _ 0 ⟩
+       (n * n) * p  ≡⟨ *-comm (n * n) p ⟩
+       p * (n * n)  ≡⟨ sym (*-assoc p n n)  ⟩
+       (p * n) * n ≡⟨ pnm ⟩
        m * m ∎ }  where open ≡-Reasoning
-     -- 2 * n * n = 2m' 2m'
+     -- p * n * n = 2m' 2m'
      --  n * n = m' 2m'
     df = Dividable.factor dm
-    dn : Dividable 2 n
-    dn = divdable^2 n 2 a<sa n>1 p2 record { factor = df * df  ; is-factor = begin
-        df * df * 2 + 0  ≡⟨ *-cancelʳ-≡ _ _ {1} ( begin 
-          (df * df * 2 + 0) * 2 ≡⟨  cong (λ k → k * 2)  (+-comm (df * df * 2) 0)  ⟩
-          ((df * df) * 2) * 2 ≡⟨ cong (λ k → k * 2) (*-assoc df df 2 ) ⟩
-          (df * (df * 2)) * 2 ≡⟨ cong (λ k → (df * k ) * 2) (*-comm df 2)  ⟩
-          (df * (2 * df)) * 2 ≡⟨ sym ( cong (λ k → k * 2) (*-assoc df 2 df ) ) ⟩
-          ((df * 2) * df) * 2 ≡⟨ *-assoc (df * 2) df 2  ⟩
-          (df * 2) * (df * 2) ≡⟨ cong₂ (λ j k → j * k ) (+-comm 0 (df * 2)) (+-comm 0 _) ⟩
-          (df * 2 + 0) * (df * 2 + 0)   ≡⟨ cong₂ (λ j k → j * k) (Dividable.is-factor dm ) (Dividable.is-factor dm )⟩
-          m * m   ≡⟨ sym 2nm ⟩
-          2 * n * n   ≡⟨ cong (λ k → k * n) (*-comm 2 n) ⟩
-          n * 2 * n   ≡⟨ *-assoc n 2 n ⟩
-          n * (2 * n)   ≡⟨ cong (λ k → n * k) (*-comm 2 n) ⟩
-          n * (n * 2)   ≡⟨ sym (*-assoc n n 2) ⟩
-          n * n * 2 ∎  ) ⟩
+    dn : Dividable p n
+    dn = divdable^2 n p 1<sp n>1 pn record { factor = df * df  ; is-factor = begin
+        df * df * p + 0  ≡⟨ *-cancelʳ-≡ _ _ {p0} ( begin 
+          (df * df * p + 0) * p ≡⟨  cong (λ k → k * p)  (+-comm (df * df * p) 0)  ⟩
+            ((df * df) * p) * p ≡⟨ cong (λ k → k * p) (*-assoc df df p ) ⟩
+            (df * (df * p)) * p ≡⟨ cong (λ k → (df * k ) * p) (*-comm df p)  ⟩
+            (df * (p * df)) * p ≡⟨ sym ( cong (λ k → k * p) (*-assoc df p df ) ) ⟩
+            ((df * p) * df) * p ≡⟨ *-assoc (df * p) df p  ⟩
+            (df * p) * (df * p) ≡⟨ cong₂ (λ j k → j * k ) (+-comm 0 (df * p)) (+-comm 0 _) ⟩
+          (df * p + 0) * (df * p + 0)   ≡⟨ cong₂ (λ j k → j * k) (Dividable.is-factor dm ) (Dividable.is-factor dm )⟩
+          m * m   ≡⟨ sym pnm ⟩
+          p * n * n   ≡⟨ cong (λ k → k * n) (*-comm p n) ⟩
+            n * p * n   ≡⟨ *-assoc n p n ⟩
+            n * (p * n)   ≡⟨ cong (λ k → n * k) (*-comm p n) ⟩
+            n * (n * p)   ≡⟨ sym (*-assoc n n p) ⟩
+          n * n * p ∎  ) ⟩
        n * n ∎ }  where open ≡-Reasoning
 
 
