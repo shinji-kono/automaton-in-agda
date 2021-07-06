@@ -48,6 +48,8 @@ PrimeP (suc (suc n)) = isPrime1 (suc (suc n)) (suc n) (s≤s (s≤s z≤n)) a<sa
 open import logic
 open _∧_
 
+-- find prime factor
+
 data Factoring (m : ℕ ) : (n : ℕ) → Set where
      findFactor : (n : ℕ) → m ≤ n → ( (j : ℕ ) → m ≤ j → j < n → gcd n j ≡ 1  ) → Factoring m n
      skipFactor : (n : ℕ) → n < m →  Factoring m n

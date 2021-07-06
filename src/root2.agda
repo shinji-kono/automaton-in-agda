@@ -23,7 +23,6 @@ open _∧_
 open import prime
 
 -- equlid : ( n m k : ℕ ) → 1 < k → 1 < n → Prime k → Dividable k ( n * m ) → Dividable k n ∨ Dividable k m
--- equlid = {!!}
 
 divdable^2 : ( n k : ℕ ) → 1 < k → 1 < n → Prime k → Dividable k ( n * n ) → Dividable k n
 divdable^2 zero zero () 1<n pk dn2
@@ -35,6 +34,9 @@ divdable^2 (suc n) (suc k) 1<k 1<n pk dn2 with decD {suc k} {suc n} 1<k
 
 -- gcd-div : ( i j k : ℕ ) → (if : Dividable k i) (jf : Dividable k j )
 --    → Dividable k ( gcd i  j )
+
+-- p * n * n ≡ m * m means (m/n)^2 = p
+-- rational m/n requires m and n is comprime each other which contradicts the condition
 
 root-prime-irrational : ( n m p : ℕ ) → n > 1 → Prime p → m > 1  →  p * n * n ≡ m * m  → ¬ (gcd n m ≡ 1)
 root-prime-irrational n m 0 n>1 pn m>1 pnm = ⊥-elim ( nat-≡< refl (<-trans a<sa (Prime.p>1 pn))) 

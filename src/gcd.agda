@@ -752,18 +752,13 @@ gcd-euclid1 (suc zero) i0 (suc j) j0 di =
 gcd-euclid1 (suc (suc i)) i0 (suc j) j0  di = 
      gcd-euclid1 (suc i) i0 j j0 (gcd-next di)
 
-
-gcd-euclid : ( p a b : ℕ )  → 1 < p  → 0 < a → 0 < b → ((i : ℕ ) → i < p → 0 < i   → gcd p i ≡ 1)  →  Dividable p (a * b)  → Dividable p a ∨ Dividable p b
-gcd-euclid p a b 1<p 0<a 0<b prime div-ab with decD {p} {a} 1<p
-... | yes y = case1 y
-... | no np = case2 ge16  where
-    ge12 : (x : ℕ) → 0 < x → ( gcd p x ≡ 1 ) ∨ ( Dividable p x )
-    ge12 x 0<x with decD {p} {x} 1<p
-    ... | yes y = case2 y
-    ... | no nx with <-cmp (gcd p x ) 1
-    ... | tri< a ¬b ¬c = ⊥-elim ( nat-≤> a (s≤s (gcd>0 p x (<-trans a<sa 1<p)  0<x) ) )
-    ... | tri≈ ¬a b ¬c = case1 b
-    ... | tri> ¬a ¬b c = ⊥-elim ( nat-≡< (sym (prime (gcd p x) ge13 (<to≤ c) )) ge18 ) where
+ge12 : (p x : ℕ) → 0 < x → 1 < p → ((i : ℕ ) → i < p → 0 < i   → gcd p i ≡ 1)  →  ( gcd p x ≡ 1 ) ∨ ( Dividable p x )
+ge12 p x 0<x 1<p prime with decD {p} {x} 1<p 
+... | yes y = case2 y
+... | no nx with <-cmp (gcd p x ) 1
+... | tri< a ¬b ¬c = ⊥-elim ( nat-≤> a (s≤s (gcd>0 p x (<-trans a<sa 1<p)  0<x) ) )
+... | tri≈ ¬a b ¬c = case1 b
+... | tri> ¬a ¬b c = ⊥-elim ( nat-≡< (sym (prime (gcd p x) ge13 (<to≤ c) )) ge18 ) where
         --  1 < gcd p x 
         ge13 :  gcd p x < p -- gcd p x ≡ p → ¬ nx
         ge13 with <-cmp (gcd p x ) p
@@ -774,55 +769,63 @@ gcd-euclid p a b 1<p 0<a 0<b prime div-ab with decD {p} {a} 1<p
         ge19 = proj1 (gcd-dividable p x )
         ge18 :   1 < gcd p  (gcd p x) --  Dividable p  (gcd p x) → gcd p  (gcd p x) ≡  (gcd p x) > 1
         ge18 = subst (λ k → 1 < k ) (sym (div→gcd {p} {gcd p x} c ge19 )) c
+
+gcd-euclid : ( p a b : ℕ )  → 1 < p  → 0 < a → 0 < b → ((i : ℕ ) → i < p → 0 < i   → gcd p i ≡ 1)  →  Dividable p (a * b)  → Dividable p a ∨ Dividable p b
+gcd-euclid p a b 1<p 0<a 0<b prime div-ab with decD {p} {a} 1<p
+... | yes y = case1 y
+... | no np = case2 ge16  where
+    f = Dividable.factor div-ab
     ge10 : gcd p a ≡ 1
-    ge10 with ge12 a 0<a
+    ge10 with ge12 p a 0<a 1<p prime
     ... | case1 x = x
     ... | case2 x = ⊥-elim ( np x )
     ge11 : Euclid p a (gcd p a)
     ge11 = gcd-euclid1 p p a a GCDi
-    ge18 : (Dividable.factor div-ab * Euclid.eqb ge11) * p ≡  b * (a * Euclid.eqb ge11 )
+    ea = Euclid.eqa ge11
+    eb = Euclid.eqb ge11
+    ge18 : (f * eb) * p ≡  b * (a * eb )
     ge18 = begin
-         (Dividable.factor div-ab * Euclid.eqb ge11) * p  ≡⟨ *-assoc (Dividable.factor div-ab) (Euclid.eqb ge11) p ⟩
-         Dividable.factor div-ab * (Euclid.eqb ge11 * p)  ≡⟨ cong (λ k →  Dividable.factor div-ab  * k)  (*-comm _ p) ⟩
-          Dividable.factor div-ab * (p * Euclid.eqb ge11 )  ≡⟨ sym (*-assoc  (Dividable.factor div-ab) p (Euclid.eqb ge11) ) ⟩
-         (Dividable.factor div-ab * p ) * Euclid.eqb ge11   ≡⟨ cong (λ k → k * Euclid.eqb ge11 ) (+-comm 0  (Dividable.factor div-ab * p )) ⟩
-         (Dividable.factor div-ab * p + 0) * Euclid.eqb ge11   ≡⟨ cong (λ k → k *  Euclid.eqb ge11) (((Dividable.is-factor div-ab))) ⟩
-         (a * b) * Euclid.eqb ge11   ≡⟨ cong (λ k → k *  Euclid.eqb ge11) (*-comm a b) ⟩
-         (b * a) * Euclid.eqb ge11   ≡⟨ *-assoc b a (Euclid.eqb ge11 ) ⟩
-         b * (a * Euclid.eqb ge11 ) ∎ where open ≡-Reasoning
-    ge19 : ( Euclid.eqa ge11 * p ) ≡ (  Euclid.eqb ge11 * a ) → ((b * Euclid.eqa ge11) - (Dividable.factor div-ab * Euclid.eqb ge11)) * p + 0 ≡ b
+         (f * eb) * p  ≡⟨ *-assoc (f) (eb) p ⟩
+         f * (eb * p)  ≡⟨ cong (λ k →  f  * k)  (*-comm _ p) ⟩
+          f * (p * eb )  ≡⟨ sym (*-assoc  (f) p (eb) ) ⟩
+         (f * p ) * eb   ≡⟨ cong (λ k → k * eb ) (+-comm 0  (f * p )) ⟩
+         (f * p + 0) * eb   ≡⟨ cong (λ k → k *  eb) (((Dividable.is-factor div-ab))) ⟩
+         (a * b) * eb   ≡⟨ cong (λ k → k *  eb) (*-comm a b) ⟩
+         (b * a) * eb   ≡⟨ *-assoc b a (eb ) ⟩
+         b * (a * eb ) ∎ where open ≡-Reasoning
+    ge19 : ( ea * p ) ≡ (  eb * a ) → ((b * ea) - (f * eb)) * p + 0 ≡ b
     ge19 eq = ⊥-elim ( nat-≡< (Euclid.is-equ= ge11 eq) (subst (λ k → 0 < k ) (sym ge10) a<sa ) )
-    ge14 : ( Euclid.eqa ge11 * p ) > (  Euclid.eqb ge11 * a ) → ((b * Euclid.eqa ge11) - (Dividable.factor div-ab * Euclid.eqb ge11)) * p + 0 ≡ b
+    ge14 : ( ea * p ) > (  eb * a ) → ((b * ea) - (f * eb)) * p + 0 ≡ b
     ge14 lt = begin
-         (((b * Euclid.eqa ge11) - (Dividable.factor div-ab * Euclid.eqb ge11)) * p) + 0 ≡⟨ +-comm _ 0 ⟩
-         ((b * Euclid.eqa ge11) - ((Dividable.factor div-ab * Euclid.eqb ge11)) * p) ≡⟨ distr-minus-* {_} {Dividable.factor div-ab * Euclid.eqb ge11} {p} ⟩
-         ((b * Euclid.eqa ge11) * p) - (((Dividable.factor div-ab * Euclid.eqb ge11) * p))  ≡⟨ cong (λ k → ((b * Euclid.eqa ge11) * p)  - k  ) ge18 ⟩
-         ((b * Euclid.eqa ge11) * p) - (b * (a * Euclid.eqb ge11 ))  ≡⟨ cong (λ k → k - (b * (a * Euclid.eqb ge11)) ) (*-assoc b _ p) ⟩
-         (b * (Euclid.eqa ge11 * p)) - (b * (a * Euclid.eqb ge11 ))  ≡⟨ sym ( distr-minus-*' {b} {Euclid.eqa ge11 * p} {a * Euclid.eqb ge11} )  ⟩
-         b * (( Euclid.eqa ge11 * p) - (a * Euclid.eqb ge11) )  ≡⟨ cong (λ k → b * ( ( Euclid.eqa ge11 * p) - k)) (*-comm a (Euclid.eqb ge11)) ⟩
-         (b * ( (Euclid.eqa ge11 * p)) -  (Euclid.eqb ge11 * a) )  ≡⟨ cong (b *_) (Euclid.is-equ< ge11 lt )⟩
+         (((b * ea) - (f * eb)) * p) + 0 ≡⟨ +-comm _ 0 ⟩
+         ((b * ea) - ((f * eb)) * p) ≡⟨ distr-minus-* {_} {f * eb} {p} ⟩
+         ((b * ea) * p) - (((f * eb) * p))  ≡⟨ cong (λ k → ((b * ea) * p)  - k  ) ge18 ⟩
+         ((b * ea) * p) - (b * (a * eb ))  ≡⟨ cong (λ k → k - (b * (a * eb)) ) (*-assoc b _ p) ⟩
+         (b * (ea * p)) - (b * (a * eb ))  ≡⟨ sym ( distr-minus-*' {b} {ea * p} {a * eb} )  ⟩
+         b * (( ea * p) - (a * eb) )  ≡⟨ cong (λ k → b * ( ( ea * p) - k)) (*-comm a (eb)) ⟩
+         (b * ( (ea * p)) -  (eb * a) )  ≡⟨ cong (b *_) (Euclid.is-equ< ge11 lt )⟩
          b * gcd p a  ≡⟨ cong (b *_) ge10 ⟩
          b * 1  ≡⟨ m*1=m ⟩
          b ∎ where open ≡-Reasoning
-    ge15 : ( Euclid.eqa ge11 * p ) < (  Euclid.eqb ge11 * a ) →  ((Dividable.factor div-ab * Euclid.eqb ge11) - (b * Euclid.eqa ge11 ) ) * p + 0 ≡ b
+    ge15 : ( ea * p ) < (  eb * a ) →  ((f * eb) - (b * ea ) ) * p + 0 ≡ b
     ge15 lt = begin
-         ((Dividable.factor div-ab * Euclid.eqb ge11) - (b * Euclid.eqa ge11)  ) * p + 0  ≡⟨  +-comm _ 0 ⟩
-         ((Dividable.factor div-ab * Euclid.eqb ge11) - (b * Euclid.eqa ge11)  ) * p   ≡⟨ distr-minus-* {_} {b * Euclid.eqa ge11} {p} ⟩
-         ((Dividable.factor div-ab * Euclid.eqb ge11) * p) - ((b * Euclid.eqa ge11) * p)    ≡⟨ cong (λ k → k - ((b * Euclid.eqa ge11) * p)   ) ge18 ⟩
-         (b * (a * Euclid.eqb ge11 )) - ((b * Euclid.eqa ge11) * p )   ≡⟨   cong (λ k → (b * (a * Euclid.eqb ge11)) - k ) (*-assoc b _ p) ⟩
-         (b * (a * Euclid.eqb ge11 )) - (b * (Euclid.eqa ge11 * p) )   ≡⟨  sym ( distr-minus-*' {b} {a * Euclid.eqb ge11} {Euclid.eqa ge11 * p}  ) ⟩
-         b * ( (a * Euclid.eqb ge11) - (Euclid.eqa ge11 * p) )  ≡⟨  cong (λ k → b * ( k - ( Euclid.eqa ge11 * p) )) (*-comm a (Euclid.eqb ge11))  ⟩
-         b * ( (Euclid.eqb ge11 * a) - (Euclid.eqa ge11 * p)  )  ≡⟨ cong (b *_) (Euclid.is-equ> ge11 lt) ⟩
+         ((f * eb) - (b * ea)  ) * p + 0  ≡⟨  +-comm _ 0 ⟩
+         ((f * eb) - (b * ea)  ) * p   ≡⟨ distr-minus-* {_} {b * ea} {p} ⟩
+         ((f * eb) * p) - ((b * ea) * p)    ≡⟨ cong (λ k → k - ((b * ea) * p)   ) ge18 ⟩
+         (b * (a * eb )) - ((b * ea) * p )   ≡⟨   cong (λ k → (b * (a * eb)) - k ) (*-assoc b _ p) ⟩
+         (b * (a * eb )) - (b * (ea * p) )   ≡⟨  sym ( distr-minus-*' {b} {a * eb} {ea * p}  ) ⟩
+         b * ( (a * eb) - (ea * p) )  ≡⟨  cong (λ k → b * ( k - ( ea * p) )) (*-comm a (eb))  ⟩
+         b * ( (eb * a) - (ea * p)  )  ≡⟨ cong (b *_) (Euclid.is-equ> ge11 lt) ⟩
          b * gcd p a  ≡⟨ cong (b *_) ge10 ⟩
          b * 1  ≡⟨ m*1=m ⟩
          b ∎ where open ≡-Reasoning
     ge17 : (x  y : ℕ ) → x ≡ y → x ≤ y
     ge17 x x refl = refl-≤
     ge16 : Dividable p b
-    ge16 with <-cmp ( Euclid.eqa ge11 * p ) (  Euclid.eqb ge11 * a )
-    ... | tri< a ¬b ¬c = record { factor = (Dividable.factor div-ab * Euclid.eqb ge11)  - (b * Euclid.eqa ge11) ; is-factor = ge15 a }
-    ... | tri≈ ¬a eq ¬c = record { factor = (b * Euclid.eqa ge11) - ( Dividable.factor div-ab * Euclid.eqb ge11) ; is-factor = ge19 eq }
-    ... | tri> ¬a ¬b c = record { factor = (b * Euclid.eqa ge11) -  (Dividable.factor div-ab * Euclid.eqb ge11) ; is-factor = ge14 c }  
+    ge16 with <-cmp ( ea * p ) (  eb * a )
+    ... | tri< a ¬b ¬c = record { factor = (f * eb)  - (b * ea) ; is-factor = ge15 a }
+    ... | tri≈ ¬a eq ¬c = record { factor = (b * ea) - ( f * eb) ; is-factor = ge19 eq }
+    ... | tri> ¬a ¬b c = record { factor = (b * ea) -  (f * eb) ; is-factor = ge14 c }  
 
 
 

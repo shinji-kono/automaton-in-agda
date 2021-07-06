@@ -89,6 +89,17 @@ div2-eq (suc (suc x)) with div2 x | inspect div2 x
      suc (suc (div2-rev (div2 x)))      ≡⟨ cong (λ k → suc (suc k)) (div2-eq x) ⟩ 
      suc (suc x) ∎  where open ≡-Reasoning
 
+sucprd : {i : ℕ } → 0 < i  → suc (pred i) ≡ i
+sucprd {suc i} 0<i = refl
+
+0<s : {x : ℕ } → zero < suc x
+0<s {_} = s≤s z≤n 
+
+px<py : {x y : ℕ } → pred x  < pred y → x < y
+px<py {zero} {suc y} lt = 0<s
+px<py {suc zero} {suc (suc y)} (s≤s lt) = s≤s 0<s
+px<py {suc (suc x)} {suc (suc y)} (s≤s lt) = s≤s (px<py {suc x} {suc y} lt)
+
 minus : (a b : ℕ ) →  ℕ
 minus a zero = a
 minus zero (suc b) = zero
@@ -129,9 +140,6 @@ minus+n {suc x} {suc y} (s≤s lt) = begin
            ) ⟩
            suc x
         ∎  where open ≡-Reasoning
-
-0<s : {x : ℕ } → zero < suc x
-0<s {_} = s≤s z≤n 
 
 <-minus-0 : {x y z : ℕ } → z + x < z + y → x < y
 <-minus-0 {x} {suc _} {zero} lt = lt
@@ -198,6 +206,19 @@ x<y→≤ : {x y : ℕ } → x < y →  x ≤ suc y
 x<y→≤ {zero} {.(suc _)} (s≤s z≤n) = z≤n
 x<y→≤ {suc x} {suc y} (s≤s lt) = s≤s (x<y→≤ {x} {y} lt)
 
+≤→= : {i j : ℕ} → i ≤ j → j ≤ i → i ≡ j
+≤→= {0} {0} z≤n z≤n = refl
+≤→= {suc i} {suc j} (s≤s i<j) (s≤s j<i) = cong suc ( ≤→= {i} {j} i<j j<i )
+
+px≤x : {x  : ℕ } → pred x ≤ x 
+px≤x {zero} = refl-≤
+px≤x {suc x} = refl-≤s
+
+px≤py : {x y : ℕ } → x ≤ y → pred x  ≤ pred y 
+px≤py {zero} {zero} lt = refl-≤
+px≤py {zero} {suc y} lt = z≤n
+px≤py {suc x} {suc y} (s≤s lt) = lt 
+
 open import Data.Product
 
 i-j=0→i=j : {i j  : ℕ } → j ≤ i  → i - j ≡ 0 → i ≡ j
@@ -205,6 +226,11 @@ i-j=0→i=j {zero} {zero} _ refl = refl
 i-j=0→i=j {zero} {suc j} () refl
 i-j=0→i=j {suc i} {zero} z≤n ()
 i-j=0→i=j {suc i} {suc j} (s≤s lt) eq = cong suc (i-j=0→i=j {i} {j} lt eq)
+
+m*n=0⇒m=0∨n=0 : {i j : ℕ} → i * j ≡ 0 → (i ≡ 0) ∨ ( j ≡ 0 )
+m*n=0⇒m=0∨n=0 {zero} {j} refl = case1 refl
+m*n=0⇒m=0∨n=0 {suc i} {zero} eq = case2 refl
+
 
 minus+1 : {x y  : ℕ } → y ≤ x  → suc (minus x y)  ≡ minus (suc x) y 
 minus+1 {zero} {zero} y≤x = refl
