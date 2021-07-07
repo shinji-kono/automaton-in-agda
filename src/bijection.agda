@@ -15,34 +15,17 @@ open import Relation.Binary.PropositionalEquality
 open import logic
 open import nat
 
-record Bijection {n m : Level} (R : Set n) (S : Set m) : Set (n Level.⊔ m)  where
-   field
-       fun←  :  S → R
-       fun→  :  R → S
-       fiso← : (x : R)  → fun← ( fun→ x )  ≡ x 
-       fiso→ : (x : S ) → fun→ ( fun← x )  ≡ x 
-
-injection :  {n m : Level} (R : Set n) (S : Set m) (f : R → S ) → Set (n Level.⊔ m)
-injection R S f = (x y : R) → f x ≡ f y → x ≡ y
+-- record Bijection {n m : Level} (R : Set n) (S : Set m) : Set (n Level.⊔ m)  where
+--    field
+--        fun←  :  S → R
+--        fun→  :  R → S
+--        fiso← : (x : R)  → fun← ( fun→ x )  ≡ x 
+--        fiso→ : (x : S ) → fun→ ( fun← x )  ≡ x 
+-- 
+-- injection :  {n m : Level} (R : Set n) (S : Set m) (f : R → S ) → Set (n Level.⊔ m)
+-- injection R S f = (x y : R) → f x ≡ f y → x ≡ y
 
 open Bijection 
-
---
--- injection as an uniquneness of bijection 
---
-b→injection0 : {n m : Level} (R : Set n) (S : Set m)  → (b : Bijection R S) → injection R S (fun→ b)
-b→injection0 R S b x y eq = begin
-          x
-        ≡⟨ sym ( fiso← b x ) ⟩
-          fun← b ( fun→ b x )
-        ≡⟨ cong (λ k → fun← b k ) eq ⟩
-          fun← b ( fun→ b y )
-        ≡⟨  fiso← b y  ⟩
-          y  
-        ∎  where open ≡-Reasoning
-
-b→injection1 : {n m : Level} (R : Set n) (S : Set m)  → (b : Bijection R S) → injection S R (fun← b)
-b→injection1 R S b x y eq = trans (  sym ( fiso→ b x ) ) (trans (  cong (λ k → fun→ b k ) eq ) ( fiso→ b y  ))
 
 bij-combination : {n m l : Level} (R : Set n) (S : Set m) (T : Set l)  → Bijection R S → Bijection S T → Bijection R T
 bij-combination R S T rs st = record { fun← = λ x → fun← rs ( fun← st x ) ; fun→ = λ x → fun→ st ( fun→ rs x )

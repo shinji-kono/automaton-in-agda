@@ -74,6 +74,17 @@ _ <=> _ = false
 
 open import Relation.Binary.PropositionalEquality
 
+record Bijection {n m : Level} (R : Set n) (S : Set m) : Set (n Level.⊔ m)  where
+   field
+       fun←  :  S → R
+       fun→  :  R → S
+       fiso← : (x : R)  → fun← ( fun→ x )  ≡ x
+       fiso→ : (x : S ) → fun→ ( fun← x )  ≡ x
+
+injection :  {n m : Level} (R : Set n) (S : Set m) (f : R → S ) → Set (n Level.⊔ m)
+injection R S f = (x y : R) → f x ≡ f y → x ≡ y
+
+
 ¬t=f : (t : Bool ) → ¬ ( not t ≡ t) 
 ¬t=f true ()
 ¬t=f false ()

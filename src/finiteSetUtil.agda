@@ -21,6 +21,8 @@ record Found ( Q : Set ) (p : Q → Bool ) : Set where
        found-q : Q
        found-p : p found-q ≡ true
 
+open Bijection
+
 module _ {Q : Set } (F : FiniteSet Q) where
      open FiniteSet F
      equal→refl  : { x y : Q } → equal? x y ≡ true → x ≡ y
@@ -31,7 +33,7 @@ module _ {Q : Set } (F : FiniteSet Q) where
             Q←F (F←Q q0)
         ≡⟨ cong (λ k → Q←F k ) eq ⟩
             Q←F (F←Q q1)
-        ≡⟨ finiso→ q1 ⟩
+        ≡⟨  finiso→   q1 ⟩
             q1
         ∎  where open ≡-Reasoning
      End : (m : ℕ ) → (p : Q → Bool ) → Set
@@ -46,50 +48,41 @@ module _ {Q : Set } (F : FiniteSet Q) where
      next-end p prev m<n np i m<i | tri> ¬a ¬b c = ⊥-elim ( nat-≤> m<i c )
      next-end {m} p prev m<n np i m<i | tri≈ ¬a b ¬c = subst ( λ k → p (Q←F k) ≡ false) (m<n=i i b m<n ) np where
               m<n=i : {n : ℕ } (i : Fin n) {m : ℕ } → m ≡ (toℕ i) → (m<n : m < n )  → fromℕ< m<n ≡ i
-              m<n=i i eq m<n = {!!} -- toℕ-inject (fromℕ≤ ?) i (subst (λ k → k ≡ toℕ i) (sym (toℕ-fromℕ≤ m<n)) eq )
+              m<n=i i refl m<n = fromℕ<-toℕ i m<n 
      found : { p : Q → Bool } → (q : Q ) → p q ≡ true → exists p ≡ true
      found {p} q pt = found1 finite  (NatP.≤-refl ) ( first-end p ) where
          found1 : (m : ℕ ) (m<n : m Data.Nat.≤ finite ) → ((i : Fin finite) → m ≤ toℕ i → p (Q←F i )  ≡ false ) →  exists1 m m<n p ≡ true
          found1 0 m<n end = ⊥-elim ( ¬-bool (subst (λ k → k ≡ false ) (cong (λ k → p k) (finiso→ q) ) (end (F←Q q) z≤n )) pt )
          found1 (suc m)  m<n end with bool-≡-? (p (Q←F (fromℕ< m<n))) true
-         found1 (suc m)  m<n end | yes eq = subst (λ k → k \/ exists1 m (≤to<  m<n) p ≡ true ) (sym eq) (bool-or-4 {exists1 m (≤to<  m<n) p} ) 
+         found1 (suc m)  m<n end | yes eq = subst (λ k → k \/ exists1 m (<to≤  m<n) p ≡ true ) (sym eq) (bool-or-4 {exists1 m (<to≤  m<n) p} ) 
          found1 (suc m)  m<n end | no np = begin
-                 p (Q←F (fromℕ< m<n)) \/ exists1 m (≤to<  m<n) p
+                 p (Q←F (fromℕ< m<n)) \/ exists1 m (<to≤  m<n) p
               ≡⟨ bool-or-1 (¬-bool-t np ) ⟩
-                 exists1 m (≤to<  m<n) p
-              ≡⟨ found1 m (≤to<  m<n) (next-end p end m<n (¬-bool-t np )) ⟩
+                 exists1 m (<to≤  m<n) p
+              ≡⟨ found1 m (<to≤  m<n) (next-end p end m<n (¬-bool-t np )) ⟩
                  true
               ∎  where open ≡-Reasoning
 
 
-
-record ISO (A B : Set) : Set where
-   field
-     A←B : B → A
-     B←A : A → B
-     iso← : (q : A) → A←B ( B←A q ) ≡ q
-     iso→ : (f : B) → B←A ( A←B f ) ≡ f
-
-iso-fin : {A B : Set} → FiniteSet A  → ISO A B → FiniteSet B 
+iso-fin : {A B : Set} → FiniteSet A  → Bijection A B → FiniteSet B 
 iso-fin {A} {B}  fin iso = record {
-   Q←F = λ f → ISO.B←A iso ( FiniteSet.Q←F fin f )
- ; F←Q = λ b → FiniteSet.F←Q fin ( ISO.A←B iso b )
- ; finiso→ = finiso→ 
- ; finiso← = finiso← 
+   Q←F = λ f → fun→ iso ( FiniteSet.Q←F fin f )
+     ; F←Q = λ b → FiniteSet.F←Q fin (fun← iso b )
+     ; finiso→ = finiso→ 
+     ; finiso← = finiso← 
    } where
-   finiso→ : (q : B) → ISO.B←A iso (FiniteSet.Q←F fin (FiniteSet.F←Q fin (ISO.A←B iso q))) ≡ q
+   finiso→ : (q : B) → fun→ iso (FiniteSet.Q←F fin (FiniteSet.F←Q fin (Bijection.fun← iso q))) ≡ q
    finiso→ q = begin
-              ISO.B←A iso (FiniteSet.Q←F fin (FiniteSet.F←Q fin (ISO.A←B iso q))) 
-           ≡⟨ cong (λ k → ISO.B←A iso k ) (FiniteSet.finiso→ fin _ ) ⟩
-              ISO.B←A iso (ISO.A←B iso q)
-           ≡⟨ ISO.iso→ iso _ ⟩
+             fun→ iso (FiniteSet.Q←F fin (FiniteSet.F←Q fin (Bijection.fun← iso q))) 
+           ≡⟨ cong (λ k → fun→ iso k ) (FiniteSet.finiso→ fin _ ) ⟩
+             fun→ iso (Bijection.fun← iso q)
+           ≡⟨ fiso→ iso _ ⟩
               q
-           ∎  where
-           open ≡-Reasoning
-   finiso← : (f : Fin (FiniteSet.finite fin ))→ FiniteSet.F←Q fin (ISO.A←B iso (ISO.B←A iso (FiniteSet.Q←F fin f))) ≡ f
+           ∎  where open ≡-Reasoning
+   finiso← : (f : Fin (FiniteSet.finite fin ))→ FiniteSet.F←Q fin (Bijection.fun← iso (Bijection.fun→ iso (FiniteSet.Q←F fin f))) ≡ f
    finiso← f = begin
-              FiniteSet.F←Q fin (ISO.A←B iso (ISO.B←A iso (FiniteSet.Q←F fin f))) 
-           ≡⟨ cong (λ k → FiniteSet.F←Q fin k ) (ISO.iso← iso _) ⟩
+              FiniteSet.F←Q fin (Bijection.fun← iso (Bijection.fun→ iso (FiniteSet.Q←F fin f))) 
+           ≡⟨ cong (λ k → FiniteSet.F←Q fin k ) (Bijection.fiso← iso _) ⟩
               FiniteSet.F←Q fin (FiniteSet.Q←F fin f) 
            ≡⟨ FiniteSet.finiso← fin _  ⟩
               f
@@ -123,54 +116,54 @@ fin-∨1 {B} fb =  record {
 
 fin-∨2 : {B : Set} → ( a : ℕ ) → FiniteSet B  → FiniteSet (Fin a ∨ B) 
 fin-∨2 {B} zero  fb = iso-fin fb iso where
-   iso : ISO B (Fin zero ∨ B)
-   iso =  record {
-        A←B = A←B
-      ; B←A = λ b → case2 b
-      ; iso→ = iso→
-      ; iso← = λ _ → refl
+ iso : Bijection B (Fin zero ∨ B)
+ iso =  record {
+        fun← = fun←1
+      ; fun→ = λ b → case2 b
+      ; fiso→ = fiso→1
+      ; fiso← = λ _ → refl
     } where
-     A←B : Fin zero ∨ B → B
-     A←B (case2 x) = x 
-     iso→ : (f : Fin zero ∨ B ) → case2 (A←B f) ≡ f
-     iso→ (case2 x)  = refl
+     fun←1 : Fin zero ∨ B → B
+     fun←1 (case2 x) = x 
+     fiso→1 : (f : Fin zero ∨ B ) → case2 (fun←1 f) ≡ f
+     fiso→1 (case2 x)  = refl
 fin-∨2 {B} (suc a) fb =  iso-fin (fin-∨1 (fin-∨2 a fb) ) iso
     where
-  iso : ISO (One ∨ (Fin a ∨ B) ) (Fin (suc a) ∨ B)
-  ISO.A←B iso (case1 zero) = case1 one
-  ISO.A←B iso (case1 (suc f)) = case2 (case1 f)
-  ISO.A←B iso (case2 b) = case2 (case2 b)
-  ISO.B←A iso (case1 one) = case1 zero
-  ISO.B←A iso (case2 (case1 f)) = case1 (suc f)
-  ISO.B←A iso (case2 (case2 b)) = case2 b
-  ISO.iso← iso (case1 one) = refl
-  ISO.iso← iso (case2 (case1 x)) = refl
-  ISO.iso← iso (case2 (case2 x)) = refl
-  ISO.iso→ iso (case1 zero) = refl
-  ISO.iso→ iso (case1 (suc x)) = refl
-  ISO.iso→ iso (case2 x) = refl
+ iso : Bijection (One ∨ (Fin a ∨ B) ) (Fin (suc a) ∨ B)
+ fun← iso (case1 zero) = case1 one
+ fun← iso (case1 (suc f)) = case2 (case1 f)
+ fun← iso (case2 b) = case2 (case2 b)
+ fun→ iso (case1 one) = case1 zero
+ fun→ iso (case2 (case1 f)) = case1 (suc f)
+ fun→ iso (case2 (case2 b)) = case2 b
+ fiso← iso (case1 one) = refl
+ fiso← iso (case2 (case1 x)) = refl
+ fiso← iso (case2 (case2 x)) = refl
+ fiso→ iso (case1 zero) = refl
+ fiso→ iso (case1 (suc x)) = refl
+ fiso→ iso (case2 x) = refl
 
 
-FiniteSet→Fin : {A : Set} → (fin : FiniteSet A  ) → ISO (Fin (FiniteSet.finite fin)) A
-ISO.A←B (FiniteSet→Fin fin) f = FiniteSet.F←Q fin f
-ISO.B←A (FiniteSet→Fin fin) f = FiniteSet.Q←F fin f
-ISO.iso← (FiniteSet→Fin fin) = FiniteSet.finiso← fin
-ISO.iso→ (FiniteSet→Fin fin) =  FiniteSet.finiso→ fin
+FiniteSet→Fin : {A : Set} → (fin : FiniteSet A  ) → Bijection (Fin (FiniteSet.finite fin)) A
+fun← (FiniteSet→Fin fin) f = FiniteSet.F←Q fin f
+fun→ (FiniteSet→Fin fin) f = FiniteSet.Q←F fin f
+fiso← (FiniteSet→Fin fin) = FiniteSet.finiso← fin
+fiso→ (FiniteSet→Fin fin) =  FiniteSet.finiso→ fin
    
 
 fin-∨ : {A B : Set} → FiniteSet A → FiniteSet B → FiniteSet (A ∨ B) 
 fin-∨ {A} {B}  fa fb = iso-fin (fin-∨2 a  fb ) iso2 where
     a = FiniteSet.finite fa
     ia = FiniteSet→Fin fa
-    iso2 : ISO (Fin a ∨ B ) (A ∨ B)
-    ISO.A←B iso2 (case1 x) = case1 ( ISO.A←B ia x )
-    ISO.A←B iso2 (case2 x) = case2 x
-    ISO.B←A iso2 (case1 x) = case1 ( ISO.B←A ia x )
-    ISO.B←A iso2 (case2 x) = case2 x
-    ISO.iso← iso2 (case1 x) = cong ( λ k → case1 k ) (ISO.iso← ia x)
-    ISO.iso← iso2 (case2 x) = refl
-    ISO.iso→ iso2 (case1 x) = cong ( λ k → case1 k ) (ISO.iso→ ia x)
-    ISO.iso→ iso2 (case2 x) = refl
+    iso2 : Bijection (Fin a ∨ B ) (A ∨ B)
+    fun← iso2 (case1 x) = case1 (fun← ia x )
+    fun← iso2 (case2 x) = case2 x
+    fun→ iso2 (case1 x) = case1 (fun→ ia x )
+    fun→ iso2 (case2 x) = case2 x
+    fiso← iso2 (case1 x) = cong ( λ k → case1 k ) (Bijection.fiso← ia x)
+    fiso← iso2 (case2 x) = refl
+    fiso→ iso2 (case1 x) = cong ( λ k → case1 k ) (Bijection.fiso→ ia x)
+    fiso→ iso2 (case2 x) = refl
 
 open import Data.Product
 
@@ -179,23 +172,23 @@ fin-× {A} {B}  fa fb with FiniteSet→Fin fa
 ... | a=f = iso-fin (fin-×-f a ) iso-1 where
    a = FiniteSet.finite fa
    b = FiniteSet.finite fb
-   iso-1 : ISO (Fin a × B) ( A × B )
-   ISO.A←B iso-1 x = ( FiniteSet.F←Q fa (proj₁ x)  , proj₂ x) 
-   ISO.B←A iso-1 x = ( FiniteSet.Q←F fa (proj₁ x)  , proj₂ x) 
-   ISO.iso← iso-1 x  =  lemma  where
+   iso-1 : Bijection (Fin a × B) ( A × B )
+   fun← iso-1 x = ( FiniteSet.F←Q fa (proj₁ x)  , proj₂ x) 
+   fun→ iso-1 x = ( FiniteSet.Q←F fa (proj₁ x)  , proj₂ x) 
+   fiso← iso-1 x  =  lemma  where
      lemma : (FiniteSet.F←Q fa (FiniteSet.Q←F fa (proj₁ x)) , proj₂ x) ≡ ( proj₁ x , proj₂ x )
      lemma = cong ( λ k → ( k ,  proj₂ x ) )  (FiniteSet.finiso← fa _ )
-   ISO.iso→ iso-1 x = cong ( λ k → ( k ,  proj₂ x ) )  (FiniteSet.finiso→ fa _ )
+   fiso→ iso-1 x = cong ( λ k → ( k ,  proj₂ x ) )  (FiniteSet.finiso→ fa _ )
 
-   iso-2 : {a : ℕ } → ISO (B ∨ (Fin a × B)) (Fin (suc a) × B)
-   ISO.A←B iso-2 (zero , b ) = case1 b
-   ISO.A←B iso-2 (suc fst , b ) = case2 ( fst , b )
-   ISO.B←A iso-2 (case1 b) = ( zero , b )
-   ISO.B←A iso-2 (case2 (a , b )) = ( suc a , b )
-   ISO.iso← iso-2 (case1 x) = refl
-   ISO.iso← iso-2 (case2 x) = refl
-   ISO.iso→ iso-2 (zero , b ) = refl
-   ISO.iso→ iso-2 (suc a , b ) = refl
+   iso-2 : {a : ℕ } → Bijection (B ∨ (Fin a × B)) (Fin (suc a) × B)
+   fun← iso-2 (zero , b ) = case1 b
+   fun← iso-2 (suc fst , b ) = case2 ( fst , b )
+   fun→ iso-2 (case1 b) = ( zero , b )
+   fun→ iso-2 (case2 (a , b )) = ( suc a , b )
+   fiso← iso-2 (case1 x) = refl
+   fiso← iso-2 (case2 x) = refl
+   fiso→ iso-2 (zero , b ) = refl
+   fiso→ iso-2 (suc a , b ) = refl
 
    fin-×-f : ( a  : ℕ ) → FiniteSet ((Fin a) × B) 
    fin-×-f zero = record { Q←F = λ () ; F←Q = λ () ; finiso→ = λ () ; finiso← = λ () ; finite = 0 }
@@ -208,23 +201,23 @@ fin-∧ {A} {B} fa fb with FiniteSet→Fin fa    -- same thing for our tool
 ... | a=f = iso-fin (fin-×-f a ) iso-1 where
    a = FiniteSet.finite fa
    b = FiniteSet.finite fb
-   iso-1 : ISO (Fin a ∧ B) ( A ∧ B )
-   ISO.A←B iso-1 x = record { proj1 = FiniteSet.F←Q fa (proj1 x)  ; proj2 =  proj2 x} 
-   ISO.B←A iso-1 x = record { proj1 = FiniteSet.Q←F fa (proj1 x)  ; proj2 =  proj2 x}
-   ISO.iso← iso-1 x  =  lemma  where
+   iso-1 : Bijection (Fin a ∧ B) ( A ∧ B )
+   fun← iso-1 x = record { proj1 = FiniteSet.F←Q fa (proj1 x)  ; proj2 =  proj2 x} 
+   fun→ iso-1 x = record { proj1 = FiniteSet.Q←F fa (proj1 x)  ; proj2 =  proj2 x}
+   fiso← iso-1 x  =  lemma  where
      lemma : record { proj1 = FiniteSet.F←Q fa (FiniteSet.Q←F fa (proj1 x)) ; proj2 =  proj2 x} ≡ record {proj1 =  proj1 x ; proj2 =  proj2 x }
      lemma = cong ( λ k → record {proj1 = k ;  proj2 = proj2 x } )  (FiniteSet.finiso← fa _ )
-   ISO.iso→ iso-1 x = cong ( λ k → record {proj1 =  k ; proj2 =  proj2 x } )  (FiniteSet.finiso→ fa _ )
+   fiso→ iso-1 x = cong ( λ k → record {proj1 =  k ; proj2 =  proj2 x } )  (FiniteSet.finiso→ fa _ )
 
-   iso-2 : {a : ℕ } → ISO (B ∨ (Fin a ∧ B)) (Fin (suc a) ∧ B)
-   ISO.A←B iso-2 (record { proj1 = zero ; proj2 =  b }) = case1 b
-   ISO.A←B iso-2 (record { proj1 = suc fst ; proj2 =  b }) = case2 ( record { proj1 = fst ; proj2 =  b } )
-   ISO.B←A iso-2 (case1 b) = record {proj1 =  zero ; proj2 =  b }
-   ISO.B←A iso-2 (case2 (record { proj1 = a ; proj2 =  b })) = record { proj1 =  suc a ; proj2 =  b }
-   ISO.iso← iso-2 (case1 x) = refl
-   ISO.iso← iso-2 (case2 x) = refl
-   ISO.iso→ iso-2 (record { proj1 = zero ; proj2 =  b }) = refl
-   ISO.iso→ iso-2 (record { proj1 = suc a ; proj2 =  b }) = refl
+   iso-2 : {a : ℕ } → Bijection (B ∨ (Fin a ∧ B)) (Fin (suc a) ∧ B)
+   fun← iso-2 (record { proj1 = zero ; proj2 =  b }) = case1 b
+   fun← iso-2 (record { proj1 = suc fst ; proj2 =  b }) = case2 ( record { proj1 = fst ; proj2 =  b } )
+   fun→ iso-2 (case1 b) = record {proj1 =  zero ; proj2 =  b }
+   fun→ iso-2 (case2 (record { proj1 = a ; proj2 =  b })) = record { proj1 =  suc a ; proj2 =  b }
+   fiso← iso-2 (case1 x) = refl
+   fiso← iso-2 (case2 x) = refl
+   fiso→ iso-2 (record { proj1 = zero ; proj2 =  b }) = refl
+   fiso→ iso-2 (record { proj1 = suc a ; proj2 =  b }) = refl
 
    fin-×-f : ( a  : ℕ ) → FiniteSet ((Fin a) ∧ B) 
    fin-×-f zero = record { Q←F = λ () ; F←Q = λ () ; finiso→ = λ () ; finiso← = λ () ; finite = 0 }
@@ -281,8 +274,8 @@ fin2List {suc n} = subst (λ k → FiniteSet (Vec Bool (suc n)) ) (sym (exp2 n))
    isoQR : (x : Vec Bool n ∨ Vec Bool n ) → QtoR ( RtoQ x ) ≡ x
    isoQR (case1 x) = refl
    isoQR (case2 x) = refl
-   iso : ISO (Vec Bool n ∨ Vec Bool n) (Vec Bool (suc n))
-   iso = record { A←B = QtoR ; B←A = RtoQ ; iso← = isoQR ; iso→ = isoRQ  }
+   iso : Bijection (Vec Bool n ∨ Vec Bool n) (Vec Bool (suc n))
+   iso = record { fun← = QtoR ; fun→ = RtoQ ; fiso← = isoQR ; fiso→ = isoRQ  }
 
 F2L : {Q : Set } {n : ℕ } → (fin : FiniteSet Q ) → n < suc (FiniteSet.finite fin) → ( (q : Q) → toℕ (FiniteSet.F←Q fin q ) < n  → Bool ) → Vec Bool n
 F2L  {Q} {zero} fin _ Q→B = []
@@ -367,11 +360,11 @@ L2F-iso {Q} fin f q = l2f m a<sa (toℕ<n _) where
 fin→ : {A : Set} → FiniteSet A → FiniteSet (A → Bool ) 
 fin→ {A}  fin = iso-fin fin2List iso where
     a = FiniteSet.finite fin
-    iso : ISO (Vec Bool a ) (A → Bool)
-    ISO.A←B iso x = F2L fin a<sa ( λ q _ → x q )
-    ISO.B←A iso x = List2Func fin a<sa x 
-    ISO.iso← iso x  =  F2L-iso fin x 
-    ISO.iso→ iso x = lemma where
+    iso : Bijection (Vec Bool a ) (A → Bool)
+    fun← iso x = F2L fin a<sa ( λ q _ → x q )
+    fun→ iso x = List2Func fin a<sa x 
+    fiso← iso x  =  F2L-iso fin x 
+    fiso→ iso x = lemma where
       lemma : List2Func fin a<sa (F2L fin a<sa (λ q _ → x q)) ≡ x
       lemma = f-extensionality ( λ q → L2F-iso fin x q )
     
@@ -395,7 +388,7 @@ fin-less-cong fa n<m (elm1 elm x) (elm1 elm x) refl HE.refl = refl
 fin-< : {A : Set} → { n : ℕ } → (fa : FiniteSet A ) → (n<m : n < FiniteSet.finite fa ) → FiniteSet (fin-less fa n<m ) 
 fin-< {A}  {n} fa n<m = iso-fin (Fin2Finite n) iso where
     m = FiniteSet.finite fa
-    iso : ISO (Fin n) (fin-less fa n<m )
+    iso : Bijection (Fin n) (fin-less fa n<m )
     lemma8f : {i j n : ℕ } → ( i ≡ j ) → {i<n : i < n } → {j<n : j < n } → i<n ≅ j<n  
     lemma8f {zero} {zero} {suc n} refl {s≤s z≤n} {s≤s z≤n} = HE.refl
     lemma8f {suc i} {suc i} {suc n} refl {s≤s i<n} {s≤s j<n} = HE.cong (λ k → s≤s k ) ( lemma8f {i} {i}  refl  )
@@ -410,13 +403,13 @@ fin-< {A}  {n} fa n<m = iso-fin (Fin2Finite n) iso where
          toℕ x
       ∎  where
           open ≡-Reasoning
-    ISO.A←B iso (elm1 elm x) = fromℕ< x
-    ISO.B←A iso x = elm1 (FiniteSet.Q←F fa (fromℕ< (NatP.<-trans x<n n<m ))) to<n where
+    fun← iso (elm1 elm x) = fromℕ< x
+    fun→ iso x = elm1 (FiniteSet.Q←F fa (fromℕ< (NatP.<-trans x<n n<m ))) to<n where
       x<n : toℕ x < n
       x<n = toℕ<n x
       to<n : toℕ (FiniteSet.F←Q fa (FiniteSet.Q←F fa (fromℕ< (NatP.<-trans x<n n<m)))) < n
       to<n = subst (λ k → toℕ k < n ) (sym (FiniteSet.finiso← fa _ )) (subst (λ k → k < n ) (sym ( toℕ-fromℕ< (NatP.<-trans x<n n<m) )) x<n )
-    ISO.iso← iso x  = lemma2 where
+    fiso← iso x  = lemma2 where
       lemma2 : fromℕ< (subst (λ k → toℕ k < n) (sym
        (FiniteSet.finiso← fa (fromℕ< (NatP.<-trans (toℕ<n x) n<m)))) (subst (λ k → k < n)
        (sym (toℕ-fromℕ< (NatP.<-trans (toℕ<n x) n<m))) (toℕ<n x))) ≡ x
@@ -436,21 +429,21 @@ fin-< {A}  {n} fa n<m = iso-fin (Fin2Finite n) iso where
           open ≡-Reasoning
           lemma6 : toℕ (fromℕ< (NatP.<-trans (toℕ<n x) n<m)) < n
           lemma6 = subst ( λ k → k < n ) (sym (toℕ-fromℕ< (NatP.<-trans (toℕ<n x) n<m))) (toℕ<n x )
-    ISO.iso→ iso (elm1 elm x) = fin-less-cong fa n<m _ _ lemma (lemma8 (cong (λ k → toℕ (FiniteSet.F←Q fa k) ) lemma ) ) where
+    fiso→ iso (elm1 elm x) = fin-less-cong fa n<m _ _ lemma (lemma8 (cong (λ k → toℕ (FiniteSet.F←Q fa k) ) lemma ) ) where
       lemma13 : toℕ (fromℕ< x) ≡ toℕ (FiniteSet.F←Q fa elm)
       lemma13 = begin
             toℕ (fromℕ< x)
          ≡⟨ toℕ-fromℕ< _ ⟩
             toℕ (FiniteSet.F←Q fa elm)
          ∎  where open ≡-Reasoning
-      lemma : FiniteSet.Q←F fa (fromℕ< (NatP.<-trans (toℕ<n (ISO.A←B iso (elm1 elm x))) n<m)) ≡ elm 
+      lemma : FiniteSet.Q←F fa (fromℕ< (NatP.<-trans (toℕ<n (Bijection.fun← iso (elm1 elm x))) n<m)) ≡ elm 
       lemma = begin
-           FiniteSet.Q←F fa (fromℕ< (NatP.<-trans (toℕ<n (ISO.A←B iso (elm1 elm x))) n<m))
+           FiniteSet.Q←F fa (fromℕ< (NatP.<-trans (toℕ<n (Bijection.fun← iso (elm1 elm x))) n<m))
          ≡⟨⟩
            FiniteSet.Q←F fa (fromℕ< ( NatP.<-trans (toℕ<n ( fromℕ< x ) ) n<m))
-         ≡⟨ cong (λ k → FiniteSet.Q←F fa k) (lemma10 lemma13 ) ⟩
+         ≡⟨ cong (λ k → FiniteSet.Q←F fa k) (lemma10 lemma13 ) ⟩ 
             FiniteSet.Q←F fa (fromℕ< ( NatP.<-trans x n<m))
-         ≡⟨ cong (λ k → FiniteSet.Q←F fa (fromℕ< k ))  {!!} ⟩
+         ≡⟨ cong (λ k → FiniteSet.Q←F fa (fromℕ< k )) (HE.≅-to-≡ (lemma8 refl)) ⟩
            FiniteSet.Q←F fa (fromℕ< ( toℕ<n (FiniteSet.F←Q fa elm)))
          ≡⟨ cong (λ k → FiniteSet.Q←F fa k ) ( fromℕ<-toℕ _ _ ) ⟩
            FiniteSet.Q←F fa (FiniteSet.F←Q fa elm )

@@ -23,7 +23,7 @@ record FiniteSet ( Q : Set ) : Set  where
         finiso← : (f : Fin finite ) → F←Q ( Q←F f ) ≡ f
      exists1 : (m : ℕ ) → m Data.Nat.≤ finite → (Q → Bool) → Bool
      exists1  zero  _ _ = false
-     exists1 ( suc m ) m<n p = p (Q←F (fromℕ< {m} {finite} m<n)) \/ exists1 m (≤to< m<n) p
+     exists1 ( suc m ) m<n p = p (Q←F (fromℕ< {m} {finite} m<n)) \/ exists1 m (<to≤ m<n) p
      exists : ( Q → Bool ) → Bool
      exists p = exists1 finite ≤-refl p 
 
@@ -31,8 +31,8 @@ record FiniteSet ( Q : Set ) : Set  where
      list1 : (m : ℕ ) → m Data.Nat.≤ finite → (Q → Bool) → List Q 
      list1  zero  _ _ = []
      list1 ( suc m ) m<n p with bool-≡-? (p (Q←F (fromℕ< {m} {finite} m<n))) true
-     ... | yes _ = Q←F (fromℕ< {m} {finite} m<n) ∷ list1 m (≤to< m<n) p
-     ... | no  _ = list1 m (≤to< m<n) p
+     ... | yes _ = Q←F (fromℕ< {m} {finite} m<n) ∷ list1 m (<to≤ m<n) p
+     ... | no  _ = list1 m (<to≤ m<n) p
      to-list : ( Q → Bool ) → List Q 
      to-list p = list1 finite ≤-refl p 
 
