@@ -439,7 +439,7 @@ f-induction {n} {m} {P} {Q} f I p with <-cmp 0 (f p)
 ... | tri≈ ¬a b ¬c = Finduction.fzero I (sym b) 
 ... | tri< lt _ _ = f-induction0 p (f p) (<to≤ (Finduction.decline I lt)) where 
    f-induction0 : (p : P) → (x : ℕ) → (f (Finduction.pnext I p)) ≤ x → Q p
-   f-induction0 p zero le = Finduction.ind I (Finduction.fzero I (fi0 _ le)) where
+   f-induction0 p zero le = Finduction.ind I (Finduction.fzero I (fi0 _ le)) 
    f-induction0 p (suc x) le with <-cmp (f (Finduction.pnext I p)) (suc x)
    ... | tri< (s≤s a) ¬b ¬c = f-induction0 p x a 
    ... | tri≈ ¬a b ¬c = Finduction.ind I (f-induction0 (Finduction.pnext I p) x (y<sx→y≤x f1)) where

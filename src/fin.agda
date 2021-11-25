@@ -2,7 +2,7 @@
 
 module fin where
 
-open import Data.Fin hiding (_<_ ; _≤_ )
+open import Data.Fin hiding (_<_ ; _≤_ ; _>_ )
 open import Data.Fin.Properties hiding ( <-trans )
 open import Data.Nat
 open import logic
@@ -113,5 +113,4 @@ lemma11 {n} {m} {x} n<m  = begin
               toℕ x
            ∎  where
                open ≡-Reasoning
-
 

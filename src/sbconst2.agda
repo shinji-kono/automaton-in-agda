@@ -30,24 +30,24 @@ test4 = subset-construction existsS1 am2
 test51 = accept test4 start1 ( i0  ∷ i1  ∷ i0  ∷ [] )
 test61 = accept test4 start1 ( i1  ∷ i1  ∷ i1  ∷ [] )
 
-subset-construction-lemma→ : { Q : Set } { Σ : Set  } { n  : ℕ }  → (exists : ( Q → Bool ) → Bool ) →
+subset-construction-lemma→ : { Q : Set } { Σ : Set  } → (exists : ( Q → Bool ) → Bool ) →
     (NFA : NAutomaton Q  Σ ) → (astart : Q → Bool ) 
     → (x : List Σ)
     → Naccept NFA exists astart  x ≡ true
     → accept (  subset-construction exists NFA ) astart  x ≡ true
-subset-construction-lemma→ {Q} {Σ} {n} exists NFA astart x naccept = lemma1 x astart naccept where
+subset-construction-lemma→ {Q} {Σ}  exists NFA astart x naccept = lemma1 x astart naccept where
     lemma1 :  (x : List Σ) → ( states : Q → Bool )
        → Naccept NFA exists states x ≡ true
        → accept (  subset-construction exists NFA ) states x ≡ true
     lemma1 [] states naccept = naccept
     lemma1 (h ∷ t ) states naccept = lemma1 t (δconv exists (Nδ NFA) states h) naccept
 
-subset-construction-lemma← : { Q : Set } { Σ : Set  } { n  : ℕ }  → (exists : ( Q → Bool ) → Bool ) →
+subset-construction-lemma← : { Q : Set } { Σ : Set  }   → (exists : ( Q → Bool ) → Bool ) →
     (NFA : NAutomaton Q  Σ ) → (astart : Q → Bool )
     → (x : List Σ)
     → accept (  subset-construction exists NFA ) astart x ≡ true
     → Naccept NFA exists astart x ≡ true
-subset-construction-lemma← {Q} {Σ} {n} exists NFA astart x saccept = lemma2 x astart saccept where
+subset-construction-lemma← {Q} {Σ}  exists NFA astart x saccept = lemma2 x astart saccept where
     lemma2 :  (x : List Σ) → ( states : Q → Bool )
        → accept (  subset-construction exists NFA ) states x ≡ true
        → Naccept NFA exists states x ≡ true

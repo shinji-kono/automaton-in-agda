@@ -1,3 +1,4 @@
+{-# OPTIONS --sized-types #-}
 open import Relation.Nullary
 open import Relation.Binary.PropositionalEquality
 module flcagl
@@ -118,7 +119,8 @@ module Lang where
         Setoid._≈_ (Bis i) = _≅⟨ i ⟩≅_
         Setoid.isEquivalence (Bis i) = ≅isEquivalence i
 
-        import Relation.Binary.EqReasoning as EqR
+        -- import Relation.Binary.EqReasoning as EqR
+        import Relation.Binary.Reasoning.Setoid as EqR
 
         ≅trans′ : ∀ i (k l m : Lang ∞)
            ( p : k ≅⟨ i ⟩≅ l ) ( q : l ≅⟨ i ⟩≅ m ) → k ≅⟨ i ⟩≅ m
@@ -402,7 +404,8 @@ composeA : ∀{S1 S2} (da1 : DA S1)(s2 : S2)(da2 : DA S2) → DA (S1 × List ∞
 δ (composeA da1 s2 da2) (s1 , ss2) a =
         δ da1 s1 a , δs da2 (if ν da1 s1 then s2 ∷ ss2 else ss2) a
 
-import Relation.Binary.EqReasoning as EqR
+-- import Relation.Binary.EqReasoning as EqR
+import Relation.Binary.Reasoning.Setoid as EqR
 
 composeA-gen : ∀{i S1 S2} (da1 : DA S1) (da2 : DA S2) → ∀(s1 : S1)(s2 : S2)(ss : List ∞ S2) →
         lang (composeA da1 s2 da2) (s1 , ss) ≅⟨ i ⟩≅ lang da1 s1 · lang da2 s2 ∪ lang (powA da2) ss

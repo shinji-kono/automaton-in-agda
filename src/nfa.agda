@@ -5,7 +5,7 @@ module nfa where
 open import Data.Nat
 open import Data.List
 open import Data.Fin hiding ( _<_ )
-open import Data.Maybe
+open import Data.Maybe hiding ( zip )
 open import Relation.Nullary
 open import Data.Empty
 -- open import Data.Bool using ( Bool ; true ; false ; _∧_ ; _∨_ )
@@ -39,7 +39,7 @@ existsS1 : ( States1 → Bool ) → Bool
 existsS1 qs = qs sr \/ qs ss \/ qs st
 
 -- extract list of q which qs q is true
-to-listS1 : ( States1 → Bool ) → List States1            
+to-listS1 : ( States1 → Bool ) → List States1
 to-listS1 qs = ss1 LStates1 where
    ss1 : List States1 → List States1
    ss1 [] = []
@@ -149,4 +149,103 @@ am2def  =  record { δ    = λ qs s q → existsS1 (λ qn → qs q /\ Nδ am2 q 
 
 dexample4-1 = accept am2def start1 ( i0  ∷ i1  ∷ i1  ∷ i0 ∷ [] ) 
 texample4-1 = trace am2def start1 ( i0  ∷ i1  ∷ i1  ∷ i0 ∷ [] ) 
+
+-- LStates1 contains all states in States1
+
+-- a list of Q contains (q : Q)
+
+eqState1? : (x y : States1)  →  Dec ( x ≡ y )
+eqState1? sr sr = yes refl
+eqState1? ss ss = yes refl
+eqState1? st st = yes refl
+eqState1? sr ss = no (λ ())
+eqState1? sr st = no (λ ())
+eqState1? ss sr = no (λ ())
+eqState1? ss st = no (λ ())
+eqState1? st sr = no (λ ())
+eqState1? st ss = no (λ ())
+
+
+list-contains  : {Q : Set} → ( (x y : Q ) → Dec ( x ≡ y ) ) → (qs : List Q) → (q : Q ) → Bool
+list-contains {Q} eq? [] q = false
+list-contains {Q} eq? (x ∷ qs) q with eq? x q
+... | yes _  = true
+... | no _  = list-contains eq? qs q
+
+containsP : {Q : Set} → ( eq? : (x y : Q ) →  Dec ( x ≡ y ))  → (qs : List Q) → (q : Q ) → Set 
+containsP eq? qs q = list-contains eq? qs q ≡ true
+
+contains-all : (q : States1 ) → containsP eqState1? LStates1 q 
+contains-all sr = refl
+contains-all ss = refl
+contains-all st = refl
+
+-- foldr : (A → B → B) → B → List A → B
+-- foldr c n []       = n
+-- foldr c n (x ∷ xs) = c x (foldr c n xs)
+
+ssQ : {Q : Set } ( qs : Q → Bool ) → List Q → List Q
+ssQ qs [] = []
+ssQ qs (x ∷ t) with qs x
+... | true   = x ∷ ssQ qs t
+... | false  = ssQ qs t 
+
+bool-t1 : {b : Bool } → b ≡ true → (true /\ b)  ≡ true
+bool-t1 refl = refl
+
+bool-1t : {b : Bool } → b ≡ true → (b /\ true)  ≡ true
+bool-1t refl = refl
+
+to-list1 : {Q : Set } (qs : Q → Bool ) →  (all : List Q) → foldr (λ q x → qs q /\ x ) true (ssQ  qs all ) ≡ true
+to-list1 qs []  = refl
+to-list1 qs (x ∷ all)  with qs x  | inspect qs x
+... | false | record { eq = eq } = to-list1 qs all 
+... | true  | record { eq = eq } = subst (λ k → k /\ foldr (λ q → _/\_ (qs q)) true (ssQ qs all) ≡ true ) (sym eq) ( bool-t1 (to-list1 qs all) )
+
+existsS1-valid : ¬ ( (qs : States1 → Bool ) →  ( existsS1 qs ≡ true ) )
+existsS1-valid n = ¬-bool refl ( n ( λ x → false ))
+
+--
+--  using finiteSet
+--
+
+open import finiteSet
+open import finiteSetUtil
+open FiniteSet
+
+allQ : {Q : Set } (finq : FiniteSet Q) → List Q
+allQ {Q} finq = to-list finq (λ x → true)
+
+existQ : {Q : Set } (finq : FiniteSet Q) → (Q → Bool) → Bool
+existQ finq qs = exists finq qs
+
+eqQ? : {Q : Set } (finq : FiniteSet Q) → (x y : Q ) → Bool
+eqQ? finq x y = equal? finq x y
+
+finState1 : FiniteSet States1
+finState1 = record {
+     finite = finite0
+   ; Q←F = Q←F0 
+   ; F←Q = F←Q0 
+   ; finiso→ = finiso→0
+   ; finiso← = finiso←0
+ } where
+     finite0 : ℕ
+     finite0 = 3
+     Q←F0 : Fin finite0 → States1
+     Q←F0 zero = sr
+     Q←F0 (suc zero) = ss
+     Q←F0 (suc (suc zero)) = st
+     F←Q0 : States1 → Fin finite0
+     F←Q0 sr = # 0
+     F←Q0 ss = # 1
+     F←Q0 st = # 2
+     finiso→0 : (q : States1) → Q←F0 ( F←Q0 q ) ≡ q
+     finiso→0 sr = refl
+     finiso→0 ss = refl
+     finiso→0 st = refl
+     finiso←0 : (f : Fin finite0 ) → F←Q0 ( Q←F0 f ) ≡ f
+     finiso←0 zero = refl
+     finiso←0 (suc zero) = refl
+     finiso←0 (suc (suc zero)) = refl
 

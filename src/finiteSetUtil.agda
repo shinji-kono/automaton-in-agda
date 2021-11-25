@@ -23,8 +23,16 @@ record Found ( Q : Set ) (p : Q → Bool ) : Set where
 
 open Bijection
 
+open import Axiom.Extensionality.Propositional
+open import Level hiding (suc ; zero)
+postulate f-extensionality : { n : Level}  → Axiom.Extensionality.Propositional.Extensionality n n -- (Level.suc n)
+
 module _ {Q : Set } (F : FiniteSet Q) where
      open FiniteSet F
+     equal?-refl  : { x : Q } → equal? x x ≡ true 
+     equal?-refl {x} with F←Q x ≟ F←Q x
+     ... | yes refl = refl
+     ... | no ne = ⊥-elim (ne refl)
      equal→refl  : { x y : Q } → equal? x y ≡ true → x ≡ y
      equal→refl {q0} {q1} eq with F←Q q0 ≟ F←Q q1
      equal→refl {q0} {q1} refl | yes eq = begin
@@ -62,6 +70,31 @@ module _ {Q : Set } (F : FiniteSet Q) where
               ≡⟨ found1 m (<to≤  m<n) (next-end p end m<n (¬-bool-t np )) ⟩
                  true
               ∎  where open ≡-Reasoning
+     not-found : { p : Q → Bool } → ( (q : Q ) → p q ≡ false ) → exists p ≡ false
+     not-found {p} pn = not-found2 finite NatP.≤-refl where
+         not-found2 : (m : ℕ ) → (m<n : m Data.Nat.≤ finite ) → exists1 m m<n p ≡ false
+         not-found2  zero  _ = refl
+         not-found2 ( suc m ) m<n with pn (Q←F (fromℕ< {m} {finite} m<n))
+         not-found2 (suc m) m<n | eq = begin
+                  p (Q←F (fromℕ< m<n)) \/ exists1 m (<to≤ m<n) p 
+              ≡⟨ bool-or-1 eq ⟩
+                  exists1 m (<to≤ m<n) p 
+              ≡⟨ not-found2 m (<to≤ m<n)  ⟩
+                  false
+              ∎  where open ≡-Reasoning
+     found← : { p : Q → Bool } → exists p ≡ true → Found Q p
+     found← {p} exst = found2 finite NatP.≤-refl  (first-end p ) where
+         found2 : (m : ℕ ) (m<n : m Data.Nat.≤ finite ) → End m p →  Found Q p
+         found2 0 m<n end = ⊥-elim ( ¬-bool (not-found (λ q → end (F←Q q)  z≤n ) ) (subst (λ k → exists k ≡ true) (sym lemma) exst ) ) where
+             lemma : (λ z → p (Q←F (F←Q z))) ≡ p
+             lemma = f-extensionality ( λ q → subst (λ k → p k ≡ p q ) (sym (finiso→ q)) refl )
+         found2 (suc m)  m<n end with bool-≡-? (p (Q←F (fromℕ< m<n))) true
+         found2 (suc m)  m<n end | yes eq = record { found-q = Q←F (fromℕ< m<n) ; found-p = eq }
+         found2 (suc m)  m<n end | no np = 
+               found2 m (<to≤ m<n) (next-end p end m<n (¬-bool-t np )) 
+     not-found← : { p : Q → Bool } → exists p ≡ false → (q : Q ) → p q ≡ false 
+     not-found← {p} np q = ¬-bool-t ( contra-position {_} {_} {_} {exists p ≡ true} (found q) (λ ep → ¬-bool np ep ) )
+
 
 
 iso-fin : {A B : Set} → FiniteSet A  → Bijection A B → FiniteSet B 
@@ -293,7 +326,7 @@ List2Func {Q} {suc n} fin (s≤s n<m) (h ∷ t) q with  FiniteSet.F←Q fin q �
 
 open import Level renaming ( suc to Suc ; zero to Zero) 
 open import Axiom.Extensionality.Propositional
-postulate f-extensionality : { n : Level}  →  Axiom.Extensionality.Propositional.Extensionality n n 
+-- postulate f-extensionality : { n : Level}  →  Axiom.Extensionality.Propositional.Extensionality n n 
 
 F2L-iso : { Q : Set } → (fin : FiniteSet Q ) → (x : Vec Bool (FiniteSet.finite fin) ) → F2L fin a<sa (λ q _ → List2Func fin a<sa x q ) ≡ x
 F2L-iso {Q} fin x = f2l m a<sa x where

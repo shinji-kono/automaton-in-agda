@@ -170,3 +170,23 @@ bool-and-2 {true} {false} refl = refl
 bool-and-2 {false} {false} refl = refl
 
 
+open import Data.Nat
+open import Data.Nat.Properties
+
+_≥b_ : ( x y : ℕ) → Bool
+x ≥b y with <-cmp x y
+... | tri< a ¬b ¬c = false
+... | tri≈ ¬a b ¬c = true
+... | tri> ¬a ¬b c = true
+
+_>b_ : ( x y : ℕ) → Bool
+x >b y with <-cmp x y
+... | tri< a ¬b ¬c = false
+... | tri≈ ¬a b ¬c = false
+... | tri> ¬a ¬b c = true
+
+_≤b_ : ( x y : ℕ) → Bool
+x ≤b y  = y ≥b x
+
+_<b_ : ( x y : ℕ) → Bool
+x <b y  = y >b x

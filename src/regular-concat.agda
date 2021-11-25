@@ -13,47 +13,47 @@ open import  Relation.Binary.PropositionalEquality hiding ( [_] )
 open import logic
 open import nat
 open import automaton
-open import regular-language
+open import regular-language 
 
 open import nfa
 open import sbconst2
+open import finiteSet
+open import finiteSetUtil
 
-open RegularLanguage
 open Automaton
+open FiniteSet
 
-Concat-NFA :  {Σ : Set} → (A B : RegularLanguage Σ ) → ((x y : states A )→ Dec (x ≡ y)) → ((x y : states B )→ Dec (x ≡ y))
-    → NAutomaton (states A ∨ states B) Σ 
-Concat-NFA {Σ} A B equal?A equal?B = record { Nδ = δnfa ; Nend = nend } 
+
+Concat-NFA :  {Σ : Set} → (A B : RegularLanguage Σ ) → NAutomaton (states A ∨ states B) Σ 
+Concat-NFA {Σ} A B = record { Nδ = δnfa ; Nend = nend } 
    module Concat-NFA where
        δnfa : states A ∨ states B → Σ → states A ∨ states B → Bool
-       δnfa (case1 q) i (case1 q₁) with equal?A (δ (automaton A) q i) q₁
-       ... | yes _ = true
-       ... | no _ =  false
-       δnfa (case1 qa) i (case2 qb) with equal?B qb (δ (automaton B) (astart B) i) 
-       ... | yes _ = aend (automaton A) qa 
-       ... | no _ =  false
-       δnfa (case2 q) i (case2 q₁) with equal?B (δ (automaton B) q i) q₁
-       ... | yes _ = true
-       ... | no _ =  false
+       δnfa (case1 q) i (case1 q₁) = equal? (afin A) (δ (automaton A) q i) q₁
+       δnfa (case1 qa) i (case2 qb) = (aend (automaton A) qa ) /\
+           (equal? (afin B) qb (δ (automaton B) (astart B) i) )
+       δnfa (case2 q) i (case2 q₁) = equal? (afin B) (δ (automaton B) q i) q₁
        δnfa _ i _ = false
        nend : states A ∨ states B → Bool
        nend (case2 q) = aend (automaton B) q
        nend (case1 q) = aend (automaton A) q /\ aend (automaton B) (astart B) -- empty B case
 
-Concat-NFA-start :  {Σ : Set} → (A B : RegularLanguage Σ ) → states A ∨ states B → ((x y : states A )→ Dec (x ≡ y))  → Bool
-Concat-NFA-start A B (case1 a) equal?A with equal?A a (astart A)
-... | yes _ = true
-... | no _ =  false
-Concat-NFA-start A B (case2 b) equal?A = false
+Concat-NFA-start :  {Σ : Set} → (A B : RegularLanguage Σ ) → states A ∨ states B → Bool
+Concat-NFA-start A B q = equal? (fin-∨ (afin A) (afin B)) (case1 (astart A)) q
 
-M-Concat : {Σ : Set} → (A B : RegularLanguage Σ ) → ((states A → Bool) → Bool) → ((states B → Bool) → Bool)  → RegularLanguage Σ
-M-Concat {Σ} A B existsA existsB = record {
+CNFA-exist : {Σ : Set} → (A B : RegularLanguage Σ ) → (states A ∨ states B → Bool) → Bool
+CNFA-exist A B qs = exists (fin-∨ (afin A) (afin B)) qs 
+
+M-Concat : {Σ : Set} → (A B : RegularLanguage Σ ) → RegularLanguage Σ
+M-Concat {Σ} A B = record {
        states = states A ∨ states B → Bool
-     ; astart = λ ab → Concat-NFA-start A B ab {!!} 
-     ; automaton = subset-construction sbexists (Concat-NFA A B {!!} {!!} ) 
+     ; astart = Concat-NFA-start A B
+     ; afin = finf
+     ; automaton = subset-construction (CNFA-exist A B) (Concat-NFA A B) 
    } where
-       sbexists : (states A ∨ states B → Bool) → Bool
-       sbexists P = existsA ( λ a → existsB ( λ b → P (case1 a) \/ P (case2 b)))
+       fin : FiniteSet (states A ∨ states B ) 
+       fin = fin-∨ (afin A) (afin B)
+       finf : FiniteSet (states A ∨ states B → Bool ) 
+       finf = fin→ fin 
        
 record Split {Σ : Set} (A : List Σ → Bool ) ( B : List Σ → Bool ) (x :  List Σ ) : Set where
     field
@@ -138,57 +138,50 @@ AB→split {Σ} A B (h ∷ t) y eqa eqb = begin
 open NAutomaton
 open import Data.List.Properties
 
-open import finiteSet
-open import finiteSetUtil
-
-open FiniteSet
-
 closed-in-concat :  {Σ : Set} → (A B : RegularLanguage Σ ) → ( x : List Σ ) → isRegular (Concat (contain A) (contain B)) x ( M-Concat A B )
 closed-in-concat {Σ} A B x = ≡-Bool-func closed-in-concat→ closed-in-concat← where
-    afin : (A : RegularLanguage Σ ) → FiniteSet A
-    afin = ?
     finab = (fin-∨ (afin A) (afin B))
     NFA = (Concat-NFA A B)
     abmove : (q : states A ∨ states B) → (h : Σ ) → states A ∨ states B
     abmove (case1 q) h = case1 (δ (automaton A) q h)
     abmove (case2 q) h = case2 (δ (automaton B) q h)
     lemma-nmove-ab : (q : states A ∨ states B) → (h : Σ ) → Nδ NFA q h (abmove q h) ≡ true
-    lemma-nmove-ab (case1 q) _ = ? -- equal?-refl (afin A)
-    lemma-nmove-ab (case2 q) _ = ? -- equal?-refl (afin B)
+    lemma-nmove-ab (case1 q) h = equal?-refl (afin A) 
+    lemma-nmove-ab (case2 q) h = equal?-refl (afin B) 
     nmove : (q : states A ∨ states B) (nq : states A ∨ states B → Bool ) → (nq q ≡ true) → ( h : Σ ) →
        exists finab (λ qn → nq qn /\ Nδ NFA qn h (abmove q h)) ≡ true
     nmove (case1 q) nq nqt h = found finab (case1 q) ( bool-and-tt nqt (lemma-nmove-ab (case1 q)  h) )  
     nmove (case2 q) nq nqt h = found finab (case2 q) ( bool-and-tt nqt (lemma-nmove-ab (case2 q) h) ) 
     acceptB : (z : List Σ) → (q : states B) → (nq : states A ∨ states B → Bool ) → (nq (case2 q) ≡ true) → ( accept (automaton B) q z ≡ true ) 
-        → Naccept NFA finab nq z  ≡ true
+        → Naccept NFA (CNFA-exist A B) nq z  ≡ true
     acceptB [] q nq nqt fb = lemma8 where
         lemma8 : exists finab ( λ q → nq q /\ Nend NFA q ) ≡ true
         lemma8 = found finab (case2 q) ( bool-and-tt nqt fb )
-    acceptB (h ∷ t ) q nq nq=q fb = acceptB t (δ (automaton B) q h) (Nmoves NFA finab nq h) (nmove (case2 q) nq nq=q h) fb 
+    acceptB (h ∷ t ) q nq nq=q fb = acceptB t (δ (automaton B) q h) (Nmoves NFA (CNFA-exist A B) nq h) (nmove (case2 q) nq nq=q h) fb 
 
     acceptA : (y z : List Σ) → (q : states A) → (nq : states A ∨ states B → Bool ) → (nq (case1 q) ≡ true)
         → ( accept (automaton A) q y ≡ true ) → ( accept (automaton B) (astart B) z ≡ true ) 
-        → Naccept NFA finab nq (y ++ z)  ≡ true
+        → Naccept NFA (CNFA-exist A B) nq (y ++ z)  ≡ true
     acceptA [] [] q nq nqt fa fb = found finab (case1 q) (bool-and-tt nqt (bool-and-tt fa fb )) 
-    acceptA [] (h ∷ z)  q nq nq=q fa fb = acceptB z nextb (Nmoves NFA finab nq h) lemma70 fb where
+    acceptA [] (h ∷ z)  q nq nq=q fa fb = acceptB z nextb (Nmoves NFA (CNFA-exist A B) nq h) lemma70 fb where
          nextb : states B
          nextb = δ (automaton B) (astart B) h
          lemma70 : exists finab (λ qn → nq qn /\ Nδ NFA qn h (case2 nextb)) ≡ true
          lemma70 = found finab (case1 q) ( bool-and-tt nq=q (bool-and-tt fa (lemma-nmove-ab (case2 (astart B)) h) ))
-    acceptA (h ∷ t) z q nq nq=q fa fb = acceptA t z (δ (automaton A) q h) (Nmoves NFA finab nq h) (nmove (case1 q) nq nq=q h)  fa fb where
+    acceptA (h ∷ t) z q nq nq=q fa fb = acceptA t z (δ (automaton A) q h) (Nmoves NFA (CNFA-exist A B) nq h) (nmove (case1 q) nq nq=q h)  fa fb 
 
     acceptAB : Split (contain A) (contain B) x
-        → Naccept NFA finab (equal? finab (case1 (astart A))) x  ≡ true
-    acceptAB S = subst ( λ k → Naccept NFA finab (equal? finab (case1 (astart A))) k  ≡ true  ) ( sp-concat S )
-        (acceptA (sp0 S) (sp1 S)  (astart A) (equal? finab (case1 (astart A))) ? (prop0 S) (prop1 S) )
+        → Naccept NFA (CNFA-exist A B) (equal? finab (case1 (astart A))) x  ≡ true
+    acceptAB S = subst ( λ k → Naccept NFA (CNFA-exist A B) (equal? finab (case1 (astart A))) k  ≡ true  ) ( sp-concat S )
+        (acceptA (sp0 S) (sp1 S)  (astart A) (equal? finab (case1 (astart A))) (equal?-refl finab) (prop0 S) (prop1 S) )
 
     closed-in-concat→ : Concat (contain A) (contain B) x ≡ true → contain (M-Concat A B) x ≡ true
     closed-in-concat→ concat with split→AB (contain A) (contain B) x concat
     ... | S = begin
-          accept (subset-construction finab NFA (case1 (astart A))) (Concat-NFA-start A B ) x 
-       ≡⟨ ≡-Bool-func (subset-construction-lemma← finab NFA (case1 (astart A)) x ) 
-          (subset-construction-lemma→ finab NFA (case1 (astart A)) x ) ⟩
-          Naccept NFA finab (equal? finab (case1 (astart A))) x
+          accept  (subset-construction (CNFA-exist A B) (Concat-NFA A B) ) (Concat-NFA-start A B ) x 
+       ≡⟨ ≡-Bool-func (subset-construction-lemma←  (CNFA-exist A B)  NFA (equal? finab (case1 (astart A))) x ) 
+          (subset-construction-lemma→  (CNFA-exist A B)  NFA (equal? finab (case1 (astart A))) x ) ⟩
+          Naccept NFA (CNFA-exist A B) (equal? finab (case1 (astart A))) x
        ≡⟨ acceptAB S ⟩
          true
        ∎  where open ≡-Reasoning
@@ -199,16 +192,17 @@ closed-in-concat {Σ} A B x = ≡-Bool-func closed-in-concat→ closed-in-concat
     ab-case (case1 qa') qa x = qa'  ≡ qa
     ab-case (case2 qb) qa x = ¬ ( accept (automaton B) qb x  ≡ true )
 
-    contain-A : (x : List Σ) → (nq : states A ∨ states B → Bool ) → (fn : Naccept NFA finab nq x ≡ true )
+    contain-A : (x : List Σ) → (nq : states A ∨ states B → Bool ) → (fn : Naccept NFA (CNFA-exist A B) nq x ≡ true )
           → (qa : states A )  → (  (q : states A ∨ states B) → nq q ≡ true → ab-case q qa x )
           → split (accept (automaton A) qa ) (contain B) x ≡ true
-    contain-A [] nq fn qa cond with found← finab fn 
+    contain-A [] nq fn qa cond with found← finab fn  -- at this stage, A and B must be satisfied with [] (ab-case cond forces it)
     ... | S with found-q S | inspect found-q S | cond (found-q S) (bool-∧→tt-0 (found-p S))
     ... | case1 qa' | record { eq = refl } | refl = bool-∧→tt-1 (found-p S)
     ... | case2 qb | record { eq = refl } | ab = ⊥-elim ( ab (bool-∧→tt-1 (found-p S)))
     contain-A (h ∷ t) nq fn qa cond with bool-≡-? ((aend (automaton A) qa) /\  accept (automaton B) (δ (automaton B) (astart B) h) t ) true
-    ... | yes eq = bool-or-41 eq
-    ... | no ne = bool-or-31 (contain-A t (Nmoves NFA finab nq h) fn (δ (automaton A) qa h) lemma11 ) where
+    ... | yes eq = bool-or-41 eq  -- found A ++ B all end
+    ... | no ne = bool-or-31 (contain-A t (Nmoves NFA (CNFA-exist A B) nq h) fn (δ (automaton A) qa h) lemma11 ) where -- B failed continue with ab-base condtion
+       --- prove ab-ase condition (we haven't checked but case2 b may happen)
        lemma11 :  (q : states A ∨ states B) → exists finab (λ qn → nq qn /\ Nδ NFA qn h q) ≡ true → ab-case q (δ (automaton A) qa h) t
        lemma11 (case1 qa')  ex with found← finab ex 
        ... | S with found-q S | inspect found-q S | cond (found-q S) (bool-∧→tt-0 (found-p S)) 
@@ -225,14 +219,14 @@ closed-in-concat {Σ} A B x = ≡-Bool-func closed-in-concat→ closed-in-concat
            lemma12 : accept (automaton B) qb t ≡ true → aend (automaton A) qa /\ accept (automaton B) (δ (automaton B) (astart B) h) t ≡ true
            lemma12 fb = bool-and-tt (bool-∧→tt-0 eee) (subst ( λ k → accept (automaton B) k t ≡ true ) (equal→refl (afin B) (bool-∧→tt-1 eee) ) fb )
 
-    lemma10 : Naccept NFA finab (equal? finab (case1 (astart A))) x  ≡ true → split (contain A) (contain B) x ≡ true
+    lemma10 : Naccept NFA (CNFA-exist A B) (equal? finab (case1 (astart A))) x  ≡ true → split (contain A) (contain B) x ≡ true
     lemma10 CC = contain-A x (Concat-NFA-start A B ) CC (astart A) lemma15 where 
        lemma15 : (q : states A ∨ states B) → Concat-NFA-start A B q ≡ true → ab-case q (astart A) x
        lemma15 q nq=t with equal→refl finab nq=t 
        ... | refl = refl
 
     closed-in-concat← : contain (M-Concat A B) x ≡ true → Concat (contain A) (contain B) x ≡ true
-    closed-in-concat← C with subset-construction-lemma← finab NFA (case1 (astart A)) x C
+    closed-in-concat← C with subset-construction-lemma← (CNFA-exist A B) NFA (equal? finab (case1 (astart A))) x C 
     ... | CC = lemma10 CC
 
 

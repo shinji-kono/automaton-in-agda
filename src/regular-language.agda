@@ -20,16 +20,6 @@ language {Σ} = List Σ → Bool
 language-L : { Σ : Set } → Set
 language-L {Σ} = List (List Σ)
 
-open Automaton
-
-record RegularLanguage ( Σ : Set ) : Set (Suc Zero) where
-   field
-      states : Set 
-      astart : states 
-      automaton : Automaton states Σ
-   contain : List Σ → Bool
-   contain x = accept automaton astart x
-
 Union : {Σ : Set} → ( A B : language {Σ} ) → language {Σ}
 Union {Σ} A B x = (A x ) \/ (B x)
 
@@ -44,7 +34,8 @@ Concat {Σ} A B = split A B
 
 {-# TERMINATING #-}
 Star : {Σ : Set} → ( A : language {Σ} ) → language {Σ}
-Star {Σ} A = split A ( Star {Σ} A )
+Star {Σ} A [] = true
+Star {Σ} A (h ∷ t) = split A ( Star {Σ} A ) (h ∷ t)
 
 open import automaton-ex
 
@@ -56,9 +47,35 @@ test-AB→split : {Σ : Set} → {A B : List In2 → Bool} → split A B ( i0 �
    )
 test-AB→split {_} {A} {B} = refl
 
-open RegularLanguage 
+star-nil : {Σ : Set} → ( A : language {Σ} ) → Star A [] ≡ true
+star-nil A = refl
+
+open Automaton
+open import finiteSet
+open import finiteSetUtil
+
+record RegularLanguage ( Σ : Set ) : Set (Suc Zero) where
+   field
+      states : Set
+      astart : states
+      afin : FiniteSet states
+      automaton : Automaton states Σ
+   contain : List Σ → Bool
+   contain x = accept automaton astart x
+
+open RegularLanguage
+
 isRegular : {Σ : Set} → (A : language {Σ} ) → ( x : List Σ ) → (r : RegularLanguage Σ ) → Set
-isRegular A x r = A x ≡ contain r x 
+isRegular A x r = A x ≡ contain r x
+
+RegularLanguage-is-language : { Σ : Set } → RegularLanguage Σ  → language {Σ} 
+RegularLanguage-is-language {Σ} R = RegularLanguage.contain R 
+
+RegularLanguage-is-language' : { Σ : Set } → RegularLanguage Σ  → List Σ  → Bool
+RegularLanguage-is-language' {Σ} R x = accept (automaton R) (astart R) x where
+   open RegularLanguage
+
+--  a language is implemented by an automaton
 
 -- postulate 
 --   fin-× : {A B : Set} → { a b : ℕ } → FiniteSet A {a} → FiniteSet B {b} → FiniteSet (A × B) {a * b}
@@ -67,6 +84,7 @@ M-Union : {Σ : Set} → (A B : RegularLanguage Σ ) → RegularLanguage Σ
 M-Union {Σ} A B = record {
        states =  states A × states B
      ; astart = ( astart A , astart B )
+     ; afin = fin-× (afin A) (afin B)
      ; automaton = record {
              δ = λ q x → ( δ (automaton A) (proj₁ q) x , δ (automaton B) (proj₂ q) x )
            ; aend = λ q → ( aend (automaton A) (proj₁ q) \/ aend (automaton B) (proj₂ q) )
