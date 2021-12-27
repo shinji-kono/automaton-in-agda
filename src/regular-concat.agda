@@ -23,6 +23,7 @@ open import finiteSetUtil
 open Automaton
 open FiniteSet
 
+open RegularLanguage
 
 Concat-NFA :  {Σ : Set} → (A B : RegularLanguage Σ ) → NAutomaton (states A ∨ states B) Σ 
 Concat-NFA {Σ} A B = record { Nδ = δnfa ; Nend = nend } 
@@ -55,6 +56,13 @@ M-Concat {Σ} A B = record {
        finf : FiniteSet (states A ∨ states B → Bool ) 
        finf = fin→ fin 
        
+-- closed-in-concat' :  {Σ : Set} → (A B : RegularLanguage Σ ) → ( x : List Σ ) → isRegular (Concat (contain A) (contain B)) x ( M-Concat A B )
+-- closed-in-concat' {Σ} A B x = ≡-Bool-func closed-in-concat→ closed-in-concat← where
+--     closed-in-concat→ : Concat (contain A) (contain B) x ≡ true → contain (M-Concat A B) x ≡ true
+--     closed-in-concat→ = {!!}
+--     closed-in-concat← : contain (M-Concat A B) x ≡ true → Concat (contain A) (contain B) x ≡ true
+--     closed-in-concat← = {!!}
+
 record Split {Σ : Set} (A : List Σ → Bool ) ( B : List Σ → Bool ) (x :  List Σ ) : Set where
     field
         sp0 : List Σ
@@ -202,7 +210,7 @@ closed-in-concat {Σ} A B x = ≡-Bool-func closed-in-concat→ closed-in-concat
     contain-A (h ∷ t) nq fn qa cond with bool-≡-? ((aend (automaton A) qa) /\  accept (automaton B) (δ (automaton B) (astart B) h) t ) true
     ... | yes eq = bool-or-41 eq  -- found A ++ B all end
     ... | no ne = bool-or-31 (contain-A t (Nmoves NFA (CNFA-exist A B) nq h) fn (δ (automaton A) qa h) lemma11 ) where -- B failed continue with ab-base condtion
-       --- prove ab-ase condition (we haven't checked but case2 b may happen)
+       --- prove ab-case condition (we haven't checked but case2 b may happen)
        lemma11 :  (q : states A ∨ states B) → exists finab (λ qn → nq qn /\ Nδ NFA qn h q) ≡ true → ab-case q (δ (automaton A) qa h) t
        lemma11 (case1 qa')  ex with found← finab ex 
        ... | S with found-q S | inspect found-q S | cond (found-q S) (bool-∧→tt-0 (found-p S)) 

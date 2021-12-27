@@ -3,20 +3,22 @@
 open import Relation.Binary.PropositionalEquality hiding ( [_] )
 open import Relation.Nullary using (¬_; Dec; yes; no)
 open import Data.List hiding ( [_] )
+open import finiteSet
 
-module derive ( Σ : Set) ( eq? : (x y : Σ) → Dec (x ≡ y)) where
+module derive ( Σ : Set) ( fin : FiniteSet Σ ) ( eq? : (x y : Σ) → Dec (x ≡ y)) where
 
 -- open import nfa
 open import Data.Nat
 -- open import Data.Nat hiding ( _<_ ; _>_ )
 -- open import Data.Fin hiding ( _<_ )
-
-open import finiteSet
-open import FSetUtil
+open import finiteSetUtil
 open import automaton
 open import logic
 open import regex
+open FiniteSet
 
+-- whether a regex accepts empty input
+--
 empty? : Regex  Σ → Bool
 empty?  ε       = true
 empty?  φ       = false
@@ -24,18 +26,6 @@ empty? (x *)    = true
 empty? (x & y)  = empty? x /\ empty? y
 empty? (x || y) = empty? x \/ empty? y
 empty? < x >    = false
-
-derivative0 :  Regex  Σ → Σ → Regex  Σ
-derivative0 ε s = φ
-derivative0 φ s = φ
-derivative0 (x *) s = derivative0 x s & (x *)
-derivative0 (x & y) s with empty? x
-... | true =  (derivative0 x s & y) || derivative0 y s
-... | false = derivative0 x s & y
-derivative0 (x || y) s = derivative0 x s || derivative0 y s
-derivative0 < x > s with eq? x s
-... | yes _ = ε
-... | no  _ = φ
 
 derivative :  Regex  Σ → Σ → Regex  Σ
 derivative ε s = φ
@@ -74,53 +64,114 @@ record Derivative (x : Regex  Σ ) : Set where
 
 open Derivative
 
-open import Data.Fin
+open import Data.Fin hiding (_<_)
 
 -- derivative generates   (x & y) || ... form. y and x part is a substerm of original regex
--- since subterm is finite, only finite number of state is negerated, if we normalize ||-list.
-
-data subterm (r : Regex Σ) : Regex Σ → Set where
-    sε   : subterm r ε
-    sφ   : subterm r φ
-    orig : subterm r r
-    x&   : {x y : Regex Σ } → subterm r (x & y)  → subterm r x
-    &y   : {x y : Regex Σ } → subterm r (x & y)  → subterm r y
-    x|   : {x y : Regex Σ } → subterm r (x || y) → subterm r x
-    |y   : {x y : Regex Σ } → subterm r (x || y) → subterm r y
-    s*   : {x : Regex Σ }   → subterm r (x *)    → subterm r x
-    s<_>   : (s : Σ) → subterm r < s > → subterm r < s >
-
-record Subterm (r : Regex Σ) : Set where
-  field
-    subt : Regex Σ
-    is-subt : subterm r subt
-
-finsub : (r : Regex Σ ) → FiniteSet (Subterm r)
-finsub ε = {!!}
-finsub φ = {!!}
-finsub (r *) = {!!}
-finsub (r & r₁) = {!!}
-finsub (r || r₁) = {!!}
-finsub < x > = {!!}
-
-finsubList : (r : Regex Σ ) → FiniteSet (Subterm r  ∧ Subterm r → Bool )
-finsubList r = fin→ ( fin-∧ (finsub r) (finsub r) )
-
--- derivative is subset of Subterm r → Subterm r → Bool
-
-der2ssb : {r : Regex Σ } → Derivative r → Subterm r ∧ Subterm r → Bool
-der2ssb = {!!}
-
--- we cannot say this, because Derivative is redundant
--- der2inject : {r : Regex Σ } → (x y : Derivative r ) → ( ( s t : Subterm r ∧ Subterm r ) → der2ssb x s ≡ der2ssb y t ) → x ≡ y
-
+-- since subterm is finite, only finite number of state is generated for each operator 
 -- this does not work, becuase it depends on input sequences
 -- finite-derivative : (r : Regex  Σ) → FiniteSet Σ  → FiniteSet (Derivative r) 
-
+-- order : Regex  Σ → ℕ
+-- decline-derive : (x : Regex Σ ) (i : Σ ) → 0 < order x → order (derivative x i) < order x 
+--    is not so easy
 -- in case of automaton, number of derivative is limited by iteration of input length, so it is finite.
+-- so we cannot say derived automaton is finite i.e. regex-match is regular language now
 
 regex→automaton : (r : Regex   Σ) → Automaton (Derivative r) Σ
 regex→automaton r = record { δ = λ d s → record { state = derivative (state d) s ; is-derived = derive-step d s} ; aend = λ d → empty? (state d) }  where
     derive-step : (d0 : Derivative r) → (s : Σ) → regex-states r (derivative (state d0) s)
     derive-step d0 s = derive (is-derived d0) s
+
+regex-match : (r : Regex   Σ) →  (List Σ) → Bool
+regex-match ex is = accept ( regex→automaton ex ) record { state =  ex ; is-derived = unit } is 
+
+open import Relation.Binary.Definitions
+
+cmp-regex : (x y : Regex Σ) → Dec ( x ≡ y )
+cmp-regex ε ε = yes refl
+cmp-regex ε φ = no (λ ())
+cmp-regex ε (y *) = no (λ ())
+cmp-regex ε (y & y₁) = no (λ ())
+cmp-regex ε (y || y₁) = no (λ ())
+cmp-regex ε < x > = no (λ ())
+cmp-regex φ ε = no (λ ())
+cmp-regex φ φ = yes refl
+cmp-regex φ (y *) =  no (λ ())
+cmp-regex φ (y & y₁) =  no (λ ())
+cmp-regex φ (y || y₁) =  no (λ ())
+cmp-regex φ < x > =  no (λ ())
+cmp-regex (x *) ε =  no (λ ())
+cmp-regex (x *) φ =  no (λ ())
+cmp-regex (x *) (y *) with cmp-regex x y
+... | yes refl = yes refl
+... | no ne = no (λ x → ne (cmp1 x)) where
+   cmp1 : (x *) ≡ (y *) → x ≡ y
+   cmp1 refl = refl
+cmp-regex (x *) (y & y₁) = no (λ ())
+cmp-regex (x *) (y || y₁) = no (λ ())
+cmp-regex (x *) < x₁ > = no (λ ())
+cmp-regex (x & x₁) ε = no (λ ())
+cmp-regex (x & x₁) φ = no (λ ())
+cmp-regex (x & x₁) (y *) = no (λ ())
+cmp-regex (x & x₁) (y & y₁) with cmp-regex x y | cmp-regex x₁ y₁ 
+... | yes refl | yes refl = yes refl
+... | no ne | _ = no (λ x → ne (cmp1 x)) where
+   cmp1 :  x & x₁ ≡ y & y₁ → x ≡ y
+   cmp1 refl = refl
+... | _ | no ne  = no (λ x → ne (cmp1 x)) where
+   cmp1 :  x & x₁ ≡ y & y₁ → x₁ ≡ y₁
+   cmp1 refl = refl
+cmp-regex (x & x₁) (y || y₁) = no (λ ())
+cmp-regex (x & x₁) < x₂ > = no (λ ())
+cmp-regex (x || x₁) ε = no (λ ())
+cmp-regex (x || x₁) φ = no (λ ())
+cmp-regex (x || x₁) (y *) = no (λ ())
+cmp-regex (x || x₁) (y & y₁) = no (λ ())
+cmp-regex (x || x₁) (y || y₁) with cmp-regex x y | cmp-regex x₁ y₁ 
+... | yes refl | yes refl = yes refl
+... | no ne | _ = no (λ x → ne (cmp1 x)) where
+   cmp1 :  x || x₁ ≡ y || y₁ → x ≡ y
+   cmp1 refl = refl
+... | _ | no ne  = no (λ x → ne (cmp1 x)) where
+   cmp1 :  x || x₁ ≡ y || y₁ → x₁ ≡ y₁
+   cmp1 refl = refl
+cmp-regex (x || x₁) < x₂ > = no (λ ())
+cmp-regex < x > ε = no (λ ())
+cmp-regex < x > φ = no (λ ())
+cmp-regex < x > (y *) = no (λ ())
+cmp-regex < x > (y & y₁) = no (λ ())
+cmp-regex < x > (y || y₁) = no (λ ())
+cmp-regex < x > < x₁ > with equal? fin x x₁ | inspect ( equal? fin x ) x₁
+... | false | record { eq = eq } = no (λ x → ¬-bool eq (cmp1 x)) where
+   cmp1 :  < x > ≡ < x₁ > →  equal? fin x x₁ ≡ true 
+   cmp1 refl = equal?-refl fin
+... | true | record { eq = eq } with equal→refl fin eq
+... | refl = yes refl
+
+insert : List (Regex Σ) → (Regex Σ) → List (Regex Σ) 
+insert [] k = k ∷ []
+insert (x ∷ t) k with cmp-regex k x
+... | no n = x ∷ (insert t k) 
+... | yes y = x ∷ t
+
+regex-derive : List (Regex Σ) → List (Regex Σ)
+regex-derive t = regex-derive0 t t where
+   regex-derive1 : Regex Σ → List Σ → List (Regex Σ) → List (Regex Σ)
+   regex-derive1 x [] t = t
+   regex-derive1 x (i ∷ t) r =  regex-derive1 x t (insert r (derivative x i))
+   regex-derive0 :  List (Regex Σ)  → List (Regex Σ) → List (Regex Σ)
+   regex-derive0 [] t = t
+   regex-derive0 (x ∷ r) t = regex-derive0 r (regex-derive1 x (to-list fin (λ _ → true)) t) 
+
+--
+-- if (Derivative r is finite,  regex→automaton is finite
+--
+drive-is-finite : (r : Regex   Σ) → FiniteSet (Derivative r) 
+drive-is-finite ε = {!!}
+drive-is-finite φ = {!!}
+drive-is-finite (r *) = {!!} where
+   d1 :  FiniteSet (Derivative r )
+   d1 = drive-is-finite r
+drive-is-finite (r & r₁) = {!!}
+drive-is-finite (r || r₁) = {!!}
+drive-is-finite < x > = {!!}
 

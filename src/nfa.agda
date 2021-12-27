@@ -50,9 +50,8 @@ to-listS1 qs = ss1 LStates1 where
 Nmoves : { Q : Set } { Σ : Set  }
     → NAutomaton Q  Σ
     → (exists : ( Q → Bool ) → Bool)
-    →  ( Qs : Q → Bool )  → (s : Σ ) → Q → Bool
-Nmoves {Q} { Σ} M exists  Qs  s q  =
-      exists ( λ qn → (Qs qn /\ ( Nδ M qn s q )  ))
+    →  ( Qs : Q → Bool )  → (s : Σ ) → ( Q → Bool )
+Nmoves {Q} { Σ} M exists  Qs  s  = λ q → exists ( λ qn → (Qs qn /\ ( Nδ M qn s q )  ))
 
 Naccept : { Q : Set } { Σ : Set  } 
     → NAutomaton Q  Σ
@@ -61,6 +60,25 @@ Naccept : { Q : Set } { Σ : Set  }
 Naccept M exists sb []  = exists ( λ q → sb q /\ Nend M q )
 Naccept M exists sb (i ∷ t ) = Naccept M exists (λ q →  exists ( λ qn → (sb qn /\ ( Nδ M qn i q )  ))) t
 
+{-# TERMINATING #-}
+NtraceDepth : { Q : Set } { Σ : Set  } 
+    → NAutomaton Q  Σ
+    → (Nstart : Q → Bool) → List Q  → List  Σ → List (List ( Σ ∧ Q ))
+NtraceDepth {Q} {Σ} M sb all is = ndepth all sb is [] [] where
+    ndepth : List Q → (q : Q → Bool ) → List Σ  → List ( Σ ∧ Q )  →  List (List ( Σ ∧ Q )  ) →  List (List ( Σ ∧ Q )  )
+    ndepth1 : Q → Σ → List Q →  List Σ  → List ( Σ ∧ Q )  →  List ( List ( Σ ∧ Q )) →  List ( List ( Σ ∧ Q ))
+    ndepth1 q i [] is t t1 = t1
+    ndepth1 q i (x ∷ qns) is t t1 =  ndepth all (Nδ M x i) is (⟪ i , q ⟫ ∷ t) (ndepth1 q i qns is t t1 )
+    ndepth [] sb is t t1 =  t1
+    ndepth (q ∷ qs) sb [] t t1 with sb q /\ Nend M q
+    ... | true =  ndepth qs sb [] t ( t  ∷ t1 )
+    ... | false =  ndepth qs sb [] t t1
+    ndepth (q ∷ qs) sb (i ∷ is) t t1 with sb q 
+    ... | true  = ndepth qs sb (i ∷ is) t (ndepth1 q i all is t t1 )
+    ... | false = ndepth qs sb (i ∷ is) t t1
+
+-- trace in state set
+--
 Ntrace : { Q : Set } { Σ : Set  } 
     → NAutomaton Q  Σ
     → (exists : ( Q → Bool ) → Bool)
@@ -71,6 +89,17 @@ Ntrace M exists to-list sb (i ∷ t ) =
     to-list (λ q →  sb q ) ∷
     Ntrace M exists to-list (λ q →  exists ( λ qn → (sb qn /\ ( Nδ M qn i q )  ))) t
 
+data-fin-00 : ( Fin 3 ) → Bool 
+data-fin-00 zero = true
+data-fin-00 (suc zero) = true
+data-fin-00 (suc (suc zero)) = true
+data-fin-00 (suc (suc (suc ()))) 
+
+data-fin-01 :  (x : ℕ ) → x < 3 → Bool 
+data-fin-01 zero lt = true
+data-fin-01 (suc zero) lt = true
+data-fin-01 (suc (suc zero)) lt = true
+data-fin-01 (suc (suc (suc x))) (s≤s (s≤s (s≤s ())))
 
 transition3 : States1  → In2  → States1 → Bool
 transition3 sr i0 sr = true
@@ -101,8 +130,11 @@ example2-1 = Naccept am2 existsS1 start1 ( i0  ∷ i1  ∷ i0  ∷ [] )
 example2-2 = Naccept am2 existsS1 start1 ( i1  ∷ i1  ∷ i1  ∷ [] ) 
 
 t-1 : List ( List States1 )
-t-1 = Ntrace am2 existsS1 to-listS1 start1 ( i1  ∷ i1  ∷ i1  ∷ [] ) 
-t-2 = Ntrace am2 existsS1 to-listS1 start1 ( i0  ∷ i1  ∷ i0  ∷ [] ) 
+t-1 = Ntrace am2 existsS1 to-listS1 start1 ( i1  ∷ i1  ∷ i1  ∷ [] )  -- (sr ∷ []) ∷ (sr ∷ ss ∷ []) ∷ (sr ∷ ss ∷ st ∷ []) ∷ (st ∷ []) ∷ []
+t-2 = Ntrace am2 existsS1 to-listS1 start1 ( i0  ∷ i1  ∷ i0  ∷ [] )  -- (sr ∷ []) ∷ (sr ∷ []) ∷ (sr ∷ ss ∷ []) ∷ [] ∷ []
+t-3 = NtraceDepth am2 start1 LStates1 ( i1  ∷ i1  ∷ i1  ∷ [] ) 
+t-4 = NtraceDepth am2 start1 LStates1 ( i0  ∷ i1  ∷ i0  ∷ [] ) 
+t-5 = NtraceDepth am2 start1 LStates1 ( i0  ∷ i1 ∷ [] ) 
 
 transition4 : States1  → In2  → States1 → Bool
 transition4 sr i0 sr = true

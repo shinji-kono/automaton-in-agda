@@ -476,3 +476,158 @@ n-induction {n} {m} {P} {Q} f I p  = f-induction0 p (f (Ninduction.pnext I p)) �
    ... | tri> ¬a ¬b c = ⊥-elim ( nat-≤> le c )  
 
 
+record Factor (n m : ℕ ) : Set where
+   field 
+      factor : ℕ
+      remain : ℕ
+      is-factor : factor * n + remain ≡ m
+
+record Dividable (n m : ℕ ) : Set where
+   field 
+      factor : ℕ
+      is-factor : factor * n + 0 ≡ m 
+
+open Factor
+
+DtoF : {n m : ℕ} → Dividable n m → Factor n m
+DtoF {n} {m} record { factor = f ; is-factor = fa } = record { factor = f ; remain = 0 ; is-factor = fa }
+
+FtoD : {n m : ℕ} → (fc : Factor n m) → remain fc ≡ 0 → Dividable n m 
+FtoD {n} {m} record { factor = f ; remain = r ; is-factor = fa } refl = record { factor = f ; is-factor = fa }
+
+--divdable^2 : ( n k : ℕ ) → Dividable k ( n * n ) → Dividable k n
+--divdable^2 n k dn2 = {!!}
+
+decf : { n k : ℕ } → ( x : Factor k (suc n) ) → Factor k n
+decf {n} {k} record { factor = f ; remain = r ; is-factor = fa } = 
+ decf1 {n} {k} f r fa where
+  decf1 : { n k : ℕ } → (f r : ℕ) → (f * k + r ≡ suc n)  → Factor k n 
+  decf1 {n} {k} f (suc r) fa  =  -- this case must be the first
+     record { factor = f ; remain = r ; is-factor = ( begin -- fa : f * k + suc r ≡ suc n
+        f * k + r ≡⟨ cong pred ( begin
+          suc ( f * k + r ) ≡⟨ +-comm _ r ⟩
+          r + suc (f * k)  ≡⟨ sym (+-assoc r 1 _) ⟩
+          (r + 1) + f * k ≡⟨ cong (λ t → t + f * k ) (+-comm r 1) ⟩
+          (suc r ) + f * k ≡⟨ +-comm (suc r) _ ⟩
+          f * k + suc r  ≡⟨ fa ⟩
+          suc n ∎ ) ⟩ 
+        n ∎ ) }  where open ≡-Reasoning
+  decf1 {n} {zero} (suc f) zero fa  = ⊥-elim ( nat-≡< fa (
+        begin suc (suc f * zero + zero) ≡⟨ cong suc (+-comm _ zero)  ⟩
+        suc (f * 0) ≡⟨ cong suc (*-comm f zero)  ⟩
+        suc zero ≤⟨ s≤s z≤n ⟩
+        suc n ∎ )) where open ≤-Reasoning
+  decf1 {n} {suc k} (suc f) zero fa  = 
+     record { factor = f ; remain = k ; is-factor = ( begin -- fa : suc (k + f * suc k + zero) ≡ suc n
+        f * suc k + k ≡⟨ +-comm _ k ⟩
+        k + f * suc k ≡⟨ +-comm zero _ ⟩
+        (k + f * suc k) + zero  ≡⟨ cong pred fa ⟩
+        n ∎ ) }  where open ≡-Reasoning
+
+div0 :  {k : ℕ} → Dividable k 0
+div0 {k} = record { factor = 0; is-factor = refl }
+
+div= :  {k : ℕ} → Dividable k k
+div= {k} = record { factor = 1; is-factor = ( begin
+        k + 0 * k + 0  ≡⟨ trans ( +-comm _ 0) ( +-comm _ 0) ⟩
+        k ∎ ) }  where open ≡-Reasoning
+
+div1 : { k : ℕ } → k > 1 →  ¬  Dividable k 1
+div1 {k} k>1 record { factor = (suc f) ; is-factor = fa } = ⊥-elim ( nat-≡< (sym fa) ( begin
+    2 ≤⟨ k>1 ⟩
+    k ≡⟨ +-comm 0 _ ⟩
+    k + 0 ≡⟨ refl  ⟩
+    1 * k ≤⟨ *-mono-≤ {1} {suc f} (s≤s z≤n ) ≤-refl ⟩
+    suc f * k ≡⟨ +-comm 0 _ ⟩
+    suc f * k + 0 ∎  )) where open ≤-Reasoning  
+
+div+div : { i j k : ℕ } →  Dividable k i →  Dividable k j → Dividable k (i + j) ∧ Dividable k (j + i)
+div+div {i} {j} {k} di dj = ⟪ div+div1 , subst (λ g → Dividable k g) (+-comm i j) div+div1 ⟫ where
+      fki = Dividable.factor di
+      fkj = Dividable.factor dj
+      div+div1 : Dividable k (i + j)
+      div+div1 = record { factor = fki + fkj  ; is-factor = ( begin 
+          (fki + fkj) * k + 0 ≡⟨ +-comm _ 0 ⟩
+          (fki + fkj) * k  ≡⟨ *-distribʳ-+ k fki _ ⟩
+          fki * k + fkj * k  ≡⟨ cong₂ ( λ i j → i + j ) (+-comm 0 (fki * k)) (+-comm 0 (fkj * k)) ⟩
+          (fki * k + 0) + (fkj * k + 0) ≡⟨ cong₂ ( λ i j → i + j ) (Dividable.is-factor di) (Dividable.is-factor dj) ⟩
+          i + j  ∎ ) } where
+             open ≡-Reasoning  
+
+div-div : { i j k : ℕ } → k > 1 →  Dividable k i →  Dividable k j → Dividable k (i - j) ∧ Dividable k (j - i)
+div-div {i} {j} {k} k>1 di dj = ⟪ div-div1 di dj , div-div1 dj di ⟫ where
+      div-div1 : {i j : ℕ } → Dividable k i →  Dividable k j → Dividable k (i - j)
+      div-div1 {i} {j} di dj = record { factor = fki - fkj  ; is-factor = ( begin 
+          (fki - fkj) * k + 0 ≡⟨ +-comm _ 0 ⟩
+          (fki - fkj) * k  ≡⟨ distr-minus-* {fki} {fkj}  ⟩
+          (fki * k) - (fkj * k)  ≡⟨ cong₂ ( λ i j → i - j ) (+-comm 0 (fki * k)) (+-comm 0 (fkj * k)) ⟩
+          (fki * k + 0) - (fkj * k + 0) ≡⟨ cong₂ ( λ i j → i - j ) (Dividable.is-factor di) (Dividable.is-factor dj) ⟩
+          i - j  ∎ ) } where
+             open ≡-Reasoning  
+             fki = Dividable.factor di
+             fkj = Dividable.factor dj
+
+open _∧_
+
+div+1 : { i k : ℕ } → k > 1 →  Dividable k i →  ¬ Dividable k (suc i)  
+div+1 {i} {k} k>1 d d1 = div1 k>1 div+11 where
+   div+11 : Dividable k 1
+   div+11 = subst (λ g → Dividable k g) (minus+y-y {1} {i} ) ( proj2 (div-div k>1 d d1  ) )
+
+div<k : { m k : ℕ } → k > 1 → m > 0 →  m < k →  ¬ Dividable k m
+div<k {m} {k} k>1 m>0 m<k d = ⊥-elim ( nat-≤> (div<k1 (Dividable.factor d) (Dividable.is-factor d)) m<k ) where
+    div<k1 : (f : ℕ ) → f * k + 0 ≡ m → k ≤ m
+    div<k1 zero eq = ⊥-elim (nat-≡< eq m>0 )
+    div<k1 (suc f) eq = begin
+          k ≤⟨ x≤x+y ⟩
+          k + (f * k + 0) ≡⟨ sym (+-assoc k _ _) ⟩
+          k + f * k + 0 ≡⟨ eq ⟩
+          m ∎  where open ≤-Reasoning  
+
+div→k≤m : { m k : ℕ } → k > 1 → m > 0 →  Dividable k m → m ≥ k
+div→k≤m {m} {k} k>1 m>0 d with <-cmp m k
+... | tri< a ¬b ¬c = ⊥-elim ( div<k k>1 m>0 a d )
+... | tri≈ ¬a refl ¬c = ≤-refl
+... | tri> ¬a ¬b c = <to≤ c
+
+div1*k+0=k : {k : ℕ } → 1 * k + 0 ≡ k
+div1*k+0=k {k} =  begin
+   1 * k + 0 ≡⟨ cong (λ g → g + 0) (+-comm _ 0) ⟩
+   k + 0 ≡⟨ +-comm _ 0 ⟩
+   k  ∎ where open ≡-Reasoning
+
+decD : {k m : ℕ} → k > 1 → Dec (Dividable k m )
+decD {k} {m} k>1 = n-induction {_} {_} {ℕ} {λ m → Dec (Dividable k m ) } F I m where
+        F : ℕ → ℕ
+        F m = m
+        F0 : ( m : ℕ ) → F (m - k) ≡ 0 →  Dec  (Dividable k m  )
+        F0 0 eq = yes record { factor = 0 ; is-factor = refl }
+        F0 (suc m) eq with <-cmp k (suc m)
+        ... | tri< a ¬b ¬c = yes  record { factor = 1 ; is-factor =
+            subst (λ g → 1 * k + 0 ≡ g ) (sym (i-j=0→i=j (<to≤ a) eq )) div1*k+0=k }  -- (suc m - k) ≡ 0 → k ≡ suc m, k ≤ suc m
+        ... | tri≈ ¬a refl ¬c =  yes   record { factor = 1 ; is-factor = div1*k+0=k } 
+        ... | tri> ¬a ¬b c = no ( λ d →  ⊥-elim (div<k k>1 (s≤s z≤n ) c d) )
+        decl : {m  : ℕ } → 0 < m → m - k < m
+        decl {m} 0<m = y-x<y (<-trans a<sa k>1 ) 0<m 
+        ind : (p : ℕ ) → Dec (Dividable k (p - k) ) → Dec (Dividable k p )
+        ind p (yes y) with <-cmp p k
+        ... | tri≈ ¬a refl ¬c = yes (subst (λ g → Dividable k g) (minus+n ≤-refl ) (proj1 ( div+div y div= ))) 
+        ... | tri> ¬a ¬b k<p  = yes (subst (λ g → Dividable k g) (minus+n (<-trans k<p a<sa)) (proj1 ( div+div y div= ))) 
+        ... | tri< a ¬b ¬c with <-cmp p 0
+        ... | tri≈ ¬a refl ¬c₁ = yes div0
+        ... | tri> ¬a ¬b₁ c = no (λ d → not-div p (Dividable.factor d) a c (Dividable.is-factor d) ) where
+            not-div : (p f : ℕ) → p < k  → 0 < p → f * k + 0 ≡ p → ⊥
+            not-div (suc p) (suc f) p<k 0<p eq = nat-≡< (sym eq) ( begin -- ≤-trans p<k {!!}) -- suc p ≤ k
+              suc (suc p) ≤⟨ p<k ⟩
+              k ≤⟨ x≤x+y  ⟩
+              k + (f * k + 0) ≡⟨ sym (+-assoc k _ _) ⟩
+              suc f * k + 0 ∎  ) where open ≤-Reasoning  
+        ind p (no n) = no (λ d → n (proj1 (div-div k>1 d div=))  ) 
+        I : Ninduction ℕ  _  F
+        I = record {
+              pnext = λ p → p - k
+            ; fzero = λ {m} eq → F0 m eq
+            ; decline = λ {m} lt → decl lt 
+            ; ind = λ {p} prev → ind p prev
+          } 
+

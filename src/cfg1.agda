@@ -2,13 +2,14 @@ module cfg1 where
 
 open import Level renaming ( suc to succ ; zero to Zero )
 open import Data.Nat  hiding ( _≟_ )
-open import Data.Fin
-open import Data.Product
+-- open import Data.Fin
+-- open import Data.Product
 open import Data.List
 open import Data.Maybe
-open import Data.Bool using ( Bool ; true ; false ; _∧_ ; _∨_ )
+-- open import Data.Bool using ( Bool ; true ; false ; _∧_ ; _∨_ )
 open import  Relation.Binary.PropositionalEquality hiding ( [_] )
 open import Relation.Nullary using (¬_; Dec; yes; no)
+open import logic
 
 --
 --   Java → Java Byte Code
@@ -52,8 +53,8 @@ open CFGGrammer
 
 split : {Σ : Set} → (List Σ → Bool)
       → ( List Σ → Bool) → List Σ → Bool
-split x y  [] = x [] ∧ y []
-split x y (h  ∷ t) = (x [] ∧ y (h  ∷ t)) ∨
+split x y  [] = x [] /\ y []
+split x y (h  ∷ t) = (x [] /\ y (h  ∷ t)) \/
   split (λ t1 → x (  h ∷ t1 ))  (λ t2 → y t2 ) t
 
 
@@ -63,7 +64,7 @@ cfg-language0 :  {Symbol  : Set} → CFGGrammer Symbol   → Body Symbol  →  L
 cfg-language1 :  {Symbol  : Set} → CFGGrammer Symbol   → Seq Symbol  →  List Symbol → Bool
 cfg-language1 cg Error x = false
 cfg-language1 cg (S ， seq) x with typeof cg S
-cfg-language1 cg (_ ， seq) (x' ∷ t) | T x =  eq? cg x x' ∧ cfg-language1 cg seq t
+cfg-language1 cg (_ ， seq) (x' ∷ t) | T x =  eq? cg x x' /\ cfg-language1 cg seq t
 cfg-language1 cg (_ ， seq) [] | T x = false
 cfg-language1 cg (_ ， seq) x | N nonTerminal = split (cfg-language0 cg (cfg cg nonTerminal) )(cfg-language1 cg seq ) x
 cfg-language1 cg (S ．) x with typeof cg S
@@ -73,7 +74,7 @@ cfg-language1 cg (_ ．) x | N nonTerminal = cfg-language0 cg (cfg cg nonTermina
 
 cfg-language0 cg _ [] = false
 cfg-language0 cg (rule ｜ b) x =
-     cfg-language1 cg rule x  ∨ cfg-language0 cg b x  
+     cfg-language1 cg rule x  \/ cfg-language0 cg b x  
 cfg-language0 cg (rule ；) x = cfg-language1 cg rule x  
 
 cfg-language :  {Symbol  : Set} → CFGGrammer Symbol   → List Symbol → Bool
@@ -181,4 +182,80 @@ E1Grammer = record {
 ecfgtest1 = cfg-language E1Grammer (  e1 ∷ [] )
 ecfgtest2 = cfg-language E1Grammer (  e[ ∷ e1 ∷ e] ∷ [] )
 ecfgtest3 = cfg-language E1Grammer (  e[ ∷ e[ ∷ e1 ∷ e] ∷ e] ∷ [] )
+ecfgtest4 = cfg-language E1Grammer (  e[ ∷ e1 ∷ [] )
+
+open import Function
+
+left : {t : Set } → List E1Token → ( fail next : List E1Token → t ) → t
+left ( e[ ∷ t ) fail next = next t
+left t fail next = fail t 
+
+right : {t : Set } → List E1Token → ( fail next : List E1Token → t ) → t
+right ( e] ∷ t ) fail next = next t
+right t fail next = fail t 
+
+
+{-# TERMINATING #-}
+expr1 : {t : Set } → List E1Token → ( fail next : List E1Token → t ) → t
+expr1 ( e1 ∷ t ) fail next = next t
+expr1 ( expr ∷ t ) fail next = next t
+expr1 ( term  ∷ t ) fail next = next t
+expr1 x fail next = left x fail $ λ x → expr1 x fail $ λ x → right x fail $ next
+-- expr1 x fail next = left x fail ( λ x → expr1 x fail ( λ x → right x fail ( next )))
+
+cfgtest01  = expr1 ( e[ ∷ e[ ∷ e1 ∷ e] ∷ e] ∷ [] ) (λ x → ⟪ false , x ⟫ ) (λ x → ⟪ true , x ⟫ ) 
+cfgtest02  = expr1 ( e[ ∷ e[ ∷ e1 ∷ e] ∷ [] ) (λ x → ⟪ false , x ⟫ ) (λ x →  ⟪ true , x ⟫ )
+cfgtest03  = expr1 ( e[ ∷ e[ ∷ e1 ∷ e] ∷ e] ∷ e] ∷ [] ) (λ x → ⟪ false , x ⟫ ) (λ x →  ⟪ true , x ⟫ )
+
+open import pushdown
+
+data CG1 : Set where
+   ce : CG1
+   c1 : CG1
+
+pd  : CG1 → E1Token → CG1 → CG1 ∧ PushDown CG1
+pd c1 e[ s = ⟪ c1 , push c1 ⟫
+pd c1 e] c1 = ⟪ c1 , pop ⟫
+pd c1 e1 c1 = ⟪ c1 , none ⟫
+pd s expr s1 = ⟪ c1 , none ⟫
+pd s term s1 = ⟪ c1 , none ⟫
+pd s _ s1 = ⟪ ce , none ⟫
+
+pok  : CG1 → Bool
+pok c1  = true
+pok s  = false
+
+pnc : PushDownAutomaton CG1 E1Token CG1
+pnc = record {
+         pδ  = pd
+      ;  pempty = ce
+      ;  pok = pok
+   }  
+
+pda-ce-test1 = PushDownAutomaton.paccept pnc c1 ( e[ ∷ e[ ∷ e1 ∷ e] ∷ e] ∷ [] ) []
+pda-ce-test2 = PushDownAutomaton.paccept pnc c1 ( e[ ∷ e[ ∷ e1 ∷ e] ∷ [] ) []
+pda-ce-test3 = PushDownAutomaton.paccept pnc c1 ( e[ ∷ e1 ∷ e] ∷ e1 ∷ [] ) []
+
+record PNC (accept : Bool )  : Set where
+  field
+    orig-x : List E1Token
+    pnc-q : CG1
+    pnc-st : List CG1
+    pnc-p : CG1 → List CG1 → Bool 
+    success : accept ≡ true  → pnc-p pnc-q pnc-st ≡ true  → PushDownAutomaton.paccept pnc c1 orig-x []  ≡ true
+    failure : accept ≡ false → pnc-p pnc-q pnc-st ≡ false → PushDownAutomaton.paccept pnc c1 orig-x [] ≡ false
+
+open import Data.Unit
+
+{-# TERMINATING #-}
+expr1P : {n : Level } {t : Set n } → (x : List E1Token ) → PNC true 
+    → ( fail : List E1Token → PNC false → t ) → ( next : List E1Token → PNC true → t ) → t
+expr1P x _ _ _ = {!!}
+
+expr1P-test : (x : List E1Token ) →  ⊤
+expr1P-test x = expr1P x record { orig-x = x ; pnc-q = c1 ; pnc-st = []
+      ; pnc-p = λ q st → PushDownAutomaton.paccept pnc q x st ; success = λ _ p → p ; failure = λ _ p → p }
+      (λ x p → {!!} ) (λ x p → {!!} )
+
+
 
