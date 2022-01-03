@@ -2,9 +2,10 @@
 
 module fin where
 
-open import Data.Fin hiding (_<_ ; _≤_ ; _>_ )
-open import Data.Fin.Properties hiding ( <-trans )
+open import Data.Fin hiding (_<_ ; _≤_ ; _>_ ; _+_ )
+open import Data.Fin.Properties hiding (≤-trans ;  <-trans ;  ≤-refl  ) renaming ( <-cmp to <-fcmp )
 open import Data.Nat
+open import Data.Nat.Properties
 open import logic
 open import nat
 open import Relation.Binary.PropositionalEquality
@@ -87,7 +88,6 @@ lemma12 {zero} {suc m} (s≤s z≤n) zero refl = refl
 lemma12 {suc n} {suc m} (s≤s n<m) (suc f) refl =  cong suc ( lemma12 {n} {m} n<m f refl  ) 
 
 open import Relation.Binary.HeterogeneousEquality as HE using (_≅_ ) 
-open import Data.Fin.Properties
 
 -- <-irrelevant
 <-nat=irr : {i j n : ℕ } → ( i ≡ j ) → {i<n : i < n } → {j<n : j < n } → i<n ≅ j<n  
@@ -114,3 +114,163 @@ lemma11 {n} {m} {x} n<m  = begin
            ∎  where
                open ≡-Reasoning
 
+x<y→fin-1 : {n : ℕ } → { x y : Fin (suc n)} →  toℕ x < toℕ y  → Fin n
+x<y→fin-1 {n} {x} {y} lt = fromℕ< (≤-trans lt (fin≤n _ ))
+
+x<y→fin-1-eq : {n : ℕ } → { x y : Fin (suc n)} → (lt : toℕ x < toℕ y ) → toℕ x ≡ toℕ (x<y→fin-1 lt )
+x<y→fin-1-eq {n} {x} {y} lt = sym ( begin
+           toℕ (fromℕ< (≤-trans lt (fin≤n y)) ) ≡⟨ toℕ-fromℕ< _ ⟩
+           toℕ x  ∎  ) where open ≡-Reasoning
+
+f<→< : {n : ℕ } → { x y : Fin n} → x Data.Fin.< y  →  toℕ x < toℕ y  
+f<→< {_} {zero} {suc y} (s≤s lt) = s≤s z≤n
+f<→< {_} {suc x} {suc y} (s≤s lt) = s≤s (f<→< {_} {x} {y} lt)
+
+f≡→≡ : {n : ℕ } → { x y : Fin n} → x ≡ y  →  toℕ x ≡ toℕ y  
+f≡→≡ refl = refl
+
+open import Data.List
+open import Relation.Binary.Definitions
+
+fin-phase2 : { n : ℕ }  (q : Fin n) (qs : List (Fin n) ) → Bool
+fin-phase2 q [] = false
+fin-phase2 q (x ∷ qs) with <-fcmp q x
+... | tri< a ¬b ¬c = fin-phase2 q qs
+... | tri≈ ¬a b ¬c = true
+... | tri> ¬a ¬b c = fin-phase2 q qs
+fin-phase1 : { n : ℕ }  (q : Fin n) (qs : List (Fin n) ) → Bool
+fin-phase1 q [] = false
+fin-phase1 q (x ∷ qs) with <-fcmp q x
+... | tri< a ¬b ¬c = fin-phase1 q qs
+... | tri≈ ¬a b ¬c = fin-phase2 q qs
+... | tri> ¬a ¬b c = fin-phase1 q qs
+
+fin-dup-in-list : { n : ℕ}  (q : Fin n) (qs : List (Fin n) ) → Bool
+fin-dup-in-list {n} q qs = fin-phase1 q qs
+
+record FDup-in-list (n : ℕ ) (qs : List (Fin n))  : Set where
+   field
+      dup : Fin n
+      is-dup : fin-dup-in-list dup qs ≡ true
+
+list-less : {n : ℕ } → List (Fin (suc n)) → List (Fin n)
+list-less [] = []
+list-less {n} (i ∷ ls) with <-fcmp (fromℕ< a<sa) i
+... | tri< a ¬b ¬c = ⊥-elim ( nat-≤> a (subst (λ k → toℕ i < suc k ) (sym fin<asa) (fin≤n _ )))
+... | tri≈ ¬a b ¬c = list-less ls
+... | tri> ¬a ¬b c = x<y→fin-1 c ∷ list-less ls
+
+fin010 : {n m : ℕ } {x : Fin n} (c : suc (toℕ x) ≤ toℕ (fromℕ< {m} a<sa) ) → toℕ (fromℕ< (≤-trans c (fin≤n (fromℕ< a<sa)))) ≡ toℕ x
+fin010 {_} {_} {x} c = begin 
+           toℕ (fromℕ< (≤-trans c (fin≤n (fromℕ< a<sa))))  ≡⟨ toℕ-fromℕ< _ ⟩
+           toℕ x  ∎   where open ≡-Reasoning
+
+---
+---  if List (Fin n) is longer than n, there is at most one duplication
+---
+fin-dup-in-list>n : {n : ℕ } → (qs : List (Fin n))  → (len> : length qs > n ) → FDup-in-list n qs
+fin-dup-in-list>n {zero} [] ()
+fin-dup-in-list>n {zero} (() ∷ qs) lt
+fin-dup-in-list>n {suc n} qs lt = fdup-phase0 where
+     open import Level using ( Level )
+     --  make a dup from one level below
+     fdup+1 : (qs : List (Fin (suc n))) (i : Fin n) →  fin-dup-in-list  (fromℕ< a<sa ) qs ≡ false
+          → fin-dup-in-list i (list-less qs) ≡ true → FDup-in-list (suc n) qs
+     fdup+1 qs i ne p = record { dup = fin+1 i ; is-dup = f1-phase1 qs p (case1 ne) } where
+          -- we have two loops on the max element and the current level. The disjuction means the phases may differ.
+          f1-phase2 : (qs : List (Fin (suc n)) ) → fin-phase2 i (list-less qs) ≡ true
+              → (fin-phase1 (fromℕ< a<sa) qs ≡ false ) ∨ (fin-phase2 (fromℕ< a<sa) qs ≡ false)
+              → fin-phase2 (fin+1 i) qs ≡ true
+          f1-phase2 (x ∷ qs) p (case1 q1) with  <-fcmp (fromℕ< a<sa) x
+          ... | tri< a ¬b ¬c = ⊥-elim ( nat-≤> a (subst (λ k → toℕ x < suc k ) (sym fin<asa) (fin≤n _ )))
+          f1-phase2 (x ∷ qs) p (case1 q1) | tri≈ ¬a b ¬c with <-fcmp (fin+1 i) x
+          ... | tri< a ¬b ¬c₁ = f1-phase2 qs p (case2 q1)
+          ... | tri≈ ¬a₁ b₁ ¬c₁ = refl
+          ... | tri> ¬a₁ ¬b c = f1-phase2 qs p (case2 q1)
+          -- two fcmp is only different in the size of Fin, but to develop both f1-phase and list-less both fcmps are required
+          f1-phase2 (x ∷ qs) p (case1 q1) | tri> ¬a ¬b c with <-fcmp i (fromℕ< (≤-trans c (fin≤n (fromℕ< a<sa)))) | <-fcmp (fin+1 i) x
+          ... | tri< a ¬b₁ ¬c | tri< a₁ ¬b₂ ¬c₁ = f1-phase2 qs p (case1 q1)
+          ... | tri< a ¬b₁ ¬c | tri≈ ¬a₁ b ¬c₁  = ⊥-elim ( ¬a₁ (subst₂ (λ j k → j < k) (sym fin+1-toℕ) (toℕ-fromℕ< _) a ))
+          ... | tri< a ¬b₁ ¬c | tri> ¬a₁ ¬b₂ c₁ = ⊥-elim ( ¬a₁ (subst₂ (λ j k → j < k) (sym fin+1-toℕ) (toℕ-fromℕ< _) a ))
+          ... | tri≈ ¬a₁ b ¬c | tri< a ¬b₁ ¬c₁  = ⊥-elim ( ¬a₁ (subst₂ (λ j k → j < k) fin+1-toℕ (sym (toℕ-fromℕ< _)) a ))
+          ... | tri≈ ¬a₁ b ¬c | tri≈ ¬a₂ b₁ ¬c₁ = refl
+          ... | tri≈ ¬a₁ b ¬c | tri> ¬a₂ ¬b₁ c₁ = ⊥-elim ( ¬c (subst₂ (λ j k → j > k) fin+1-toℕ (sym (toℕ-fromℕ< _)) c₁ ))
+          ... | tri> ¬a₁ ¬b₁ c₁ | tri< a ¬b₂ ¬c = ⊥-elim ( ¬c (subst₂ (λ j k → j > k) (sym fin+1-toℕ) (toℕ-fromℕ< _) c₁ ))
+          ... | tri> ¬a₁ ¬b₁ c₁ | tri≈ ¬a₂ b ¬c = ⊥-elim ( ¬c (subst₂ (λ j k → j > k) (sym fin+1-toℕ) (toℕ-fromℕ< _) c₁ ))
+          ... | tri> ¬a₁ ¬b₁ c₁ | tri> ¬a₂ ¬b₂ c₂ = f1-phase2 qs p (case1 q1)
+          f1-phase2 (x ∷ qs) p (case2 q1) with  <-fcmp (fromℕ< a<sa) x
+          ... | tri< a ¬b ¬c = ⊥-elim ( nat-≤> a (subst (λ k → toℕ x < suc k ) (sym fin<asa) (fin≤n _ )))
+          f1-phase2 (x ∷ qs) p (case2 q1) | tri≈ ¬a b ¬c with <-fcmp (fin+1 i) x
+          ... | tri< a ¬b ¬c₁ = ⊥-elim ( ¬-bool q1 refl )
+          ... | tri≈ ¬a₁ b₁ ¬c₁ = refl
+          ... | tri> ¬a₁ ¬b c = ⊥-elim ( ¬-bool q1 refl )
+          f1-phase2 (x ∷ qs) p (case2 q1) | tri> ¬a ¬b c with <-fcmp i (fromℕ< (≤-trans c (fin≤n (fromℕ< a<sa)))) | <-fcmp (fin+1 i) x
+          ... | tri< a ¬b₁ ¬c | tri< a₁ ¬b₂ ¬c₁ = f1-phase2 qs p (case2 q1)
+          ... | tri< a ¬b₁ ¬c | tri≈ ¬a₁ b ¬c₁  = ⊥-elim ( ¬a₁ (subst₂ (λ j k → j < k) (sym fin+1-toℕ) (toℕ-fromℕ< _) a ))
+          ... | tri< a ¬b₁ ¬c | tri> ¬a₁ ¬b₂ c₁ = ⊥-elim ( ¬a₁ (subst₂ (λ j k → j < k) (sym fin+1-toℕ) (toℕ-fromℕ< _) a ))
+          ... | tri≈ ¬a₁ b ¬c | tri< a ¬b₁ ¬c₁  = ⊥-elim ( ¬a₁ (subst₂ (λ j k → j < k) fin+1-toℕ (sym (toℕ-fromℕ< _)) a ))
+          ... | tri≈ ¬a₁ b ¬c | tri≈ ¬a₂ b₁ ¬c₁ = refl
+          ... | tri≈ ¬a₁ b ¬c | tri> ¬a₂ ¬b₁ c₁ = ⊥-elim ( ¬c (subst₂ (λ j k → j > k) fin+1-toℕ (sym (toℕ-fromℕ< _)) c₁ ))
+          ... | tri> ¬a₁ ¬b₁ c₁ | tri< a ¬b₂ ¬c = ⊥-elim ( ¬c (subst₂ (λ j k → j > k) (sym fin+1-toℕ) (toℕ-fromℕ< _) c₁ ))
+          ... | tri> ¬a₁ ¬b₁ c₁ | tri≈ ¬a₂ b ¬c = ⊥-elim ( ¬c (subst₂ (λ j k → j > k) (sym fin+1-toℕ) (toℕ-fromℕ< _) c₁ ))
+          ... | tri> ¬a₁ ¬b₁ c₁ | tri> ¬a₂ ¬b₂ c₂ =  f1-phase2 qs p (case2 q1 )
+          f1-phase1 : (qs : List (Fin (suc n)) ) → fin-phase1 i (list-less qs) ≡ true
+              → (fin-phase1 (fromℕ< a<sa) qs ≡ false ) ∨ (fin-phase2 (fromℕ< a<sa) qs ≡ false)
+              → fin-phase1 (fin+1 i) qs ≡ true
+          f1-phase1 (x ∷ qs) p (case1 q1) with  <-fcmp (fromℕ< a<sa) x
+          ... | tri< a ¬b ¬c = ⊥-elim ( nat-≤> a (subst (λ k → toℕ x < suc k ) (sym fin<asa) (fin≤n _ )))
+          f1-phase1 (x ∷ qs) p (case1 q1) | tri≈ ¬a b ¬c with <-fcmp (fin+1 i) x
+          ... | tri< a ¬b ¬c₁ = f1-phase1 qs p (case2 q1)
+          ... | tri≈ ¬a₁ b₁ ¬c₁ = ⊥-elim (fdup-10 b b₁) where
+               fdup-10 : fromℕ< a<sa ≡ x → fin+1 i ≡ x → ⊥
+               fdup-10 eq eq1 = nat-≡< (cong toℕ (trans eq1 (sym eq))) (subst₂ (λ j k → j < k ) (sym fin+1-toℕ) (sym fin<asa) fin<n ) 
+          ... | tri> ¬a₁ ¬b c = f1-phase1 qs p (case2 q1)
+          f1-phase1 (x ∷ qs) p (case1 q1) | tri> ¬a ¬b c with <-fcmp i (fromℕ< (≤-trans c (fin≤n (fromℕ< a<sa)))) | <-fcmp (fin+1 i) x
+          ... | tri< a ¬b₁ ¬c | tri< a₁ ¬b₂ ¬c₁ = f1-phase1 qs p (case1 q1)
+          ... | tri< a ¬b₁ ¬c | tri≈ ¬a₁ b ¬c₁  = ⊥-elim ( ¬a₁ (subst₂ (λ j k → j < k) (sym fin+1-toℕ) (toℕ-fromℕ< _) a ))
+          ... | tri< a ¬b₁ ¬c | tri> ¬a₁ ¬b₂ c₁ = ⊥-elim ( ¬a₁ (subst₂ (λ j k → j < k) (sym fin+1-toℕ) (toℕ-fromℕ< _) a ))
+          ... | tri≈ ¬a₁ b ¬c | tri< a ¬b₁ ¬c₁  = ⊥-elim ( ¬a₁ (subst₂ (λ j k → j < k) fin+1-toℕ (sym (toℕ-fromℕ< _)) a ))
+          ... | tri≈ ¬a₁ b ¬c | tri≈ ¬a₂ b₁ ¬c₁ = f1-phase2 qs p (case1 q1)
+          ... | tri≈ ¬a₁ b ¬c | tri> ¬a₂ ¬b₁ c₁ = ⊥-elim ( ¬c (subst₂ (λ j k → j > k) fin+1-toℕ (sym (toℕ-fromℕ< _)) c₁ ))
+          ... | tri> ¬a₁ ¬b₁ c₁ | tri< a ¬b₂ ¬c = ⊥-elim ( ¬c (subst₂ (λ j k → j > k) (sym fin+1-toℕ) (toℕ-fromℕ< _) c₁ ))
+          ... | tri> ¬a₁ ¬b₁ c₁ | tri≈ ¬a₂ b ¬c = ⊥-elim ( ¬c (subst₂ (λ j k → j > k) (sym fin+1-toℕ) (toℕ-fromℕ< _) c₁ ))
+          ... | tri> ¬a₁ ¬b₁ c₁ | tri> ¬a₂ ¬b₂ c₂ = f1-phase1 qs p (case1 q1)
+          f1-phase1 (x ∷ qs) p (case2 q1) with  <-fcmp (fromℕ< a<sa) x
+          ... | tri< a ¬b ¬c = ⊥-elim ( nat-≤> a (subst (λ k → toℕ x < suc k ) (sym fin<asa) (fin≤n _ )))
+          f1-phase1 (x ∷ qs) p (case2 q1) | tri≈ ¬a b ¬c = ⊥-elim ( ¬-bool q1 refl )
+          f1-phase1 (x ∷ qs) p (case2 q1) | tri> ¬a ¬b c with <-fcmp i (fromℕ< (≤-trans c (fin≤n (fromℕ< a<sa)))) | <-fcmp (fin+1 i) x
+          ... | tri< a ¬b₁ ¬c | tri< a₁ ¬b₂ ¬c₁ = f1-phase1 qs p (case2 q1)
+          ... | tri< a ¬b₁ ¬c | tri≈ ¬a₁ b ¬c₁  = ⊥-elim ( ¬a₁ (subst₂ (λ j k → j < k) (sym fin+1-toℕ) (toℕ-fromℕ< _) a ))
+          ... | tri< a ¬b₁ ¬c | tri> ¬a₁ ¬b₂ c₁ = ⊥-elim ( ¬a₁ (subst₂ (λ j k → j < k) (sym fin+1-toℕ) (toℕ-fromℕ< _) a ))
+          ... | tri≈ ¬a₁ b ¬c | tri< a ¬b₁ ¬c₁  = ⊥-elim ( ¬a₁ (subst₂ (λ j k → j < k) fin+1-toℕ (sym (toℕ-fromℕ< _)) a ))
+          ... | tri≈ ¬a₁ b ¬c | tri≈ ¬a₂ b₁ ¬c₁ = f1-phase2 qs p (case2 q1)
+          ... | tri≈ ¬a₁ b ¬c | tri> ¬a₂ ¬b₁ c₁ = ⊥-elim ( ¬c (subst₂ (λ j k → j > k) fin+1-toℕ (sym (toℕ-fromℕ< _)) c₁ ))
+          ... | tri> ¬a₁ ¬b₁ c₁ | tri< a ¬b₂ ¬c = ⊥-elim ( ¬c (subst₂ (λ j k → j > k) (sym fin+1-toℕ) (toℕ-fromℕ< _) c₁ ))
+          ... | tri> ¬a₁ ¬b₁ c₁ | tri≈ ¬a₂ b ¬c = ⊥-elim ( ¬c (subst₂ (λ j k → j > k) (sym fin+1-toℕ) (toℕ-fromℕ< _) c₁ ))
+          ... | tri> ¬a₁ ¬b₁ c₁ | tri> ¬a₂ ¬b₂ c₂ = f1-phase1 qs p (case2 q1)
+     fdup-phase0 : FDup-in-list (suc n) qs 
+     fdup-phase0 with fin-dup-in-list (fromℕ< a<sa) qs | inspect (fin-dup-in-list (fromℕ< a<sa)) qs
+     ... | true  | record { eq = eq } = record { dup = fromℕ< a<sa ; is-dup = eq }
+     ... | false | record { eq = ne } = fdup+1 qs (FDup-in-list.dup fdup) ne (FDup-in-list.is-dup fdup)  where
+           -- if no dup in the max element, the list without the element is only one length shorter
+           fless : (qs : List (Fin (suc n))) → length qs > suc n  → fin-dup-in-list (fromℕ< a<sa) qs ≡ false → n < length (list-less qs) 
+           fless qs lt p = fl-phase1 n qs lt p where
+               fl-phase2 : (n1 : ℕ) (qs : List (Fin (suc n))) → length qs > n1  → fin-phase2 (fromℕ< a<sa) qs ≡ false → n1 < length (list-less qs) 
+               fl-phase2 zero (x ∷ qs) (s≤s lt) p with  <-fcmp (fromℕ< a<sa) x
+               ... | tri< a ¬b ¬c = ⊥-elim ( nat-≤> a (subst (λ k → toℕ x < suc k ) (sym fin<asa) (fin≤n _ )))
+               ... | tri> ¬a ¬b c =  s≤s z≤n 
+               fl-phase2 (suc n1) (x ∷ qs) (s≤s lt) p with  <-fcmp (fromℕ< a<sa) x
+               ... | tri< a ¬b ¬c = ⊥-elim ( nat-≤> a (subst (λ k → toℕ x < suc k ) (sym fin<asa) (fin≤n _ )))
+               ... | tri> ¬a ¬b c = s≤s ( fl-phase2 n1 qs lt p )
+               fl-phase1 : (n1 : ℕ) (qs : List (Fin (suc n))) → length qs > suc n1  → fin-phase1 (fromℕ< a<sa) qs ≡ false → n1 < length (list-less qs) 
+               fl-phase1 zero (x ∷ qs) (s≤s lt) p  with <-fcmp (fromℕ< a<sa) x
+               ... | tri< a ¬b ¬c = ⊥-elim ( nat-≤> a (subst (λ k → toℕ x < suc k ) (sym fin<asa) (fin≤n _ )))
+               ... | tri≈ ¬a b ¬c = fl-phase2 0 qs lt p
+               ... | tri> ¬a ¬b c = s≤s z≤n
+               fl-phase1 (suc n1) (x ∷ qs) (s≤s lt) p with <-fcmp (fromℕ< a<sa) x
+               ... | tri< a ¬b ¬c = ⊥-elim ( nat-≤> a (subst (λ k → toℕ x < suc k ) (sym fin<asa) (fin≤n _ )))
+               ... | tri≈ ¬a b ¬c = fl-phase2 (suc n1) qs lt p 
+               ... | tri> ¬a ¬b c = s≤s ( fl-phase1 n1 qs lt p )
+           -- if the list without the max element is only one length shorter, we can recurse
+           fdup : FDup-in-list n (list-less qs)
+           fdup = fin-dup-in-list>n (list-less qs) (fless qs lt ne)

@@ -4,7 +4,7 @@ module finiteSetUtil  where
 
 open import Data.Nat hiding ( _≟_ )
 open import Data.Fin renaming ( _<_ to _<<_ ; _>_ to _f>_ ; _≟_ to _f≟_ ) hiding (_≤_ )
-open import Data.Fin.Properties
+open import Data.Fin.Properties hiding ( <-trans ) renaming ( <-cmp to <-fcmp )
 open import Data.Empty
 open import Relation.Nullary
 open import Relation.Binary.Definitions
@@ -494,6 +494,10 @@ memberQ {Q} finq q (q0 ∷ qs) with equal? finq q q0
 ... | true = true
 ... | false = memberQ finq q qs
 
+--
+-- there is a duplicate element in finite list
+--
+
 phase2 : { Q : Set }  (finq : FiniteSet Q) (q : Q) (qs : List Q ) → Bool
 phase2 finq q [] = false
 phase2 finq q (x ∷ qs) with equal? finq q x
@@ -508,96 +512,48 @@ phase1 finq q (x ∷ qs) with equal? finq q x
 dup-in-list : { Q : Set }  (finq : FiniteSet Q) (q : Q) (qs : List Q ) → Bool
 dup-in-list {Q} finq q qs = phase1 finq q qs 
 
+--
+-- if length of the list is longer than kinds of a finite set, there is a duplicate
+-- prove this based on the theorem on Data.Fin
+--
 
-dup-in-list+1 : { Q : Set }  (finq : FiniteSet Q) 
-   → (q : Q) (qs : List Q ) → dup-in-list finq q qs ≡ true
-   → dup-in-list (fin-∨1 finq) (case2 q) (map case2 qs ) ≡ true
-dup-in-list+1 {Q} finq q qs p = 1-phase1 qs p where
-    dup04 : {q x : Q} →  equal? finq q x ≡ equal?  (fin-∨1 finq) (case2 q) (case2 x)
-    dup04 {q} {x} with  F←Q finq q f≟ F←Q finq x
-    ... | yes _ = refl
-    ... | no _ = refl
-    1-phase2 : (qs : List Q) → phase2 finq q qs ≡ true → phase2 (fin-∨1 finq) (case2 q) (map case2 qs ) ≡ true
-    1-phase2 (x ∷ qs ) p with equal? finq q x | equal?  (fin-∨1 finq) (case2 q) (case2 x)  | dup04 {q} {x}
-    ... | true | true | t = refl
-    ... | false | false | t = 1-phase2 qs p
-    1-phase1 : (qs : List Q) → phase1 finq q qs ≡ true → phase1 (fin-∨1 finq) (case2 q) (map case2 qs ) ≡ true
-    1-phase1 (x ∷ qs ) p with equal? finq q x | equal?  (fin-∨1 finq) (case2 q) (case2 x)  | dup04 {q} {x}
-    ... | true | true | t = 1-phase2 qs p
-    ... | false | false | t = 1-phase1 qs p
-
-dup-in-list+iso : { Q : Set }  (finq : FiniteSet Q) 
+dup-in-list+fin : { Q : Set }  (finq : FiniteSet Q) 
    → (q : Q) (qs : List Q )
-   → dup-in-list (Fin2Finite (finite finq)) (F←Q  finq q) (map (F←Q finq) qs) ≡ true
+   → fin-dup-in-list (F←Q  finq q) (map (F←Q finq) qs) ≡ true
    → dup-in-list finq q qs ≡ true
-dup-in-list+iso {Q} finq q qs p = i-phase1 qs p where
-    dup05 : {q x : Q} → equal? finq q x ≡  equal?  (Fin2Finite (finite finq)) (F←Q finq q) (F←Q finq x) 
-    dup05 {q} {x} with  F←Q finq q f≟ F←Q finq x
-    ... | yes _ = refl
-    ... | no _ = refl
-    i-phase2 : (qs : List Q) →   phase2 (Fin2Finite (finite finq)) (F←Q  finq q) (map (F←Q finq) qs) ≡ true
+dup-in-list+fin {Q} finq q qs p = i-phase1 qs p where
+    i-phase2 : (qs : List Q) →   fin-phase2 (F←Q  finq q) (map (F←Q finq) qs) ≡ true
         → phase2 finq q qs ≡ true 
-    i-phase2 (x ∷ qs) p with equal? finq q x | equal?  (Fin2Finite (finite finq)) (F←Q finq q) (F←Q finq x) | dup05 {q} {x}
-    ... | true | true | t2 = refl
-    ... | false | false | t2 =  i-phase2 qs p
-    i-phase1 : (qs : List Q) →   dup-in-list (Fin2Finite (finite finq)) (F←Q  finq q) (map (F←Q finq) qs) ≡ true
+    i-phase2 (x ∷ qs) p with equal? finq q x | inspect (equal? finq q ) x | <-fcmp  (F←Q finq q)  (F←Q finq x)
+    ... | true | _ | t = refl
+    ... | false | _ | tri< a ¬b ¬c = i-phase2 qs p
+    ... | false | record { eq = eq }  | tri≈ ¬a b ¬c = ⊥-elim (¬-bool eq
+        (subst₂ (λ j k → equal? finq j k ≡ true) (finiso→ finq q) (subst (λ k →  Q←F finq k ≡ x) (sym b) (finiso→ finq x)) ( equal?-refl finq  )))
+    ... | false | _ | tri> ¬a ¬b c = i-phase2 qs p
+    i-phase1 : (qs : List Q) → fin-phase1 (F←Q  finq q) (map (F←Q finq) qs) ≡ true 
         → phase1 finq q qs ≡ true 
-    i-phase1 (x ∷ qs) p with equal? finq q x | equal?  (Fin2Finite (finite finq)) (F←Q finq q) (F←Q finq x) | dup05 {q} {x}
-    ... | true | true | t2 = i-phase2 qs p
-    ... | false | false | t2 =  i-phase1 qs p
+    i-phase1 (x ∷ qs) p with equal? finq q x |  inspect (equal? finq q ) x | <-fcmp  (F←Q finq q)  (F←Q finq x)
+    ... | true | record { eq = eq }  | tri< a ¬b ¬c =  ⊥-elim ( nat-≡< (cong (λ x → toℕ (F←Q finq x)) ( equal→refl finq eq )) a )
+    ... | true | _ | tri≈ ¬a b ¬c = i-phase2 qs p
+    ... | true | record { eq = eq}  | tri> ¬a ¬b c = ⊥-elim ( nat-≡< (cong (λ x → toℕ (F←Q finq x)) (sym ( equal→refl finq eq ))) c )
+    ... | false | _ | tri< a ¬b ¬c = i-phase1 qs p
+    ... | false | record {eq = eq} | tri≈ ¬a b ¬c = ⊥-elim (¬-bool eq
+        (subst₂ (λ j k → equal? finq j k ≡ true) (finiso→ finq q) (subst (λ k →  Q←F finq k ≡ x) (sym b) (finiso→ finq x)) ( equal?-refl finq  )))
+    ... | false | _ | tri> ¬a ¬b c = i-phase1 qs p
 
 record Dup-in-list {Q : Set } (finq : FiniteSet Q) (qs : List Q)  : Set where
    field
       dup : Q
       is-dup : dup-in-list finq dup qs ≡ true
 
-
 dup-in-list>n : {Q : Set } → (finq : FiniteSet Q) → (qs : List Q)  → (len> : length qs > finite finq ) → Dup-in-list finq qs
-dup-in-list>n {Q} finq qs lt = record {
-         dup = dup-05
-       ; is-dup = dup-in-list+iso finq dup-05 qs dup-06 } where
-    LEM-dup : Dup-in-list finq qs ∨ ( ¬  Dup-in-list finq qs )
-    LEM-dup with exists finq ( λ q → dup-in-list finq q qs ) | inspect (exists finq) ( λ q → dup-in-list finq q qs )
-    ... | true | record { eq = eq1 } = case1 ( record { dup = Found.found-q dup-01 ; is-dup =  Found.found-p dup-01} ) where
-            dup-01 : Found Q ( λ q → dup-in-list finq q qs )
-            dup-01 = found← finq eq1
-    ... | false | record { eq = eq1 } = case2 (λ D → ¬-bool ( not-found← finq eq1 (Dup-in-list.dup D)) (Dup-in-list.is-dup D) )
-    record NList (n : ℕ) : Set where
-       field
-          ls : List (Fin n)
-          ls>n : length ls > n
-    dup-02 : (n : ℕ) → (ls : NList n ) → Dup-in-list (Fin2Finite n) (NList.ls ls) 
-    dup-02 zero ls = {!!}
-    dup-02 (suc n) ls = dup-03 where
-       n1 : Fin (suc n)
-       n1 =  fromℕ< refl-≤
-       d-phase2 : (qs : List (Fin (suc n)) ) → NList n ∨ ( phase2 (Fin2Finite (suc n)) n1 qs ≡ true )
-       d-phase2 [] = {!!}
-       d-phase2 (x ∷ qs) with equal? (Fin2Finite (suc n)) n1 x
-       ... | true = case2 refl
-       ... | false with d-phase2 qs
-       ... | case1 p = case1 record { ls = {!!} ∷ NList.ls p ; ls>n = {!!} }
-       ... | case2 eq = case2 eq 
-       d-phase1 : (qs : List (Fin (suc n)) ) → NList n ∨ ( phase1 (Fin2Finite (suc n)) n1 qs ≡ true )
-       d-phase1 [] = {!!}
-       d-phase1 (x ∷ qs) with equal? (Fin2Finite (suc n)) n1 x
-       ... | true with d-phase2 qs
-       ... | case1 p = case1 record { ls = {!!} ∷ NList.ls p ; ls>n = {!!} }
-       ... | case2 eq = case2 eq
-       d-phase1 (x ∷ qs)  | false with d-phase1 qs
-       ... | case1 p = case1 record { ls = {!!} ∷ NList.ls p ; ls>n = {!!} }
-       ... | case2 eq = case2 eq
-       dup-03 : Dup-in-list (Fin2Finite (suc n)) (NList.ls ls) 
-       dup-03 with d-phase1 (NList.ls ls) 
-       ... | case1 ls1 = record { dup = fin+1 (Dup-in-list.dup dup-04) ; is-dup = dup-07 } where
-           dup-04 : Dup-in-list (Fin2Finite n) (NList.ls ls1) 
-           dup-04 = dup-02 n ls1
-           dup-07 : dup-in-list (Fin2Finite (suc n)) (fin+1 (Dup-in-list.dup dup-04)) (NList.ls ls) ≡ true
-           dup-07 = dup-in-list+iso finq  {!!} {!!} (dup-in-list+1 {!!} {!!} qs {!!})
-       ... | case2 dup = record { dup = n1 ; is-dup = dup }
-    dup-05 : Q
-    dup-05 = Q←F finq (Dup-in-list.dup (dup-02 (finite finq) record { ls = map (F←Q finq) qs ; ls>n = {!!} } ))
-    dup-06 :  dup-in-list (Fin2Finite (finite finq)) (F←Q finq dup-05) (map (F←Q finq) qs) ≡ true
-    dup-06 = subst (λ k → dup-in-list (Fin2Finite (finite finq)) k (map (F←Q finq) qs) ≡ true )
-        {!!} (Dup-in-list.is-dup (dup-02 (finite finq) record { ls = map (F←Q finq) qs ; ls>n = {!!} } ) )
-
+dup-in-list>n {Q} finq qs lt = record { dup = Q←F finq (FDup-in-list.dup dl)
+  ; is-dup = dup-in-list+fin finq (Q←F finq (FDup-in-list.dup dl)) qs dl01 } where
+     maplen : (qs : List Q) → length (map (F←Q finq) qs) ≡ length qs
+     maplen [] = refl
+     maplen (x ∷ qs) = cong suc (maplen qs)
+     dl : FDup-in-list (finite finq ) (map (F←Q finq) qs)
+     dl = fin-dup-in-list>n (map (F←Q finq) qs) (subst (λ k → k > finite finq ) (sym (maplen qs)) lt)
+     dl01 :  fin-dup-in-list (F←Q finq (Q←F finq (FDup-in-list.dup dl))) (map (F←Q finq) qs) ≡ true
+     dl01 = subst (λ k →  fin-dup-in-list k (map (F←Q finq) qs) ≡ true )
+         (sym (finiso← finq _)) ( FDup-in-list.is-dup dl )
