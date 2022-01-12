@@ -11,7 +11,7 @@ open import  Relation.Binary.PropositionalEquality hiding ( [_] )
 open import Relation.Nullary using (¬_; Dec; yes; no)
 -- open import Data.String
 
-data IsTerm (Token : Set) : Set where
+data IsTerm (Token : Set) : Set (succ Zero) where
     isTerm :  Token → IsTerm Token
     noTerm  : IsTerm Token
 

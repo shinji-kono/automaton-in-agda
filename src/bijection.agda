@@ -112,7 +112,7 @@ nxn : Bijection ℕ (ℕ ∧ ℕ)
 nxn = record {
      fun← = λ p → nxn→n (proj1 p) (proj2 p)
    ; fun→ =  n→nxn 
-   ; fiso← = n-id
+   ; fiso← = λ i → NN.k1 (nn i)
    ; fiso→ = λ x → nn-id (proj1 x) (proj2 x)
   } where
      nxn→n :  ℕ →  ℕ → ℕ
@@ -188,17 +188,15 @@ nxn = record {
         suc ((i + 1) + (i + suc (nxn→n 0 i))) ≡⟨ cong suc (+-assoc i 1 (i + suc (nxn→n 0 i))) ⟩
         suc (i + suc (i + suc (nxn→n 0 i))) ∎ where open ≡-Reasoning
 
-     nni>j : {i : ℕ}  → suc i > NN.j (nn i)
      -----
      --
      -- create the invariant NN for all n
      --
-     nn zero = record { j = 0 ; k = 0 ; sum = 0 ; stage = 0 ; nn = refl ; ni = refl ; k1 = refl ; k0 = refl
+     nn zero = record { j = 0 ; k = 0 ; k1 = refl 
         ;  nn-unique = λ {j0} {k0} eq → cong₂ (λ x y → ⟪ x , y ⟫) (sym (proj1 (nxn→n0 eq))) (sym (proj2 (nxn→n0 {j0} {k0} eq))) }
      nn (suc i) with NN.k (nn i)  | inspect  NN.k (nn i) 
-     ... | zero | record { eq = eq } = record { k = suc (sum ) ; j = 0 ; sum = suc  (sum ) ; stage = suc  (sum ) + (stage )
-         ; nn = refl
-         ; ni = nn01 ; k1 = nn02 ; k0 = nn03 ;  nn-unique = nn04 } where
+     ... | zero | record { eq = eq } = record { k = suc (sum ) ; j = 0 
+         ; k1 = nn02 ; nn-unique = nn04 } where
             ---
             --- increment the stage
             ---
@@ -207,18 +205,6 @@ nxn = record {
             j = NN.j (nn i)
             NNnn :  NN.j (nn i) + NN.k (nn i) ≡ sum
             NNnn = sym refl
-            NNni : i ≡ NN.j (nn i) + stage   
-            NNni = begin
-               i ≡⟨ sym (minus+n {i} {NN.j (nn i)} (nni>j {i}  )) ⟩
-               stage + NN.j (nn i)  ≡⟨ +-comm stage _ ⟩
-               NN.j (nn i) + stage ∎   where open ≡-Reasoning 
-            nn01 : suc i ≡ 0 + (suc sum + stage )
-            nn01 = begin
-               suc i ≡⟨ cong suc (NNni ) ⟩
-               suc ((NN.j  (nn i) ) + stage )  ≡⟨ cong (λ k → suc (k + stage )) (+-comm 0 _ ) ⟩
-               suc ((NN.j  (nn i) + 0 ) + stage )  ≡⟨ cong (λ k → suc ((NN.j  (nn i) + k) + stage )) (sym eq) ⟩
-               suc ((NN.j (nn i) + NN.k  (nn i)) + stage )  ≡⟨ cong (λ k → suc ( k + stage )) (NNnn ) ⟩
-               0 +   (suc sum + stage ) ∎  where open ≡-Reasoning
             nn02 :  nxn→n 0 (suc sum)  ≡ suc i
             nn02 = begin
                sum + suc (nxn→n 0 sum) ≡⟨ sym (+-assoc sum 1 (nxn→n 0 sum)) ⟩
@@ -229,22 +215,6 @@ nxn = record {
                suc (nxn→n (NN.j (nn i) + 0 ) (NN.k (nn i))) ≡⟨ cong (λ k → suc ( nxn→n k (NN.k (nn i)))) (+-comm (NN.j (nn i)) 0) ⟩
                suc (nxn→n (NN.j (nn i)) (NN.k (nn i))) ≡⟨ cong suc (NN.k1 (nn i) ) ⟩
                suc i ∎  where open ≡-Reasoning
-            nn03 :  n→nxn (suc i) ≡ ⟪ 0 , suc (sum ) ⟫   -- k0 : n→nxn i ≡ ⟪ NN.j (nn i) = sum , NN.k (nn i) = 0 ⟫
-            nn03 with n→nxn i | inspect  n→nxn i
-            ... | ⟪ x , zero  ⟫ | record { eq = eq1 } = begin
-                ⟪ {!!} , {!!} ⟫ ≡⟨  {!!} ⟩
-                ⟪ zero , suc x ⟫ ≡⟨ cong (λ k →  ⟪ zero , suc k ⟫) (sym (cong proj1 eq1)) ⟩
-                ⟪ zero , suc (proj1 (n→nxn i)) ⟫ ≡⟨ cong (λ k →  ⟪ zero , suc k ⟫) (cong proj1 refl) ⟩
-                ⟪ zero , suc (NN.j (nn i)) ⟫ ≡⟨  cong (λ k →  ⟪ zero , suc k ⟫) (+-comm 0 _ ) ⟩
-                ⟪ zero , suc (NN.j (nn i) + 0) ⟫ ≡⟨  cong (λ k →  ⟪ zero , suc (NN.j (nn i) + k)  ⟫ ) (sym eq)  ⟩
-                ⟪ zero , suc (NN.j (nn i) + NN.k (nn i)) ⟫ ≡⟨ cong (λ k →  ⟪ zero , suc k ⟫ ) (NNnn )  ⟩
-                ⟪ 0 , suc sum  ⟫  ∎  where open ≡-Reasoning
-            ... | ⟪ x , suc y ⟫ | record { eq = eq1 } = ⊥-elim ( nat-≡< (sym (cong proj2 refl)) (begin
-               suc (NN.k (nn i)) ≡⟨ cong suc eq ⟩
-               suc 0 ≤⟨ s≤s z≤n  ⟩
-               suc y ≡⟨ sym (cong proj2 eq1) ⟩
-               proj2 (n→nxn i)  ∎ ))  where open ≤-Reasoning
-            --  nid2  : (i j : ℕ) → suc (nxn→n i (suc j)) ≡ nxn→n (suc i) j 
             nn04 : {j0 k0 : ℕ} → nxn→n j0 k0 ≡ suc i → ⟪ 0 , suc (sum ) ⟫ ≡ ⟪ j0 , k0 ⟫
             nn04 {zero} {suc k0} eq1 = cong (λ k → ⟪ 0 , k ⟫ ) (cong suc (sym nn08)) where -- eq : nxn→n zero (suc k0) ≡ suc i -- 
                nn07 : nxn→n k0 0 ≡ i
@@ -269,8 +239,7 @@ nxn = record {
                   i ∎   where open ≡-Reasoning 
                nn06 : nxn→n j0 (suc k0) ≡ i → ⟪ NN.j (nn i) , NN.k (nn i) ⟫ ≡ ⟪ j0 , suc k0 ⟫ 
                nn06 = NN.nn-unique (nn i)
-     ... | suc k  | record {eq = eq} = record { k = k ; j = suc (NN.j (nn i)) ; sum = sum  ; stage = stage  ; nn = nn10
-         ; ni = cong suc (NNni (nn i)) ; k1 = nn11 ; k0 = nn12 ;  nn-unique = nn13 } where
+     ... | suc k  | record {eq = eq} = record { k = k ; j = suc (NN.j (nn i)) ; k1 = nn11 ;  nn-unique = nn13 } where
             ---
             --- increment in a stage
             ---
@@ -279,11 +248,6 @@ nxn = record {
             j = NN.j (nn i)
             NNnn :  NN.j (nn i) + NN.k (nn i) ≡ sum
             NNnn = sym refl
-            NNni : i ≡ NN.j (nn i) + stage   
-            NNni = begin
-               i ≡⟨ sym (minus+n {i} {NN.j (nn i)} (nni>j {i}  )) ⟩
-               stage + NN.j (nn i)  ≡⟨ +-comm stage _ ⟩
-               NN.j (nn i) + stage ∎   where open ≡-Reasoning 
             nn10 : suc (NN.j (nn i)) + k ≡ sum 
             nn10 = begin
                 suc (NN.j (nn i)) + k ≡⟨ cong (λ x → x + k) (+-comm 1 _)  ⟩
@@ -301,22 +265,6 @@ nxn = record {
             nn18 = subst (λ k → 0 < k ) ( begin
                     suc k ≡⟨ sym eq ⟩
                     NN.k (nn i)  ∎  ) (s≤s z≤n )  where open ≡-Reasoning  
-            nn12 :   n→nxn (suc i) ≡ ⟪ suc (NN.j (nn i)) , k ⟫  --  n→nxn i ≡ ⟪ NN.j (nn i) ,  NN.k (nn i)  ⟫
-            nn12 with  n→nxn i | inspect  n→nxn i
-            ... | ⟪ x , zero ⟫ | record { eq = eq1 } = ⊥-elim ( nat-≡< (sym (cong proj2 eq1))
-                (subst (λ k → 0 < k ) ( begin
-                    suc k ≡⟨ sym eq ⟩
-                    NN.k (nn i) ≡⟨ cong proj2 (sym refl ) ⟩
-                    proj2 (n→nxn i) ∎  ) (s≤s z≤n )) ) where open ≡-Reasoning  --  eq1 n→nxn i ≡ ⟪ x , zero ⟫
-            ... | ⟪ x , suc y ⟫ | record { eq = eq1 } = begin -- n→nxn i ≡ ⟪ x , suc y ⟫
-                ⟪ {!!} , {!!} ⟫ ≡⟨ {!!} ⟩
-                ⟪ suc x , y ⟫ ≡⟨ refl ⟩
-                ⟪ suc x , pred (suc y) ⟫ ≡⟨ cong (λ k → ⟪ suc (proj1 k) , pred (proj2 k) ⟫) ( begin
-                   ⟪ x , suc y ⟫  ≡⟨ sym eq1 ⟩
-                   n→nxn i ≡⟨ refl ⟩
-                   ⟪ NN.j (nn i) , NN.k (nn i) ⟫ ∎ )  ⟩
-                ⟪ suc (NN.j (nn i)) , pred (NN.k (nn i)) ⟫ ≡⟨ cong (λ k →  ⟪ suc (NN.j (nn i)) , pred k ⟫) eq ⟩
-                ⟪ suc (NN.j (nn i)) , k ⟫ ∎   where open ≡-Reasoning 
             nn13 :  {j0 k0 : ℕ} → nxn→n j0 k0 ≡ suc i → ⟪ suc (NN.j (nn i)) , k ⟫ ≡ ⟪ j0 , k0 ⟫
             nn13 {zero} {suc k0} eq1 = ⊥-elim ( nat-≡< (sym (cong proj2 nn17)) nn18 ) where  -- (nxn→n zero (suc k0)) ≡ suc i
                 nn16 : nxn→n k0 zero ≡ i
@@ -335,22 +283,11 @@ nxn = record {
                 nn15 : ⟪ NN.j (nn i) , NN.k (nn i) ⟫ ≡ ⟪ j0 , suc k0 ⟫
                 nn15 = NN.nn-unique (nn i) nn14
 
-     n-id :  (i : ℕ) → nxn→n (proj1 (n→nxn i)) (proj2 (n→nxn i)) ≡ i
-     n-id i = subst (λ k →  nxn→n (proj1 k) (proj2 k)  ≡ i ) (sym refl) (NN.k1 (nn i))
-
      nn-id : (j k : ℕ) → n→nxn (nxn→n j k) ≡ ⟪ j , k ⟫
      nn-id j k = begin
           n→nxn (nxn→n j k)  ≡⟨ refl ⟩
           ⟪ NN.j (nn (nxn→n j k)) , NN.k (nn (nxn→n j k)) ⟫ ≡⟨ NN.nn-unique (nn (nxn→n j k)) refl ⟩
           ⟪ j , k ⟫ ∎  where open ≡-Reasoning
-     nni>j {zero}  = refl-≤
-     nni>j {suc i}  = {!!}
-     -- nni>j {i} {n} = begin
-     --      suc (NN.j n)  ≤⟨ {!!} ⟩
-     --      suc (nxn→n (NN.j n) (NN.k n)) ≡⟨ {!!} ⟩
-     --      suc i ∎ where
-     --         open ≤-Reasoning
-
 
 
 --   []     0
@@ -367,7 +304,7 @@ record LB (n : ℕ) (lton : List Bool → ℕ ) : Set where
   field
      nlist : List Bool
      isBin : lton nlist ≡ n
-     isUnique :  (x : List Bool) → lton x ≡ n → nlist  ≡ x -- we don't need this
+     isUnique :  (x : List Bool) → lton x ≡ n → nlist  ≡ x 
 
 lb+1 : List Bool → List Bool
 lb+1 [] =  false ∷ [] 

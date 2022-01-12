@@ -132,6 +132,19 @@ f≡→≡ refl = refl
 open import Data.List
 open import Relation.Binary.Definitions
 
+-- fin-count : { n : ℕ }  (q : Fin n) (qs : List (Fin n) ) → ℕ
+-- fin-count q p[ = 0
+-- fin-count q (q0 ∷ qs ) with <-fcmp q q0 
+-- ... | tri-e = suc (fin-count q qs)
+-- ... | false = fin-count q qs
+
+-- fin-not-dup-in-list : { n : ℕ}  (qs : List (Fin n) ) → Set
+-- fin-not-dup-in-list {n} qs = (q : Fin n) → fin-count q ≤ 1
+
+-- this is far easier
+-- fin-not-dup-in-list→len<n : { n : ℕ}  (qs : List (Fin n) ) → ( (q : Fin n) → fin-not-dup-in-list qs q) → length qs ≤ n
+-- fin-not-dup-in-list→len<n = ?
+
 fin-phase2 : { n : ℕ }  (q : Fin n) (qs : List (Fin n) ) → Bool
 fin-phase2 q [] = false
 fin-phase2 q (x ∷ qs) with <-fcmp q x

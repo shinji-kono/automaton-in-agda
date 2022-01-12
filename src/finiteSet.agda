@@ -3,7 +3,7 @@ module finiteSet  where
 
 open import Data.Nat hiding ( _≟_ )
 open import Data.Fin renaming ( _<_ to _<<_ ) hiding (_≤_)
--- open import Data.Fin.Properties
+-- open import Data.Fin.Properties  hiding ( ≤-refl )
 open import Data.Empty
 open import Relation.Nullary
 open import Relation.Binary.Definitions

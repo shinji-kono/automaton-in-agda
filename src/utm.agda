@@ -2,9 +2,10 @@ module utm where
 
 open import turing
 open import Data.Product
-open import Data.Bool
+-- open import Data.Bool
 open import Data.List
 open import Data.Nat
+open import logic
 
 data utmStates : Set where
      reads : utmStates

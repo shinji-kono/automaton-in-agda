@@ -15,16 +15,16 @@ open Automaton
 
 accept : { Q : Set } { Σ : Set  }
     → Automaton Q  Σ
-    → (astart : Q)
+    → Q
     → List  Σ → Bool
-accept {Q} { Σ} M q [] = aend M q
-accept {Q} { Σ} M q ( H  ∷ T ) = accept M ( (δ M) q H ) T
+accept M q [] = aend M q
+accept M q ( H  ∷ T ) = accept M ( δ M q H ) T
 
 moves : { Q : Set } { Σ : Set  }
     → Automaton Q  Σ
     → Q → List  Σ → Q
-moves {Q} { Σ} M q [] = q
-moves {Q} { Σ} M q ( H  ∷ T ) = moves M ( δ M q H)  T
+moves M q [] = q
+moves M q ( H  ∷ T ) = moves M ( δ M q H)  T
 
 trace : { Q : Set } { Σ : Set  }
     → Automaton Q  Σ

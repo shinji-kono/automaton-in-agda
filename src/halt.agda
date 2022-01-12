@@ -22,8 +22,8 @@ record HBijection {n m : Level} (R : Set n) (S : Set m) : Set (n Level.⊔ m)  w
 --  normal bijection required below, but we don't need this to show the inconsistency
 --     fiso→ : (x : S ) → fun→ ( fun← x )  ≡ x 
 
-injection :  {n m : Level} (R : Set n) (S : Set m) (f : R → S ) → Set (n Level.⊔ m)
-injection R S f = (x y : R) → f x ≡ f y → x ≡ y
+injection' :  {n m : Level} (R : Set n) (S : Set m) (f : R → S ) → Set (n Level.⊔ m)
+injection' R S f = (x y : R) → f x ≡ f y → x ≡ y
 
 open HBijection 
 
@@ -112,3 +112,5 @@ TNL halt utm = record {
      -- the rest of bijection means encoding is unique
      -- fiso→ :  (y : List Bool ) → encode utm record { tm = λ x →  h1 (λ tm → Halt.halt halt (UTM.utm utm) tm  ) x } ≡ y
           
+TNL1 : UTM → ¬ Halt 
+TNL1 utm halt = diagonal ( TNL halt utm )

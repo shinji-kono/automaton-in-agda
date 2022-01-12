@@ -44,6 +44,10 @@ module _ {Q : Set } (F : FiniteSet Q) where
         ≡⟨  finiso→   q1 ⟩
             q1
         ∎  where open ≡-Reasoning
+     eqP : (x y : Q) → Dec ( x ≡ y )
+     eqP x y with F←Q x ≟ F←Q y
+     ... | yes eq = yes (subst₂ (λ j k → j ≡ k ) (finiso→ x) (finiso→ y) (cong Q←F eq) )
+     ... | no n = no (λ eq → n (cong F←Q eq))
      End : (m : ℕ ) → (p : Q → Bool ) → Set
      End m p = (i : Fin finite) → m ≤ toℕ i → p (Q←F i )  ≡ false 
      first-end :  ( p : Q → Bool ) → End finite p

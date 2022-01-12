@@ -5,11 +5,12 @@ open import Level renaming ( suc to succ ; zero to Zero )
 open import Data.Nat -- hiding ( erase )
 open import Data.List
 open import Data.Maybe hiding ( map )
-open import Data.Bool using ( Bool ; true ; false ) renaming ( not to negate )
+-- open import Data.Bool using ( Bool ; true ; false ) renaming ( not to negate )
 open import  Relation.Binary.PropositionalEquality hiding ( [_] )
 open import Relation.Nullary using (¬_; Dec; yes; no)
 open import Level renaming ( suc to succ ; zero to Zero )
 open import Data.Product hiding ( map )
+open import logic 
 
 
 data Write   (  Σ : Set  ) : Set  where
@@ -75,6 +76,33 @@ record Turing ( Q : Set ) ( Σ : Set  )
     taccept : List  Σ → ( Q × List  Σ × List  Σ )
     taccept L = move0 tend tnone tδ tstart L []
 
+open import automaton
+open Automaton
+
+{-# TERMINATING #-}
+move1 : {Q Σ : Set } ( tend : Q → Bool ) (tnone : Σ ) (δ : Q →  Σ → Q ) (tδ : Q → Σ →  Write  Σ  ×  Move)
+   (q : Q ) ( L : List  Σ ) ( R : List   Σ ) →  Q × List  Σ × List  Σ 
+move1 tend tnone δ tδ  q L R with tend q
+... | true = ( q , L , R )
+move1 tend tnone δ tδ  q L [] | false = move1 tend tnone δ tδ  q  L  ( tnone  ∷ [] ) 
+move1 tend tnone δ tδ  q [] R | false = move1 tend tnone δ tδ  q  ( tnone  ∷ [] )  R 
+move1 tend tnone δ tδ  q ( LH  ∷ LT ) ( RH ∷ RT ) | false with tδ (δ q LH) LH
+... |  write x , left  = move1 tend tnone δ tδ  (δ q LH) ( RH ∷ x  ∷ LT ) RT 
+... |  write x , right = move1 tend tnone δ tδ  (δ q LH) LT ( x  ∷ RH  ∷ RT ) 
+... |  write x , mnone = move1 tend tnone δ tδ  (δ q LH) ( x  ∷ LT ) (  RH ∷ RT ) 
+... |  wnone , left    = move1 tend tnone δ tδ  (δ q LH) ( RH  ∷ LH  ∷ LT ) RT  
+... |  wnone , right   = move1 tend tnone δ tδ  (δ q LH)  LT ( LH  ∷ RH  ∷ RT ) 
+... |  wnone , mnone   = move1 tend tnone δ tδ  (δ q LH) ( LH  ∷ LT ) (  RH ∷ RT )  
+
+record TM ( Q : Set ) ( Σ : Set  ) 
+       : Set  where
+    field
+        automaton : Automaton  Q Σ
+        tδ : Q → Σ → Write  Σ  ×  Move 
+        tnone :  Σ
+    taccept : Q → List  Σ → ( Q × List  Σ × List  Σ )
+    taccept q L = move1 (aend automaton) tnone (δ automaton) tδ q L []
+
 data CopyStates : Set where
    s1 : CopyStates
    s2 : CopyStates
@@ -103,6 +131,16 @@ copyMachine = record {
         tδ = Copyδ
      ;  tstart = s1
      ;  tend = tend
+     ;  tnone =  0
+  } where
+      tend : CopyStates →  Bool
+      tend H = true
+      tend _ = false
+
+copyTM : TM CopyStates ℕ
+copyTM = record {
+        automaton = record { δ = λ q i → proj₁ (Copyδ q i) ; aend = tend }
+     ;  tδ = λ q i → proj₂ (Copyδ q i )
      ;  tnone =  0
   } where
       tend : CopyStates →  Bool

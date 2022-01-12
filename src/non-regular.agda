@@ -115,7 +115,7 @@ record TA1 { Q : Set } { Σ : Set  } (fa : Automaton Q  Σ ) (finq : FiniteSet Q
        q=qd : QDSEQ finq qd z trace-yz
 
 --
--- using accept ≡ true may simplify the make-TA
+-- using accept ≡ true may simplify the pumping-lemma
 -- QDSEQ is too complex, should we generate (lengty y ≡ 0 → equal ) ∧  ...
 --
 -- like this ...
@@ -136,11 +136,11 @@ record TA { Q : Set } { Σ : Set  } (fa : Automaton Q  Σ )   ( q : Q ) (is : Li
        trace-xyyz : Trace fa (x ++ y ++ y ++ z) q
        non-nil-y : ¬ (y ≡ [])
 
-make-TA : { Q : Set } { Σ : Set  } (fa : Automaton Q  Σ ) (finq : FiniteSet Q) (q qd : Q) (is : List Σ) 
+pumping-lemma : { Q : Set } { Σ : Set  } (fa : Automaton Q  Σ ) (finq : FiniteSet Q) (q qd : Q) (is : List Σ) 
      → (tr : Trace fa is q )
      → dup-in-list finq qd (tr→qs fa is q tr) ≡ true
      → TA fa q is
-make-TA {Q} {Σ} fa finq q qd is tr dup = tra-phase1 q is tr dup where
+pumping-lemma {Q} {Σ} fa finq q qd is tr dup = tra-phase1 q is tr dup where
    open TA
    tra-phase2 : (q : Q)  → (is : List Σ)  → (tr : Trace fa is  q )
        → phase2 finq qd (tr→qs fa is q tr) ≡ true → TA1 fa finq q qd is
@@ -194,7 +194,8 @@ open import Data.Nat.Properties
 open import nat
 
 lemmaNN : (r : RegularLanguage In2 ) → ¬ ( (s : List In2)  → isRegular inputnn1  s r ) 
-lemmaNN r Rg = {!!} where
+lemmaNN r Rg = tann {TA.x TAnn} (TA.non-nil-y TAnn ) {!!} (tr-accept→ (automaton r) _  (astart r) (TA.trace-xyz TAnn) )
+       (tr-accept→ (automaton r) _  (astart r) (TA.trace-xyyz TAnn) ) where
     n : ℕ
     n = suc (finite (afin r))
     nn =  inputnn0 n i0 i1 []
@@ -237,7 +238,7 @@ lemmaNN r Rg = {!!} where
     nn06 : Dup-in-list ( afin r) (tr→qs (automaton r) nn (astart r) nn04)
     nn06 = dup-in-list>n (afin r) nntrace nn05
     TAnn : TA (automaton r) (astart r) nn
-    TAnn = make-TA (automaton r) (afin r) (astart r) (Dup-in-list.dup nn06) nn nn04 (Dup-in-list.is-dup nn06)
+    TAnn = pumping-lemma (automaton r) (afin r) (astart r) (Dup-in-list.dup nn06) nn nn04 (Dup-in-list.is-dup nn06)
     count : In2 → List In2 → ℕ
     count _ [] = 0
     count i0 (i0 ∷ s) = suc (count i0 s)
@@ -250,7 +251,10 @@ lemmaNN r Rg = {!!} where
     nn11 {i1} (i0 ∷ s) t = nn11 s t 
     nn11 {i1} (i1 ∷ s) t = cong suc ( nn11 s t )
     nn10 : (s : List In2) → accept (automaton r) (astart r) s ≡ true → count i0 s ≡ count i1 s
-    nn10 = {!!}
+    nn10 s p = nn101 s (subst (λ k → k ≡ true) (sym (Rg s)) p ) where
+        nn101 : (s : List In2) → inputnn1 s ≡ true →  count i0 s ≡ count i1 s
+        nn101 [] p = refl
+        nn101 (x ∷ s) p = {!!}
     i1-i0? : List In2 → Bool
     i1-i0? [] = false
     i1-i0? (i1 ∷ []) = false
@@ -279,8 +283,10 @@ lemmaNN r Rg = {!!} where
     not-mono = {!!}
     mono-count : { s : List In2 } → mono-color s ≡ true   → (length s ≡ count i0 s) ∨ ( length s ≡ count i1 s)
     mono-count = {!!}
-    tann : {x y z : List In2} → ¬ y ≡ []  → accept (automaton r) (astart r) (x ++ y ++ z) ≡ true → ¬ (accept (automaton r) (astart r) (x ++ y ++ y ++ z)  ≡ true )
-    tann {x} {y} {z} ny axyz axyyz with mono-color y
+    tann : {x y z : List In2} → ¬ y ≡ []
+       → x ++ y ++ z ≡ nn
+       → accept (automaton r) (astart r) (x ++ y ++ z) ≡ true → ¬ (accept (automaton r) (astart r) (x ++ y ++ y ++ z)  ≡ true )
+    tann {x} {y} {z} ny eq axyz axyyz with mono-color y
     ... | true = {!!}
     ... | false = {!!}
 

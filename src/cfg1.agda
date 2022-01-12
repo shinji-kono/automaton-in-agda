@@ -257,5 +257,48 @@ expr1P-test x = expr1P x record { orig-x = x ; pnc-q = c1 ; pnc-st = []
       ; pnc-p = λ q st → PushDownAutomaton.paccept pnc q x st ; success = λ _ p → p ; failure = λ _ p → p }
       (λ x p → {!!} ) (λ x p → {!!} )
 
+----
+--
+--  CFG to PDA
+--
 
+cfg→pda-state :  {Symbol  : Set} → CFGGrammer Symbol → Set 
+cfg→pda-state cfg = {!!}
+
+cfg→pda-start :  {Symbol  : Set} → (cfg : CFGGrammer Symbol) → cfg→pda-state cfg
+cfg→pda-start cfg = {!!}
+
+cfg→pda :  {Symbol  : Set} → (cfg : CFGGrammer Symbol) → PDA (cfg→pda-state cfg) Symbol (cfg→pda-state cfg)
+cfg→pda cfg = {!!}
+
+cfg->pda : {Symbol  : Set} → (input : List Symbol)
+    → (cfg : CFGGrammer Symbol)
+    → PDA.paccept (cfg→pda cfg ) (cfg→pda-start cfg) input [] ≡  cfg-language cfg input
+cfg->pda = {!!}
+
+----
+--
+--  PDA to CFG 
+--
+open import pushdown
+
+pda→cfg :  {Symbol  : Set} { Q : Set} → (pda : PDA Q Symbol Q) → CFGGrammer Symbol
+pda→cfg pda = record {
+      cfg = {!!}
+    ; top = {!!}
+    ; eq? = {!!}
+    ; typeof = {!!}
+   } 
+
+pda->cfg : {Symbol  : Set} { Q : Set} → (start : Q) →  (input : List Symbol)
+    → (pda : PDA  Q Symbol Q)
+    → PDA.paccept pda start input [] ≡  cfg-language (pda→cfg pda) input
+pda->cfg = {!!}
+
+record CDGGrammer  (Symbol  : Set) : Set where
+   field
+      cdg : Seq Symbol  → Body Symbol 
+      top : Symbol
+      eq? : Symbol → Symbol → Bool
+      typeof : Symbol →  Node Symbol
 
