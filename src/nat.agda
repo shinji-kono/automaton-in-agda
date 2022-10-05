@@ -155,6 +155,13 @@ x≤x+y {suc z} {y} = s≤s  (x≤x+y {z} {y})
 x≤y+x : {z y : ℕ } → z ≤ y + z
 x≤y+x {z} {y} = subst (λ k → z ≤ k ) (+-comm _ y ) x≤x+y
 
+x≤x+sy : {x y : ℕ} → x < x + suc y
+x≤x+sy {x} {y} = begin
+        suc x ≤⟨ x≤x+y ⟩
+        suc x + y ≡⟨ cong (λ k → k + y) (+-comm 1 x ) ⟩
+        (x + 1) + y ≡⟨ (+-assoc x 1 _) ⟩
+        x + suc y ∎  where open ≤-Reasoning
+
 <-plus : {x y z : ℕ } → x < y → x + z < y + z 
 <-plus {zero} {suc y} {z} (s≤s z≤n) = s≤s (subst (λ k → z ≤ k ) (+-comm z _ ) x≤x+y  )
 <-plus {suc x} {suc y} {z} (s≤s lt) = s≤s (<-plus {x} {y} {z} lt)
@@ -181,6 +188,9 @@ x+y<z→x<z {suc x} {y} {suc z} (s≤s lt1) = s≤s ( x+y<z→x<z {x} {y} {z} lt
 *< : {x y z : ℕ } → x < y → x * suc z < y * suc z 
 *< {zero} {suc y} lt = s≤s z≤n
 *< {suc x} {suc y} (s≤s lt) = <-plus-0 (*< lt)
+
+*-cancel-left : {x y z : ℕ } → x > 0 → x * y ≡ x * z → y ≡ z
+*-cancel-left {suc x} {y} {z} x>0 eq = *-cancelˡ-≡ x eq
 
 <to<s : {x y  : ℕ } → x < y → x < suc y
 <to<s {zero} {suc y} (s≤s lt) = s≤s z≤n
@@ -583,6 +593,17 @@ div<k {m} {k} k>1 m>0 m<k d = ⊥-elim ( nat-≤> (div<k1 (Dividable.factor d) (
           k + (f * k + 0) ≡⟨ sym (+-assoc k _ _) ⟩
           k + f * k + 0 ≡⟨ eq ⟩
           m ∎  where open ≤-Reasoning  
+
+0<factor : { m k : ℕ } → k > 0 → m > 0 →  (d :  Dividable k m ) → Dividable.factor d > 0
+0<factor {m} {k} k>0 m>0 d with Dividable.factor d | inspect Dividable.factor d 
+... | zero | record { eq = eq1 } = ⊥-elim ( nat-≡< ff1 m>0 ) where
+    ff1 : 0 ≡ m 
+    ff1 = begin
+          0 ≡⟨⟩
+          0 * k + 0 ≡⟨ cong  (λ j → j * k + 0) (sym eq1) ⟩
+          Dividable.factor d * k + 0 ≡⟨ Dividable.is-factor d  ⟩
+          m ∎  where open ≡-Reasoning  
+... | suc t | _ = s≤s z≤n 
 
 div→k≤m : { m k : ℕ } → k > 1 → m > 0 →  Dividable k m → m ≥ k
 div→k≤m {m} {k} k>1 m>0 d with <-cmp m k

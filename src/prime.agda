@@ -106,6 +106,7 @@ nonPrime {n} 1<n np = np1 n n np 1<n (findFactor n ≤-refl (λ j n≤j j<n → 
 factorial : (n : ℕ) → ℕ
 factorial zero = 1
 factorial (suc n) = (suc n) * (factorial n)
+
 factorial-mono : (n : ℕ) → factorial n ≤ factorial (suc n)
 factorial-mono n = begin
      factorial n  ≤⟨ x≤x+y ⟩

@@ -43,6 +43,10 @@ de-morgan : {n  : Level } {A B : Set n} →  A ∧ B  → ¬ ( (¬ A ) ∨ (¬ B
 de-morgan {n} {A} {B} and (case1 ¬A) = ⊥-elim ( ¬A ( _∧_.proj1 and ))
 de-morgan {n} {A} {B} and (case2 ¬B) = ⊥-elim ( ¬B ( _∧_.proj2 and ))
 
+de-morgan∨ : {n  : Level } {A B : Set n} →  A ∨ B  → ¬ ( (¬ A ) ∧ (¬ B ) )
+de-morgan∨ {n} {A} {B} (case1 a) and = ⊥-elim (  _∧_.proj1 and a )
+de-morgan∨ {n} {A} {B} (case2 b) and = ⊥-elim (  _∧_.proj2 and b )
+
 dont-or :　{n m : Level} {A  : Set n} { B : Set m } →  A ∨ B → ¬ A → B
 dont-or {A} {B} (case1 a) ¬A = ⊥-elim ( ¬A a )
 dont-or {A} {B} (case2 b) ¬A = b
@@ -73,6 +77,10 @@ false <=> false = true
 _ <=> _ = false
 
 open import Relation.Binary.PropositionalEquality
+
+not-not-bool : { b : Bool } → not (not b) ≡ b
+not-not-bool {true} = refl
+not-not-bool {false} = refl
 
 record Bijection {n m : Level} (R : Set n) (S : Set m) : Set (n Level.⊔ m)  where
    field

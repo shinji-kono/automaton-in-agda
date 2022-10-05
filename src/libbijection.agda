@@ -58,6 +58,15 @@ open import Function.Surjection
   }
 
 
+open import bijection 
+bij-Setoid :  {n : Level} → Setoid (Level.suc n) n
+bij-Setoid {n}  = record {
+      Carrier = Set n
+    ; _≈_ = Bijection
+    ; isEquivalence = bijIsEquivalence  -- record { sym = bi-sym _ _ ; refl = bid _ ; trans = bi-trans _ _ _ }
+  }
+
+
 libBijection :  {n m : Level} (R : Set n) (S : Set m) → Bijection R S  → Bijection1 (≡-Setoid R) (≡-Setoid S)
 libBijection R S b = record {
      to = record { _⟨$⟩_   = λ x → fun→ b x ; cong = λ i=j → cong (fun→ b) i=j }

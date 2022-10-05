@@ -696,3 +696,79 @@ gcdmul+1 (suc m) n = begin
 m*n=m→n : {m n : ℕ } → 0 < m → m * n ≡ m * 1 → n ≡ 1
 m*n=m→n {suc m} {n} (s≤s lt) eq = *-cancelˡ-≡ m eq 
 
+gcd-is-gratest :  { i j  k : ℕ } → i > 0 → j > 0 → k > 1 → Dividable k i → Dividable k j → k ≤ gcd i j 
+gcd-is-gratest {i} {j} {k} i>0 j>0 k>1 ki kj = div→k≤m k>1 (gcd>0 i j i>0 j>0 ) gcd001 where
+    gcd001 :  Dividable k ( gcd i  j ) 
+    gcd001 = gcd-div _ _ _ k>1 ki kj
+
+gcd-div-1 : {i j : ℕ } → i > 0 → j > 0  → gcd (Dividable.factor (proj1 (gcd-dividable i j))) (Dividable.factor (proj2 (gcd-dividable i j))) ≡ 1
+gcd-div-1 {suc i} {suc j} i>0 j>0 = cop where
+   d : ℕ
+   d = gcd (suc i) (suc j)
+   d>0 : gcd (suc i) (suc j) > 0
+   d>0 = gcd>0 (suc i) (suc j)  (s≤s z≤n ) (s≤s z≤n )
+   id  : Dividable d (suc i)
+   id  = proj1 (gcd-dividable (suc i) (suc j))
+   jd  : Dividable d (suc j)
+   jd  = proj2 (gcd-dividable (suc i) (suc j))
+   cop : gcd (Dividable.factor id) (Dividable.factor jd) ≡ 1
+   cop with (gcd (Dividable.factor id) (Dividable.factor jd)) | inspect (gcd (Dividable.factor id)) (Dividable.factor jd)
+   ... | zero | record { eq  = eq1 } = ⊥-elim ( nat-≡< (sym eq1) (gcd>0 (Dividable.factor id) (Dividable.factor jd)
+       (0<factor d>0 (s≤s z≤n) id) (0<factor d>0 (s≤s z≤n) jd) ))
+   ... | suc zero | record { eq  = eq1 } = refl
+   ... | suc (suc t) | record { eq  = eq1 } = ⊥-elim ( nat-≤> (gcd-is-gratest {suc i} {(suc j)} (s≤s z≤n) (s≤s z≤n) co1 d1id d1jd ) gcd<d1 ) where
+        -- gcd-is-gratest :  { i j  k : ℕ } → i > 0 → j > 0 → k > 1 → Dividable k i → Dividable k j → k ≤ gcd i j
+        d1 : ℕ
+        d1 = gcd (Dividable.factor id) (Dividable.factor jd)
+        d1>1 : gcd (Dividable.factor id) (Dividable.factor jd) > 1
+        d1>1 = subst (λ k → 1 < k ) (sym eq1) (s≤s (s≤s z≤n))
+        mul1 :  {x : ℕ} → 1 * x ≡ x
+        mul1 {zero} = refl
+        mul1 {suc x} = begin
+              1 * suc x  ≡⟨ cong suc (+-comm x _ ) ⟩
+              suc x ∎   where open ≡-Reasoning
+        co1  : gcd (suc i) (suc j) * d1 > 1
+        co1  = begin
+              2 ≤⟨ d1>1 ⟩
+              d1  ≡⟨ sym mul1 ⟩
+              1 * d1  ≤⟨ *≤ {1} {gcd (suc i) (suc j) } {d1} d>0 ⟩
+              gcd (suc i) (suc j) * d1 ∎   where open ≤-Reasoning
+        gcdd1 = gcd-dividable (Dividable.factor id) (Dividable.factor jd)
+        gcdf1 = Dividable.factor (proj1 gcdd1)
+        gcdf2 = Dividable.factor (proj2 gcdd1)
+        d1id :  Dividable (gcd (suc i) (suc j) * d1) (suc i)
+        d1id = record { factor = gcdf1 ; is-factor = begin
+              gcdf1 * (d * d1) + 0 ≡⟨ +-comm _ 0 ⟩
+              gcdf1 * (d * d1) ≡⟨ cong (λ k1 → gcdf1 * k1) (*-comm d d1) ⟩
+              gcdf1 * (d1 * d) ≡⟨ sym (*-assoc gcdf1 d1 d) ⟩
+              gcdf1 * d1 * d ≡⟨ sym ( +-comm _ 0) ⟩
+              (gcdf1 * d1) * d + 0 ≡⟨ cong (λ k1 → k1 * d + 0 ) (sym (+-comm (gcdf1 * d1) 0)) ⟩
+              (gcdf1 * d1 + 0  ) * d + 0 ≡⟨ cong (λ k1 → k1 * d + 0 ) ( Dividable.is-factor (proj1 gcdd1) ) ⟩
+              Dividable.factor id * d + 0 ≡⟨ Dividable.is-factor id ⟩
+              suc i ∎ }  where open ≡-Reasoning
+        d1jd :  Dividable (gcd (suc i) (suc j) * d1) (suc j)
+        d1jd = record { factor = gcdf2 ; is-factor = begin
+              gcdf2 * (d * d1) + 0 ≡⟨ +-comm _ 0 ⟩
+              gcdf2 * (d * d1) ≡⟨ cong (λ k1 → gcdf2 * k1) (*-comm d d1) ⟩
+              gcdf2 * (d1 * d) ≡⟨ sym (*-assoc gcdf2 d1 d) ⟩
+              gcdf2 * d1 * d ≡⟨ sym ( +-comm _ 0) ⟩
+              (gcdf2 * d1) * d + 0 ≡⟨ cong (λ k1 → k1 * d + 0 ) (sym (+-comm (gcdf2 * d1) 0)) ⟩
+              (gcdf2 * d1 + 0  ) * d + 0 ≡⟨ cong (λ k1 → k1 * d + 0 ) ( Dividable.is-factor (proj2 gcdd1) ) ⟩
+              Dividable.factor jd * d + 0 ≡⟨ Dividable.is-factor jd ⟩
+              (suc j) ∎ }  where open ≡-Reasoning
+        mul2 : {g d1 : ℕ } → g > 0 → d1 > 1 → g < g * d1
+        mul2 {suc g} {suc zero} g>0 (s≤s ())
+        mul2 {suc g} {suc (suc d2)} g>0 d1>1 = begin
+              suc (suc g) ≡⟨ cong suc (+-comm 0 _ ) ⟩
+              suc (suc g + 0) ≤⟨ s≤s (≤-plus-0  z≤n) ⟩
+              suc (suc g + (g + d2 * suc g)) ≡⟨ cong suc (sym (+-assoc  1 g _) ) ⟩
+              suc ((1 + g) + (g + d2 * suc g)) ≡⟨  cong (λ k → suc (k + (g + d2 * suc g) )) (+-comm 1 g) ⟩
+              suc ((g + 1) + (g + d2 * suc g)) ≡⟨ cong suc (+-assoc g 1 _ )  ⟩
+              suc (g + (1 + (g + d2 * suc g))) ≡⟨⟩
+              suc (g + suc (g + d2 * suc g)) ≡⟨⟩
+              suc (suc d2) * suc g  ≡⟨ *-comm (suc (suc d2)) _ ⟩
+              suc g * suc (suc d2) ∎   where open ≤-Reasoning
+        gcd<d1 : gcd (suc i) (suc j) < gcd (suc i ) (suc j) * d1
+        gcd<d1 = mul2 (gcd>0 (suc i) (suc j) (s≤s z≤n) (s≤s z≤n) ) d1>1
+
+

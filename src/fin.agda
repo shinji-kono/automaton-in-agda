@@ -132,6 +132,14 @@ f≡→≡ refl = refl
 open import Data.List
 open import Relation.Binary.Definitions
 
+
+-----
+--
+-- find duplicate element in a List (Fin n)
+--
+--    if the length is longer than n, we can find duplicate element as FDup-in-list 
+--
+
 -- fin-count : { n : ℕ }  (q : Fin n) (qs : List (Fin n) ) → ℕ
 -- fin-count q p[ = 0
 -- fin-count q (q0 ∷ qs ) with <-fcmp q q0 
@@ -145,13 +153,13 @@ open import Relation.Binary.Definitions
 -- fin-not-dup-in-list→len<n : { n : ℕ}  (qs : List (Fin n) ) → ( (q : Fin n) → fin-not-dup-in-list qs q) → length qs ≤ n
 -- fin-not-dup-in-list→len<n = ?
 
-fin-phase2 : { n : ℕ }  (q : Fin n) (qs : List (Fin n) ) → Bool
+fin-phase2 : { n : ℕ }  (q : Fin n) (qs : List (Fin n) ) → Bool  -- find the dup
 fin-phase2 q [] = false
 fin-phase2 q (x ∷ qs) with <-fcmp q x
 ... | tri< a ¬b ¬c = fin-phase2 q qs
 ... | tri≈ ¬a b ¬c = true
 ... | tri> ¬a ¬b c = fin-phase2 q qs
-fin-phase1 : { n : ℕ }  (q : Fin n) (qs : List (Fin n) ) → Bool
+fin-phase1 : { n : ℕ }  (q : Fin n) (qs : List (Fin n) ) → Bool  -- find the first element
 fin-phase1 q [] = false
 fin-phase1 q (x ∷ qs) with <-fcmp q x
 ... | tri< a ¬b ¬c = fin-phase1 q qs

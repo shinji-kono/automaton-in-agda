@@ -46,6 +46,16 @@ t4 = refl
 t5 : ( n : ℕ ) → Set
 t5 n = inputnn1 ( inputnn0 n i0 i1 [] ) ≡ true
 
+nn01  : (i : ℕ) → inputnn1 ( inputnn0 i i0 i1 [] ) ≡ true
+nn01 zero = refl
+nn01 (suc i) = {!!} where 
+      nn02 : (i : ℕ) → ( x : List In2) → inputnn ( inputnn0 i i0 i1 x ) ≡ inputnn x
+      nn02 zero _ = refl
+      nn02 (suc i) x with inputnn (inputnn0 (suc i) i0 i1 x)
+      ... | nothing = {!!}
+      ... | just []  = {!!}
+      ... | just (i0 ∷ t1)   = {!!}
+      ... | just (i1 ∷ t1)   = {!!}
 --
 --  if there is an automaton with n states , which accespt inputnn1, it has a trasition function.
 --  The function is determinted by inputs,
@@ -199,16 +209,6 @@ lemmaNN r Rg = tann {TA.x TAnn} (TA.non-nil-y TAnn ) {!!} (tr-accept→ (automat
     n : ℕ
     n = suc (finite (afin r))
     nn =  inputnn0 n i0 i1 []
-    nn01  : (i : ℕ) → inputnn1 ( inputnn0 i i0 i1 [] ) ≡ true
-    nn01 zero = refl
-    nn01 (suc i) = {!!} where 
-      nn02 : (i : ℕ) → ( x : List In2) → inputnn ( inputnn0 i i0 i1 x ) ≡ inputnn x
-      nn02 zero _ = refl
-      nn02 (suc i) x with inputnn (inputnn0 (suc i) i0 i1 x)
-      ... | nothing = {!!}
-      ... | just []  = {!!}
-      ... | just (i0 ∷ t1)   = {!!}
-      ... | just (i1 ∷ t1)   = {!!}
     nn03 : accept (automaton r) (astart r) nn ≡ true
     nn03 = subst (λ k → k ≡ true ) (Rg nn ) (nn01 n)
     nn09 : (n m : ℕ) → n ≤ n + m

@@ -14,9 +14,9 @@ open import automaton
 
 open Automaton 
 
-ω-run : { Q  Σ : Set } → (Ω : Automaton Q Σ ) → (astart : Q ) →  ℕ → ( ℕ → Σ )  → Q
-ω-run Ω x zero s = x
-ω-run Ω x (suc n) s = δ Ω (ω-run Ω x n s) ( s n )
+ω-run : { Q  Σ : Set } → (Ω : Automaton Q Σ ) → Q →  ( ℕ → Σ )  → ( ℕ → Q )
+ω-run Ω x s zero = x
+ω-run Ω x s (suc n) = δ Ω (ω-run Ω x s n) ( s n )
 
 --
 -- accept as Buchi automaton
@@ -24,7 +24,7 @@ open Automaton
 record Buchi { Q  Σ : Set } (Ω : Automaton Q Σ ) ( S : ℕ → Σ ) : Set where
     field
         from : ℕ
-        stay : (x : Q) → (n : ℕ ) → n > from → aend Ω ( ω-run Ω x n S ) ≡ true
+        stay : (x : Q) → (n : ℕ ) → n > from → aend Ω ( ω-run Ω x S n ) ≡ true
 
 open Buchi
 
@@ -36,15 +36,15 @@ open Buchi
 --                   <-----------
 --                       p
 
-    
 --
 -- accept as Muller automaton
 --
 record Muller { Q  Σ : Set } (Ω : Automaton Q Σ ) ( S : ℕ → Σ ) : Set where
     field
         next     : (n : ℕ ) → ℕ 
-        infinite : (x : Q) → (n : ℕ ) →  aend Ω ( ω-run Ω x (n + (next n)) S ) ≡ true 
+        infinite : (x : Q) → (n : ℕ ) →  aend Ω ( ω-run Ω x  S (n + (suc (next n)))) ≡ true 
 
+open  Muller 
 --  always sometimes p
 --
 --                       not p
@@ -52,6 +52,72 @@ record Muller { Q  Σ : Set } (Ω : Automaton Q Σ ) ( S : ℕ → Σ ) : Set wh
 --        [] <> p *                 [] <> p 
 --                   <-----------
 --                       p
+
+open import nat
+open import Data.Nat.Properties
+
+-- LEMB : { Q  Σ : Set } (Ω : Automaton Q Σ ) ( S : ℕ → Σ ) → Q → Buchi Ω S ∨ (¬ ( Buchi Ω S ))
+-- LEMB Ω S Q = {!!}  -- S need not to be constructive, so we have no constructive LEM
+
+-- LEMM : { Q  Σ : Set } (Ω : Automaton Q Σ ) ( S : ℕ → Σ ) → Q → Muller Ω S ∨ (¬ ( Muller Ω S ))
+-- LEMM = {!!}
+
+ω-run-eq : { Q  Σ : Set } → (Ω Ω' : Automaton Q Σ ) → (q : Q) →  ( S : ℕ → Σ )  → (x : ℕ)
+    → δ Ω ≡ δ Ω'
+    → ω-run Ω q S x ≡ ω-run Ω' q S x
+ω-run-eq Ω  Ω' q s zero refl =  refl
+ω-run-eq Ω  Ω' q s (suc n) eq = begin
+     ω-run Ω q s (suc n) ≡⟨⟩
+     δ Ω (ω-run Ω q s n) (s n) ≡⟨ cong₂ (λ j k → j k (s n) ) eq (ω-run-eq Ω  Ω' q s n eq) ⟩
+     δ Ω' (ω-run Ω' q s n) (s n) ≡⟨⟩
+     ω-run Ω' q s (suc n) ∎  where open ≡-Reasoning
+
+--
+-- <> [] p → ¬ [] <> ¬ p
+--
+
+
+B→M : { Q  Σ : Set } (Ω : Automaton Q Σ ) ( S : ℕ → Σ ) → Q → Buchi Ω S → ¬ ( Muller record { δ = δ Ω ; aend = λ q → not (aend Ω q)} S )
+B→M {Q} {Σ} Ω S q b m = ¬-bool bm04 bm02 where
+   q1 : Q
+   q1 = ω-run Ω q S (from b + suc (next m (from b)))
+   bm02 : aend Ω q1 ≡ true
+   bm02 = stay b q (from b + suc (next m (from b) )) x≤x+sy 
+   Ω' : Automaton  Q Σ
+   Ω' = record {  δ = δ Ω ; aend = λ q → not (aend Ω q) }
+   bm03 : aend Ω' (ω-run Ω' q S (from b + (suc (next m (from b))))) ≡ true
+   bm03 = infinite m q (from b)
+   bm04 : aend Ω q1 ≡ false
+   bm04 = begin
+     aend Ω (ω-run Ω q S (from b + suc (next m (from b)))) ≡⟨ sym not-not-bool ⟩
+     not (not (aend Ω (ω-run Ω q S (from b + suc (next m (from b)))))) ≡⟨ cong (λ k → not (not (aend  Ω k))) (ω-run-eq Ω Ω' q S (from b + suc (next m (from b))) refl) ⟩
+     not (not (aend Ω (ω-run Ω' q S (from b + suc (next m (from b)))))) ≡⟨⟩
+     not (aend Ω' (ω-run Ω' q S (from b + (suc (next m (from b)))))) ≡⟨ cong (λ k → not k ) bm03  ⟩
+     false ∎  where open ≡-Reasoning
+
+--
+-- [] <> p → ¬ <> [] ¬ p
+--
+
+M→B : { Q  Σ : Set } (Ω : Automaton Q Σ ) ( S : ℕ → Σ ) → Q → Muller Ω S → ¬ ( Buchi record { δ = δ Ω ; aend = λ q → not (aend Ω q)} S )
+M→B {Q} {Σ} Ω S q m b = ¬-bool bm04 bm02 where
+   q1 : Q
+   q1 = ω-run Ω q S (from b + suc (next m (from b)))
+   bm02 : aend Ω q1 ≡ true
+   bm02 = infinite m q (from b)
+   Ω' : Automaton  Q Σ
+   Ω' = record {  δ = δ Ω ; aend = λ q → not (aend Ω q) }
+   bm03 : aend Ω' (ω-run Ω' q S (from b + (suc (next m (from b))))) ≡ true
+   bm03 = stay b q (from b + suc (next m (from b) )) x≤x+sy 
+   bm04 : aend Ω q1 ≡ false
+   bm04 = begin
+     aend Ω (ω-run Ω q S (from b + suc (next m (from b)))) ≡⟨ sym not-not-bool ⟩
+     not (not (aend Ω (ω-run Ω q S (from b + suc (next m (from b)))))) ≡⟨ cong (λ k → not (not (aend  Ω k))) (ω-run-eq Ω Ω' q S (from b + suc (next m (from b))) refl) ⟩
+     not (not (aend Ω (ω-run Ω' q S (from b + suc (next m (from b)))))) ≡⟨⟩
+     not (aend Ω' (ω-run Ω' q S (from b + (suc (next m (from b)))))) ≡⟨ cong (λ k → not k ) bm03 ⟩
+     false ∎  where open ≡-Reasoning
+
+
 
 data  States3   : Set  where
    ts* : States3
@@ -83,25 +149,21 @@ flip-seq :  ℕ → Bool
 flip-seq zero = false
 flip-seq (suc n) = not ( flip-seq n )
 
-lemma0 : Muller ωa1 flip-seq 
-lemma0 = record {
-        next = λ n → suc (suc n)
-      ; infinite = lemma01
-   } where
-        lemma01 :  (x : States3) (n : ℕ) →
-           aend ωa1 (ω-run ωa1 x (n + suc (suc n)) flip-seq) ≡ true
-        lemma01 = {!!}
+-- flip-seq is acceepted by Muller automaton ωa1 
 
 lemma1 : Buchi ωa1 true-seq 
 lemma1 = record {
         from = zero
       ; stay = {!!}
    } where
-      lem1 : ( n :  ℕ ) → n > zero → aend ωa1 (ω-run ωa1 {!!} n true-seq ) ≡ true
+      lem1 : ( n :  ℕ ) → n > zero → aend ωa1 (ω-run ωa1 {!!} true-seq n ) ≡ true
       lem1 zero ()
-      lem1 (suc n) (s≤s z≤n) with ω-run ωa1 {!!} n true-seq 
+      lem1 (suc n) (s≤s z≤n) with ω-run ωa1 {!!} true-seq n
       lem1 (suc n) (s≤s z≤n) | ts* = {!!}
       lem1 (suc n) (s≤s z≤n) | ts = {!!}
+
+lemma0 : Muller ωa1 flip-seq 
+lemma0 = {!!}
 
 ωa2 : Automaton States3 Bool
 ωa2 = record {
@@ -131,25 +193,20 @@ record flipProperty : Set where
 
 lemma2 : Muller ωa2 flip-seq 
 lemma2 = record {
-          next = next
+          next = next1
        ;  infinite = {!!}
    }  where
-     next : ℕ → ℕ
-     next = {!!}
+     next1 : ℕ → ℕ
+     next1 = {!!}
      infinite' : (n m : ℕ) → n ≥″ m → aend ωa2 {!!} ≡ true → aend ωa2 {!!} ≡ true
      infinite' = {!!}
-     infinite : (n : ℕ) → aend ωa2 {!!} ≡ true
-     infinite = {!!}
+     infinite2 : (n : ℕ) → aend ωa2 {!!} ≡ true
+     infinite2 = {!!}
 
 lemma3 : Buchi ωa1 false-seq  →  ⊥
 lemma3 = {!!}
 
 lemma4 : Muller ωa1 flip-seq  →  ⊥
 lemma4 = {!!}
-
-
-
-
-
 
 

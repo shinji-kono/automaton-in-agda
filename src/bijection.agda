@@ -152,7 +152,7 @@ nxn = record {
           suc j + suc (suc k) ∎ where open ≡-Reasoning
      nid5 {suc i} {j} {k} = cong suc (nid5 {i} {j} {k} )
 
-     -- increment in ths same stage
+     -- increment in the same stage
      nid2 : (i j : ℕ) → suc (nxn→n i (suc j)) ≡ nxn→n (suc i) j 
      nid2 zero zero = refl
      nid2 zero (suc j) = refl
@@ -177,7 +177,7 @@ nxn = record {
           nxn→n (suc (suc i)) (suc j) ∎ where
              open ≡-Reasoning
 
-     -- increment ths stage
+     -- increment the stage
      nid00 : (i : ℕ) → suc (nxn→n i 0) ≡ nxn→n 0 (suc i) 
      nid00 zero = refl
      nid00 (suc i) = begin
@@ -400,7 +400,7 @@ LBℕ = record {
             lton1 x + lton1 x ∎  )) where open ≤-Reasoning
 
      ---
-     --- lton uniqueness
+     --- lton injection
      ---
      lb=b : (x y : List Bool) → lton x ≡ lton y → x ≡ y
      lb=b [] [] eq = refl

@@ -1,4 +1,4 @@
-{-# OPTIONS --guardedness #-}
+{-# OPTIONS --guardedness --sized-types #-}
 module induction-ex where
 
 open import Relation.Binary.PropositionalEquality
@@ -80,10 +80,11 @@ open Lang
 ν ∅   = false
 δ ∅ _ = ∅
 
-∅' :  {i : Size } { A : Set }  → Lang i A
-∅' {i} {A}  = record { ν = false ; δ = lemma3 } where
-    lemma3 : {j : Size< i} → A → Lang j A
-    lemma3 {j} _ = {!!}
+-- record syntax does not recognize sized data
+-- ∅' :  {i : Size } { A : Set }  → Lang i A
+-- ∅' {i} {A}  = record { ν = false ; δ = lemma3 } where
+--     lemma3 : {j : Size< i} → A → Lang j A
+--     lemma3 {j} _ = ∅'
 
 ∅l : {A : Set } → language {A}
 ∅l _ = false
