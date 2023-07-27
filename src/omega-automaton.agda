@@ -47,7 +47,7 @@ record Muller { Q  Σ : Set } (Ω : Automaton Q Σ ) ( S : ℕ → Σ ) : Set wh
 open  Muller 
 --  always sometimes p
 --
---                       not p
+--                       not p 
 --                   ------------>
 --        [] <> p *                 [] <> p 
 --                   <-----------
@@ -183,7 +183,7 @@ flip-dec1 n = let open ≡-Reasoning in
           ( not ( flip-seq n ) )
        ∎
 
-flip-dec2 : (n : ℕ ) → not flip-seq (suc n)  ≡  flip-seq n 
+flip-dec2 : (n : ℕ ) → ? -- not flip-seq (suc n)  ≡  flip-seq n 
 flip-dec2 n = {!!}
 
 

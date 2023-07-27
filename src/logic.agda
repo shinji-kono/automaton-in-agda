@@ -10,6 +10,10 @@ data Bool : Set where
     true : Bool
     false : Bool
 
+data Two : Set where
+   i0 : Two
+   i1 : Two
+
 record  _∧_  {n m : Level} (A  : Set n) ( B : Set m ) : Set (n ⊔ m) where
    constructor ⟪_,_⟫
    field
@@ -67,7 +71,7 @@ _\/_ : Bool → Bool → Bool
 false \/ false = false
 _ \/ _ = true
 
-not_ : Bool → Bool 
+not : Bool → Bool 
 not true = false
 not false = true 
 
@@ -198,3 +202,17 @@ x ≤b y  = y ≥b x
 
 _<b_ : ( x y : ℕ) → Bool
 x <b y  = y >b x
+
+open import Relation.Binary.PropositionalEquality
+
+¬i0≡i1 : ¬ ( i0 ≡ i1 )
+¬i0≡i1 ()
+
+¬i0→i1 : {x : Two} → ¬ (x ≡ i0 ) → x ≡ i1 
+¬i0→i1 {i0} ne = ⊥-elim ( ne refl )
+¬i0→i1 {i1} ne = refl
+
+¬i1→i0 : {x : Two} → ¬ (x ≡ i1 ) → x ≡ i0 
+¬i1→i0 {i0} ne = refl
+¬i1→i0 {i1} ne = ⊥-elim ( ne refl )
+

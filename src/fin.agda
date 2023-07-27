@@ -3,7 +3,7 @@
 module fin where
 
 open import Data.Fin hiding (_<_ ; _≤_ ; _>_ ; _+_ )
-open import Data.Fin.Properties hiding (≤-trans ;  <-trans ;  ≤-refl  ) renaming ( <-cmp to <-fcmp )
+open import Data.Fin.Properties as DFP hiding (≤-trans ;  <-trans ;  ≤-refl  ) renaming ( <-cmp to <-fcmp )
 open import Data.Nat
 open import Data.Nat.Properties
 open import logic
@@ -12,9 +12,9 @@ open import Relation.Binary.PropositionalEquality
 
 
 -- toℕ<n
-fin<n : {n : ℕ} {f : Fin n} → toℕ f < n
-fin<n {_} {zero} = s≤s z≤n
-fin<n {suc n} {suc f} = s≤s (fin<n {n} {f})
+fin<n : {n : ℕ} (f : Fin n) → toℕ f < n
+fin<n {_} zero = s≤s z≤n
+fin<n {suc n} (suc f) = s≤s (fin<n {n} f)
 
 -- toℕ≤n
 fin≤n : {n : ℕ} (f : Fin (suc n)) → toℕ f ≤ n
@@ -23,7 +23,7 @@ fin≤n {suc n} (suc f) = s≤s (fin≤n {n} f)
 
 pred<n : {n : ℕ} {f : Fin (suc n)} → n > 0  → Data.Nat.pred (toℕ f) < n
 pred<n {suc n} {zero} (s≤s z≤n) = s≤s z≤n
-pred<n {suc n} {suc f} (s≤s z≤n) = fin<n
+pred<n {suc n} {suc f} (s≤s z≤n) = fin<n f
 
 fin<asa : {n : ℕ} → toℕ (fromℕ< {n} a<sa) ≡ n
 fin<asa = toℕ-fromℕ< nat.a<sa
@@ -50,6 +50,9 @@ fin+1  zero = zero
 fin+1  (suc x) = suc (fin+1 x)
 
 open import Data.Nat.Properties as NatP  hiding ( _≟_ )
+
+fin1≡0 : (f : Fin 1) → # 0 ≡ f
+fin1≡0 zero = refl
 
 fin+1≤ : { i n : ℕ } → (a : i < n)  → fin+1 (fromℕ< a) ≡ fromℕ< (<-trans a a<sa)
 fin+1≤ {0} {suc i} (s≤s z≤n) = refl
@@ -132,26 +135,17 @@ f≡→≡ refl = refl
 open import Data.List
 open import Relation.Binary.Definitions
 
-
 -----
 --
 -- find duplicate element in a List (Fin n)
 --
 --    if the length is longer than n, we can find duplicate element as FDup-in-list 
---
 
--- fin-count : { n : ℕ }  (q : Fin n) (qs : List (Fin n) ) → ℕ
--- fin-count q p[ = 0
--- fin-count q (q0 ∷ qs ) with <-fcmp q q0 
--- ... | tri-e = suc (fin-count q qs)
--- ... | false = fin-count q qs
-
--- fin-not-dup-in-list : { n : ℕ}  (qs : List (Fin n) ) → Set
--- fin-not-dup-in-list {n} qs = (q : Fin n) → fin-count q ≤ 1
-
--- this is far easier
--- fin-not-dup-in-list→len<n : { n : ℕ}  (qs : List (Fin n) ) → ( (q : Fin n) → fin-not-dup-in-list qs q) → length qs ≤ n
--- fin-not-dup-in-list→len<n = ?
+list2func : (n : ℕ) → (x : List (Fin n)) → n < length x → Fin (length x) → Fin n
+list2func n x n<l y = lf00 (toℕ y) x (fin<n y)  where
+     lf00 : (i : ℕ) → (x : List (Fin n)) → i < length x → Fin n
+     lf00 zero (x ∷ t) lt = x
+     lf00 (suc i) (x ∷ t) (s≤s lt) = lf00 i t lt
 
 fin-phase2 : { n : ℕ }  (q : Fin n) (qs : List (Fin n) ) → Bool  -- find the dup
 fin-phase2 q [] = false
@@ -180,11 +174,6 @@ list-less {n} (i ∷ ls) with <-fcmp (fromℕ< a<sa) i
 ... | tri< a ¬b ¬c = ⊥-elim ( nat-≤> a (subst (λ k → toℕ i < suc k ) (sym fin<asa) (fin≤n _ )))
 ... | tri≈ ¬a b ¬c = list-less ls
 ... | tri> ¬a ¬b c = x<y→fin-1 c ∷ list-less ls
-
-fin010 : {n m : ℕ } {x : Fin n} (c : suc (toℕ x) ≤ toℕ (fromℕ< {m} a<sa) ) → toℕ (fromℕ< (≤-trans c (fin≤n (fromℕ< a<sa)))) ≡ toℕ x
-fin010 {_} {_} {x} c = begin 
-           toℕ (fromℕ< (≤-trans c (fin≤n (fromℕ< a<sa))))  ≡⟨ toℕ-fromℕ< _ ⟩
-           toℕ x  ∎   where open ≡-Reasoning
 
 ---
 ---  if List (Fin n) is longer than n, there is at most one duplication
@@ -244,7 +233,7 @@ fin-dup-in-list>n {suc n} qs lt = fdup-phase0 where
           ... | tri< a ¬b ¬c₁ = f1-phase1 qs p (case2 q1)
           ... | tri≈ ¬a₁ b₁ ¬c₁ = ⊥-elim (fdup-10 b b₁) where
                fdup-10 : fromℕ< a<sa ≡ x → fin+1 i ≡ x → ⊥
-               fdup-10 eq eq1 = nat-≡< (cong toℕ (trans eq1 (sym eq))) (subst₂ (λ j k → j < k ) (sym fin+1-toℕ) (sym fin<asa) fin<n ) 
+               fdup-10 eq eq1 = nat-≡< (cong toℕ (trans eq1 (sym eq))) (subst₂ (λ j k → j < k ) (sym fin+1-toℕ) (sym fin<asa) (fin<n _)) 
           ... | tri> ¬a₁ ¬b c = f1-phase1 qs p (case2 q1)
           f1-phase1 (x ∷ qs) p (case1 q1) | tri> ¬a ¬b c with <-fcmp i (fromℕ< (≤-trans c (fin≤n (fromℕ< a<sa)))) | <-fcmp (fin+1 i) x
           ... | tri< a ¬b₁ ¬c | tri< a₁ ¬b₂ ¬c₁ = f1-phase1 qs p (case1 q1)
@@ -295,3 +284,5 @@ fin-dup-in-list>n {suc n} qs lt = fdup-phase0 where
            -- if the list without the max element is only one length shorter, we can recurse
            fdup : FDup-in-list n (list-less qs)
            fdup = fin-dup-in-list>n (list-less qs) (fless qs lt ne)
+
+--

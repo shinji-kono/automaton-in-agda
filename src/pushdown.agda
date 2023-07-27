@@ -47,6 +47,11 @@ record PushDownAutomaton ( Q : Set ) ( Σ : Set  ) ( Γ : Set  )
     ... | ⟪ nq , none ⟫    = paccept nq T (SH ∷ ST)
     ... | ⟪ nq , push ns ⟫ = paccept nq T ( ns  ∷  SH ∷ ST )
 
+--
+--        Automaton Q Σ
+--             Automaton (Q → Bool  ) Σ
+--             Automaton (Q ∧ List Q) Σ
+
 record PDA ( Q : Set ) ( Σ : Set  ) ( Γ : Set  )
        : Set  where
     field
@@ -108,6 +113,7 @@ pnnp = record {
 data  States1   : Set  where
    ss : States1
    st : States1
+
 pn1 : PushDownAutomaton States1 In2 States1
 pn1 = record {
          pδ  = pδ

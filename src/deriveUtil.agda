@@ -58,12 +58,21 @@ fin-a  = record {
 open import derive alpha2 fin-a a-eq?
 test11 = regex→automaton ( < a > & < b > )
 
-test12 = accept test11 record { state =  < a > & < b > ; is-derived = unit } ( a ∷ b ∷ [] )
-test13 = accept test11 record { state =  < a > & < b > ; is-derived = unit } ( a ∷ a ∷ [] )
+test12 = accept test11 record { state =  < a > & < b > ; is-derived = unit refl } ( a ∷ b ∷ [] )
+test13 = accept test11 record { state =  < a > & < b > ; is-derived = unit refl } ( a ∷ a ∷ [] )
 
 test14 = regex-match ( (  < a > & < b > ) * ) ( a ∷ b ∷ a ∷ a ∷ [] )
 
-test15 = regex-derive ( (  < a > & < b > ) * ∷ [] )
-test16 = regex-derive test15
-test17 : regex-derive test16 ≡ test16
-test17 = refl
+test15 = derive-step ( ( < a > & < b > ) * ) record { state = ( < a > & < b > ) *  ; is-derived = unit refl } a
+-- test16 = derive-step ? -- test15
+-- test17 : derive-step ? -- test16 ≡ test16
+-- test17 = refl
+
+stest11 = regex→automaton1 ( < a > & < b > )
+stest12 = accept stest11 (toSB ( < a > & < b > )) ( a ∷ b ∷ [] )
+stest13 = accept stest11 (toSB ( < a > & < b > )) ( a ∷ a ∷ [] )
+
+
+
+
+

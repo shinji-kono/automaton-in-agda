@@ -30,8 +30,9 @@ transitionQ q3 i0 = q2
 transitionQ q3 i1 = q2
 
 aendQ : StatesQ → Bool
+aendQ q1 = false
 aendQ q2 = true
-aendQ _ = false
+aendQ q3 = false
 
 a1 : Automaton StatesQ In2
 a1 = record {

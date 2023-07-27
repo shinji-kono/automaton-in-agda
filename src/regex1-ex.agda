@@ -1,8 +1,8 @@
 {-# OPTIONS --allow-unsolved-metas #-}
-module regex1 where
+module regex1-ex where
 
 open import Level renaming ( suc to succ ; zero to Zero )
-open import Data.Fin
+open import Data.Fin hiding ( pred )
 open import Data.Nat hiding ( _≟_ )
 open import Data.List hiding ( any ;  [_] )
 -- import Data.Bool using ( Bool ; true ; false ; _∧_ )
@@ -11,6 +11,7 @@ open import  Relation.Binary.PropositionalEquality as RBF hiding ( [_] )
 open import Relation.Nullary using (¬_; Dec; yes; no)
 open import regex
 open import logic
+open import regular-language
 
 -- postulate a b c d : Set
 
@@ -34,34 +35,19 @@ r5 =    ( any * ) & ( < a > & < b > & < c > || < b > & < c > & < d > )
 
 open import nfa
 
---    former ++ later  ≡ x
-split : {Σ : Set} → ((former : List Σ) → Bool) → ((later :  List Σ) → Bool) → (x : List Σ ) → Bool
-split x y  [] = x [] /\ y []
-split x y (h  ∷ t) = (x [] /\ y (h  ∷ t)) \/
-  split (λ t1 → x (  h ∷ t1 ))  (λ t2 → y t2 ) t
+tt1 : {Σ : Set} → ( P Q :  List In → Bool ) → split P Q ( a ∷ b ∷ c ∷ [] ) ≡ ?
+tt1 P Q = ?
 
--- tt1 : {Σ : Set} → ( P Q :  List In → Bool ) → split P Q ( a ∷ b ∷ c ∷ [] )
--- tt1 P Q = ?
 
-{-# TERMINATING #-}
-repeat : {Σ : Set} → (List Σ → Bool) → List Σ → Bool
-repeat x [] = true
-repeat {Σ} x ( h  ∷ t ) = split x (repeat {Σ} x) ( h  ∷ t )
+test-AB→repeat1 : {Σ : Set} → {A : List In → Bool} → repeat A  ( a ∷ b ∷ c ∷ [] ) ≡  
+    A (a ∷ []) /\ (
+           (A (b ∷ [])     /\ (A (c ∷ []) /\ true \/ false) )
+        \/ (A (b ∷ c ∷ []) /\ true \/ false))
+    \/ A (a ∷ b ∷ []) /\ (A (c ∷ []) /\ true \/ false) 
+    \/ A (a ∷ b ∷ c ∷ []) /\ true \/ false
+test-AB→repeat1 {_} {A}  = refl
 
--- Meaning of regular expression
 
-regular-language : {Σ : Set} → Regex Σ → ((x y : Σ ) → Dec (x ≡ y))  →  List Σ → Bool
-regular-language φ cmp _ = false
-regular-language ε cmp [] = true
-regular-language ε cmp (_ ∷ _) = false
-regular-language (x *) cmp = repeat ( regular-language x cmp  )
-regular-language (x & y) cmp  = split ( λ z → regular-language x  cmp z ) (λ z →  regular-language y  cmp z )
-regular-language (x || y) cmp  = λ s → ( regular-language x  cmp s )  \/  ( regular-language y  cmp s)
-regular-language < h > cmp  [] = false
-regular-language < h > cmp  (h1  ∷ [] ) with cmp h h1
-... | yes _ = true
-... | no _  = false
-regular-language < h >  _ (_ ∷ _ ∷ _)  = false
 
 cmpi : (x y : In ) → Dec (x ≡ y)
 cmpi a a = yes refl
@@ -81,20 +67,23 @@ cmpi d a = no (λ ())
 cmpi d b = no (λ ()) 
 cmpi d c = no (λ ()) 
 
-test-regex : regular-language r1' cmpi ( a ∷ [] ) ≡ false
+test-regex : regex-language r1' cmpi ( a ∷ [] ) ≡ false
 test-regex = refl
 
-test-regex1 : regular-language r2 cmpi ( a ∷ a ∷ b ∷ c ∷ [] ) ≡ true
+-- test-regex2 : regex-language r2 cmpi ( b ∷ c ∷ a ∷ b ∷ [] ) ≡ false
+-- test-regex2 = refl
+
+test-regex1 : regex-language r2 cmpi ( a ∷ a ∷ b ∷ c ∷ [] ) ≡ true
 test-regex1 = refl
 
                                                                                                                     
-test-AB→split : {Σ : Set} → {A B : List In → Bool} → split A B ( a ∷ b ∷ a ∷ [] ) ≡ (
-       ( A [] /\ B ( a ∷ b ∷ a ∷ [] ) ) \/
-       ( A ( a ∷ [] ) /\ B ( b ∷ a ∷ [] ) ) \/
-       ( A ( a ∷ b ∷ [] ) /\ B ( a ∷ [] ) ) \/
-       ( A ( a ∷ b ∷ a ∷ [] ) /\ B  []  )
-   )
-test-AB→split {_} {A} {B} = refl
+--test-AB→split : {Σ : Set} → {A B : List In → Bool} → split A B ( a ∷ b ∷ a ∷ [] ) ≡ (
+--        ( A [] /\ B ( a ∷ b ∷ a ∷ [] ) ) \/
+--        ( A ( a ∷ [] ) /\ B ( b ∷ a ∷ [] ) ) \/
+--        ( A ( a ∷ b ∷ [] ) /\ B ( a ∷ [] ) ) \/
+--        ( A ( a ∷ b ∷ a ∷ [] ) /\ B  []  )
+--    )
+-- test-AB→split {_} {A} {B} = refl
 
 list-eq : {Σ : Set} → (cmpi : (s t : Σ)  → Dec (s ≡ t ))  → (s t : List Σ ) → Bool
 list-eq cmpi [] [] = true
@@ -110,10 +99,10 @@ list-eq cmpi (x ∷ s) (y ∷ t) with cmpi x y
 -- from example 1.53 1
 
 ex53-1 : Set 
-ex53-1 = (s : List In ) → regular-language ( (< a > *) & < b > & (< a > *) ) cmpi s ≡ true → {!!} -- contains exact one b
+ex53-1 = (s : List In ) → regex-language ( (< a > *) & < b > & (< a > *) ) cmpi s ≡ true → {!!} -- contains exact one b
 
 ex53-2 : Set 
-ex53-2 = (s : List In ) → regular-language ( (any * ) & < b > & (any *) ) cmpi s ≡ true → {!!} -- contains at lease one b
+ex53-2 = (s : List In ) → regex-language ( (any * ) & < b > & (any *) ) cmpi s ≡ true → {!!} -- contains at lease one b
 
 evenp : {Σ : Set} →  List Σ → Bool
 oddp : {Σ : Set} →  List Σ → Bool
@@ -125,10 +114,10 @@ evenp (_ ∷ t) = oddp t
 
 -- from example 1.53 5
 egex-even : Set
-egex-even = (s : List In ) → regular-language ( ( any & any ) * ) cmpi s ≡ true → evenp s ≡ true
+egex-even = (s : List In ) → regex-language ( ( any & any ) * ) cmpi s ≡ true → evenp s ≡ true
 
-test11 =  regular-language ( ( any & any ) * ) cmpi (a ∷ [])
-test12 =  regular-language ( ( any & any ) * ) cmpi (a ∷ b ∷ [])
+test11 =  regex-language ( ( any & any ) * ) cmpi (a ∷ [])
+test12 =  regex-language ( ( any & any ) * ) cmpi (a ∷ b ∷ [])
 
 -- proof-egex-even : egex-even 
 -- proof-egex-even [] _ = refl
@@ -171,8 +160,8 @@ iFin = record {
      finiso←0 (suc (suc (suc zero))) = refl
 
 
-open import derive In iFin
-open import automaton
+-- open import derive In iFin
+-- open import automaton
 
-ra-ex = trace (regex→automaton cmpi r2) (record { state = r2 ; is-derived = unit }) ( a ∷ b ∷ c ∷ [])
+-- ra-ex = trace (regex→automaton cmpi r2) (record { state = r2 ; is-derived = unit refl }) ( a ∷ b ∷ c ∷ [])
 

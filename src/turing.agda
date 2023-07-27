@@ -77,6 +77,11 @@ record Turing ( Q : Set ) ( Σ : Set  )
     taccept L = move0 tend tnone tδ tstart L []
 
 open import automaton
+
+-- ATuring : {Σ : Set } → Automaton (List Σ) Σ 
+-- ATuring = record { δ = {!!} ; aend = {!!} }
+
+open import automaton
 open Automaton
 
 {-# TERMINATING #-}

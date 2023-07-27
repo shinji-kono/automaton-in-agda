@@ -47,6 +47,12 @@ divdable^2 (suc n) (suc k) 1<k 1<n pk dn2 with decD {suc k} {suc n} 1<k
 ... | case1 dn = dn
 ... | case2 dm = dm
 
+-- divdable-n*m : { n m k : ℕ } → 1 < k → 1 < n → Prime k → Dividable k ( n * m ) → Dividable k n ∨ Dividable k n
+-- divdable-n*m = ?
+
+-- 2^2 : { n k : ℕ } → 1 < n → Dividable 2 ( n * n ) → Dividable 2 n
+-- 2^2 = ?
+
 -- p * n * n ≡ m * m means (m/n)^2 = p
 -- rational m/n requires m and n is comprime each other which contradicts the condition
 

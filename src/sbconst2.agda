@@ -14,7 +14,11 @@ open import  Relation.Binary.PropositionalEquality hiding ( [_] )
 
 open Bool
 
-δconv : { Q : Set } { Σ : Set  } → ( ( Q → Bool ) → Bool ) →  ( nδ : Q → Σ → Q → Bool ) → (f : Q → Bool) → (i : Σ) → (Q → Bool)
+-- exits : check subset of Q ( Q → Bool) is not empty
+--- ( Q → Σ → Q → Bool )              transition of NFA
+--- (Q → Bool) → Σ → (Q → Bool)       generate transition of Automaton  
+
+δconv : { Q : Set } { Σ : Set  } → ( ( Q → Bool ) → Bool ) →  ( Q → Σ → Q → Bool ) → (Q → Bool) → Σ → (Q → Bool)
 δconv {Q} { Σ} exists nδ f i q =  exists ( λ r → f r /\ nδ r i q )
 
 subset-construction : { Q : Set } { Σ : Set  } → 
@@ -53,3 +57,6 @@ subset-construction-lemma← {Q} {Σ}  exists NFA astart x saccept = lemma2 x as
        → Naccept NFA exists states x ≡ true
     lemma2 [] states saccept = saccept
     lemma2 (h ∷ t ) states saccept = lemma2 t (δconv exists (Nδ NFA) states h) saccept
+
+
+

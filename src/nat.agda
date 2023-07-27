@@ -45,11 +45,42 @@ a<sa {suc la} = s≤s a<sa
 <-∨ {suc x} {suc y} (s≤s lt) | case1 eq = case1 (cong (λ k → suc k ) eq)
 <-∨ {suc x} {suc y} (s≤s lt) | case2 lt1 = case2 (s≤s lt1)
 
+≤-∨ : { x y : ℕ } → x ≤ y → ( (x ≡ y ) ∨ (x < y) )
+≤-∨ {zero} {zero} z≤n = case1 refl
+≤-∨ {zero} {suc y} z≤n = case2 (s≤s z≤n)
+≤-∨ {suc x} {zero} ()
+≤-∨ {suc x} {suc y} (s≤s lt) with ≤-∨ {x} {y} lt
+≤-∨ {suc x} {suc y} (s≤s lt) | case1 eq = case1 (cong (λ k → suc k ) eq)
+≤-∨ {suc x} {suc y} (s≤s lt) | case2 lt1 = case2 (s≤s lt1)
+
 max : (x y : ℕ) → ℕ
 max zero zero = zero
 max zero (suc x) = (suc x)
 max (suc x) zero = (suc x)
 max (suc x) (suc y) = suc ( max x y )
+
+x≤max : (x y : ℕ) → x ≤ max x y
+x≤max zero zero = ≤-refl
+x≤max zero (suc x) = z≤n
+x≤max (suc x) zero = ≤-refl
+x≤max (suc x) (suc y) = s≤s( x≤max x y )
+
+y≤max : (x y : ℕ) → y ≤ max x y
+y≤max zero zero = ≤-refl
+y≤max zero (suc x) = ≤-refl
+y≤max (suc x) zero = z≤n
+y≤max (suc x) (suc y) = s≤s( y≤max x y )
+
+x≤y→max=y : (x y : ℕ) → x ≤ y → max x y ≡ y
+x≤y→max=y zero zero x≤y = refl
+x≤y→max=y zero (suc y) x≤y = refl
+x≤y→max=y (suc x) (suc y) (s≤s x≤y) = cong suc (x≤y→max=y x y x≤y )
+
+y≤x→max=x : (x y : ℕ) → y ≤ x → max x y ≡ x
+y≤x→max=x zero zero y≤x = refl
+y≤x→max=x zero (suc y) ()
+y≤x→max=x (suc x) zero lt = refl
+y≤x→max=x (suc x) (suc y) (s≤s y≤x) = cong suc (y≤x→max=x x y y≤x )
 
 -- _*_ : ℕ → ℕ → ℕ
 -- _*_ zero _ = zero
@@ -189,9 +220,6 @@ x+y<z→x<z {suc x} {y} {suc z} (s≤s lt1) = s≤s ( x+y<z→x<z {x} {y} {z} lt
 *< {zero} {suc y} lt = s≤s z≤n
 *< {suc x} {suc y} (s≤s lt) = <-plus-0 (*< lt)
 
-*-cancel-left : {x y z : ℕ } → x > 0 → x * y ≡ x * z → y ≡ z
-*-cancel-left {suc x} {y} {z} x>0 eq = *-cancelˡ-≡ x eq
-
 <to<s : {x y  : ℕ } → x < y → x < suc y
 <to<s {zero} {suc y} (s≤s lt) = s≤s z≤n
 <to<s {suc x} {suc y} (s≤s lt) = s≤s (<to<s {x} {y} lt)
@@ -204,13 +232,24 @@ x+y<z→x<z {suc x} {y} {suc z} (s≤s lt1) = s≤s ( x+y<z→x<z {x} {y} {z} lt
 <to≤ {zero} {suc y} (s≤s z≤n) = z≤n
 <to≤ {suc x} {suc y} (s≤s lt) = s≤s (<to≤ {x} {y}  lt)
 
+<∨≤ : ( x y : ℕ ) →  (x < y ) ∨ (y ≤ x) 
+<∨≤ x y with <-cmp x y
+... | tri< a ¬b ¬c = case1 a
+... | tri≈ ¬a refl ¬c = case2 ≤-refl
+... | tri> ¬a ¬b c = case2 (<to≤ c)
+
 refl-≤s : {x : ℕ } → x ≤ suc x
 refl-≤s {zero} = z≤n
 refl-≤s {suc x} = s≤s (refl-≤s {x})
 
+a≤sa = refl-≤s
+
 refl-≤ : {x : ℕ } → x ≤ x
 refl-≤ {zero} = z≤n
 refl-≤ {suc x} = s≤s (refl-≤ {x})
+
+refl-≤≡ : {x y : ℕ } → x ≡ y → x ≤ y
+refl-≤≡ refl = refl-≤ 
 
 x<y→≤ : {x y : ℕ } → x < y →  x ≤ suc y
 x<y→≤ {zero} {.(suc _)} (s≤s z≤n) = z≤n
@@ -228,6 +267,29 @@ px≤py : {x y : ℕ } → x ≤ y → pred x  ≤ pred y
 px≤py {zero} {zero} lt = refl-≤
 px≤py {zero} {suc y} lt = z≤n
 px≤py {suc x} {suc y} (s≤s lt) = lt 
+
+sx≤py→x≤y : {x y : ℕ } → suc x ≤ suc y → x  ≤ y 
+sx≤py→x≤y (s≤s lt) = lt
+
+sx<py→x<y : {x y : ℕ } → suc x < suc y → x  < y 
+sx<py→x<y (s≤s lt) = lt
+
+sx≤y→x≤y : {x y : ℕ } → suc x ≤ y → x  ≤ y 
+sx≤y→x≤y {zero} {suc y} (s≤s le) = z≤n
+sx≤y→x≤y {suc x} {suc y} (s≤s le) = s≤s (sx≤y→x≤y {x} {y} le)
+
+x<sy→x≤y : {x y : ℕ } → x < suc y → x  ≤ y 
+x<sy→x≤y {zero} {suc y} (s≤s le) = z≤n
+x<sy→x≤y {suc x} {suc y} (s≤s le) = s≤s (x<sy→x≤y {x} {y} le)
+x<sy→x≤y {zero} {zero} (s≤s z≤n) = ≤-refl
+
+x≤y→x<sy : {x y : ℕ } → x ≤ y → x < suc y 
+x≤y→x<sy {.zero} {y} z≤n = ≤-trans a<sa (s≤s z≤n)
+x≤y→x<sy {.(suc _)} {.(suc _)} (s≤s le) = s≤s ( x≤y→x<sy le) 
+
+sx≤y→x<y : {x y : ℕ } → suc x ≤ y → x < y 
+sx≤y→x<y {zero} {suc y} (s≤s le) = s≤s z≤n
+sx≤y→x<y {suc x} {suc y} (s≤s le) = s≤s ( sx≤y→x<y {x} {y} le )
 
 open import Data.Product
 
@@ -283,9 +345,16 @@ minus+yx-yz {x} {suc y} {z} = minus+yx-yz {x} {y} {z}
 minus+xy-zy : {x y z : ℕ } → (x + y) - (z + y)  ≡ x - z
 minus+xy-zy {x} {y} {z} = subst₂ (λ j k → j - k ≡ x - z  ) (+-comm y x) (+-comm y z) (minus+yx-yz {x} {y} {z})
 
++cancel<l : (x z : ℕ ) {y : ℕ} → y + x < y + z → x < z
++cancel<l x z {zero} lt = lt
++cancel<l x z {suc y} (s≤s lt) = +cancel<l x z {y} lt
+
++cancel<r : (x z : ℕ ) {y : ℕ} → x + y < z + y → x < z
++cancel<r x z {y} lt = +cancel<l x z (subst₂ (λ j k → j < k ) (+-comm x _) (+-comm z _) lt ) 
+
 y-x<y : {x y : ℕ } → 0 < x → 0 < y  → y - x  <  y
 y-x<y {x} {y} 0<x 0<y with <-cmp x (suc y)
-... | tri< a ¬b ¬c = +-cancelʳ-< {x} (y - x) y ( begin
+... | tri< a ¬b ¬c = +cancel<r (y - x) _ ( begin
          suc ((y - x) + x) ≡⟨ cong suc (minus+n {y} {x} a ) ⟩
          suc y  ≡⟨ +-comm 1 _ ⟩
          y + suc 0  ≤⟨ +-mono-≤ ≤-refl 0<x ⟩
@@ -426,6 +495,38 @@ x=y+z→x-z=y {suc x} {suc y} {suc z} eq = x=y+z→x-z=y {x} {suc y} {z} ( begin
 m*1=m : {m : ℕ } → m * 1 ≡ m
 m*1=m {zero} = refl
 m*1=m {suc m} = cong suc m*1=m
+
++-cancel-1 : (x y z : ℕ ) → x + y  ≡ x + z  → y ≡ z
++-cancel-1 zero y z eq = eq
++-cancel-1 (suc x) y z eq = +-cancel-1 x y z (cong pred eq )
+
++-cancel-0 : (x y z : ℕ ) → y + x ≡ z + x → y ≡ z
++-cancel-0 x y z eq = +-cancel-1 x y z (trans (+-comm x y) (trans eq (sym (+-comm x z)) ))
+
+*-cancel-left : {x y z : ℕ } → x > 0 → x * y ≡ x * z → y ≡ z
+*-cancel-left {suc x} {zero} {zero} lt eq = refl
+*-cancel-left {suc x} {zero} {suc z} lt eq = ⊥-elim ( nat-≡< eq (s≤s (begin
+  x * zero  ≡⟨ *-comm x _ ⟩ 
+  zero  ≤⟨ z≤n ⟩ 
+  z + x * suc z ∎ ))) where open ≤-Reasoning
+*-cancel-left {suc x} {suc y} {zero} lt eq = ⊥-elim ( nat-≡< (sym eq) (s≤s (begin
+  x * zero  ≡⟨ *-comm x _ ⟩ 
+  zero  ≤⟨ z≤n ⟩ 
+  _ ∎ ))) where open ≤-Reasoning
+*-cancel-left {suc x} {suc y} {suc z} lt eq with cong pred eq
+... | eq1 =  cong suc (*-cancel-left {suc x} {y} {z} lt (+-cancel-0 x _ _ (begin
+   y + x * y + x ≡⟨ +-assoc y _ _ ⟩ 
+   y + (x * y + x) ≡⟨ cong (λ k → y + (k + x)) (*-comm x _)  ⟩ 
+   y + (y * x + x) ≡⟨ cong (_+_ y) (+-comm _ x) ⟩ 
+   y + (x + y * x ) ≡⟨ refl ⟩ 
+   y + suc y * x ≡⟨ cong (_+_ y) (*-comm (suc y) _)  ⟩ 
+   y + x * suc y ≡⟨ eq1 ⟩ 
+   z + x * suc z ≡⟨ refl ⟩ 
+   _ ≡⟨ sym ( cong (_+_ z) (*-comm (suc z) _) ) ⟩ 
+   _ ≡⟨ sym ( cong (_+_ z) (+-comm _ x)) ⟩ 
+   z + (z * x + x) ≡⟨ sym ( cong (λ k → z + (k + x)) (*-comm x _) ) ⟩ 
+   z + (x * z + x) ≡⟨ sym ( +-assoc z _ _) ⟩ 
+   z + x * z + x  ∎ ))) where open ≡-Reasoning
 
 record Finduction {n m : Level} (P : Set n ) (Q : P → Set m ) (f : P → ℕ) : Set  (n Level.⊔ m) where
   field
@@ -651,4 +752,5 @@ decD {k} {m} k>1 = n-induction {_} {_} {ℕ} {λ m → Dec (Dividable k m ) } F 
             ; decline = λ {m} lt → decl lt 
             ; ind = λ {p} prev → ind p prev
           } 
+
 

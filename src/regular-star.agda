@@ -1,3 +1,5 @@
+{-# OPTIONS --allow-unsolved-metas #-}
+
 module regular-star where
 
 open import Level renaming ( suc to Suc ; zero to Zero )
@@ -26,6 +28,10 @@ open Automaton
 open FiniteSet
 
 open RegularLanguage
+
+--
+--   Star (contain A) = Concat (contain A) ( Star (contain A ) ) \/ Empty
+--
 
 Star-NFA :  {Σ : Set} → (A : RegularLanguage Σ ) → NAutomaton (states A ) Σ 
 Star-NFA {Σ} A  = record { Nδ = δnfa ; Nend = nend } 

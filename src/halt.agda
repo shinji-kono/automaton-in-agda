@@ -36,7 +36,7 @@ diagonal {S} b = diagn1 (fun→ b (diag b) ) refl where
     diagn1 n dn = ¬t=f (diag b n ) ( begin
            not (diag b n)
         ≡⟨⟩
-           not (not fun← b n n)
+           not (not (fun← b n n))
         ≡⟨ cong (λ k → not (k  n) ) (sym (fiso← b _)) ⟩
            not (fun← b (fun→ b (diag b))  n)
         ≡⟨ cong (λ k → not (fun← b k n) ) dn ⟩
@@ -114,3 +114,5 @@ TNL halt utm = record {
           
 TNL1 : UTM → ¬ Halt 
 TNL1 utm halt = diagonal ( TNL halt utm )
+
+

@@ -203,7 +203,7 @@ U-TM = record {
 Copyδ-encode : List utmΣ
 Copyδ-encode = 
        ０  ∷ ０  ∷ １  ∷ ０  ∷  １ ∷ １ ∷ ０ ∷ ０ ∷ ０ ∷ ０ ∷   -- s1 0  = H    , wnone       , mnone
-  *  ∷ ０  ∷ ０  ∷ １  ∷ １  ∷  ０ ∷ １ ∷ ０ ∷ ０ ∷ ０ ∷ １ ∷   -- s1 1  = s2   , write 0 , right
+  *  ∷ ０  ∷ ０  ∷ １  ∷ １  ∷  ０ ∷ １ ∷ ０ ∷ ０ ∷ ０ ∷ １ ∷   -- s0 1  = s2   , write 0 , right
   *  ∷ ０  ∷ １  ∷ ０  ∷ ０  ∷  ０ ∷ １ ∷ １ ∷ ０ ∷ ０ ∷ １ ∷   -- s2 0  = s3   , write 0 , right
   *  ∷ ０  ∷ １  ∷ ０  ∷ １  ∷  ０ ∷ １ ∷ ０ ∷ １ ∷ ０ ∷ １ ∷   -- s2 1  = s2   , write 1 , right
   *  ∷ ０  ∷ １  ∷ １  ∷ ０  ∷  １ ∷ ０ ∷ ０ ∷ １ ∷ ０ ∷ ０ ∷   -- s3 0  = s4   , write 1 , left
@@ -244,7 +244,7 @@ utm-test2 n inp  = loop n (Turing.tstart U-TM) inp []
         ... | nq , nL , nR | reads = loop n nq nL nR
         ... | nq , nL , nR | _ = loop (suc n) nq nL nR
 
-t1 = utm-test2 20 short-input 
+t1 = utm-test2 3 short-input 
 
 t : (n : ℕ)  → utmStates × ( List  utmΣ ) × ( List  utmΣ )
 -- t n = utm-test2 n input+Copyδ

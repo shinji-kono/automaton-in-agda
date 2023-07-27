@@ -21,10 +21,9 @@ language-L : { Σ : Set } → Set
 language-L {Σ} = List (List Σ)
 
 Union : {Σ : Set} → ( A B : language {Σ} ) → language {Σ}
-Union {Σ} A B x = (A x ) \/ (B x)
+Union {Σ} A B x = A x  \/ B x
 
-split : {Σ : Set} → (List Σ → Bool)
-      → ( List Σ → Bool) → List Σ → Bool
+split : {Σ : Set} → (x y : language {Σ} ) → language {Σ}
 split x y  [] = x [] /\ y []
 split x y (h  ∷ t) = (x [] /\ y (h  ∷ t)) \/
   split (λ t1 → x (  h ∷ t1 ))  (λ t2 → y t2 ) t
@@ -33,9 +32,21 @@ Concat : {Σ : Set} → ( A B : language {Σ} ) → language {Σ}
 Concat {Σ} A B = split A B
 
 {-# TERMINATING #-}
-Star : {Σ : Set} → ( A : language {Σ} ) → language {Σ}
-Star {Σ} A [] = true
-Star {Σ} A (h ∷ t) = split A ( Star {Σ} A ) (h ∷ t)
+Star1 : {Σ : Set} → ( A : language {Σ} ) → language {Σ}
+Star1 {Σ} A [] = true
+Star1 {Σ} A (h ∷ t) = split A ( Star1 {Σ} A ) (h ∷ t)
+
+repeat : {Σ : Set} → (x : List Σ → Bool) → (y : List Σ ) → Bool 
+repeat {Σ} x [] = true
+repeat {Σ} x (h ∷ y) = repeat2 [] (h ∷ y) where
+    repeat2 : (pre y : List Σ ) → Bool
+    repeat2 pre [] = false
+    repeat2 pre (h ∷ y) = 
+       (x (pre ++ (h ∷ [])) /\ repeat x y )
+       \/ repeat2 (pre ++ (h ∷ [])) y 
+
+Star : {Σ : Set} → (x : List Σ → Bool) → (y : List Σ ) → Bool 
+Star {Σ} x y = repeat x y
 
 open import automaton-ex
 

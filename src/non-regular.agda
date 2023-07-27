@@ -10,52 +10,108 @@ open import automaton
 open import automaton-ex
 open import finiteSetUtil
 open import finiteSet
-open import Relation.Nullary 
+open import Relation.Nullary
 open import regular-language
 open import nat
+open import pumping
 
 
 open FiniteSet
 
-inputnn :  List  In2 → Maybe (List In2)
-inputnn [] = just []
-inputnn  (i1 ∷ t) = just (i1 ∷ t)
-inputnn  (i0 ∷ t) with inputnn t
-... | nothing = nothing
-... | just [] = nothing
-... | just (i0 ∷ t1) = nothing   -- can't happen
-... | just (i1 ∷ t1) = just t1   -- remove i1 from later part
+list-eq :  List  In2 → List  In2 → Bool
+list-eq [] [] = true
+list-eq [] (x ∷ s1) = false
+list-eq (x ∷ s) [] = false
+list-eq (i0 ∷ s) (i0 ∷ s1) = false
+list-eq (i0 ∷ s) (i1 ∷ s1) = false
+list-eq (i1 ∷ s) (i0 ∷ s1) = false
+list-eq (i1 ∷ s) (i1 ∷ s1) = list-eq s s1
 
-inputnn1 :  List  In2 → Bool
-inputnn1  s with inputnn  s 
-... | nothing = false
-... | just [] = true
-... | just _ = false
+input-addi0 : ( n :  ℕ )  → List In2 →  List  In2
+input-addi0 zero x = x
+input-addi0 (suc i) x = i0 ∷ input-addi0 i x
+
+input-addi1 : ( n :  ℕ )  →  List  In2
+input-addi1 zero = []
+input-addi1 (suc i) = i1 ∷ input-addi1 i
+
+inputnn0 : ( n :  ℕ )  →  List  In2
+inputnn0 n = input-addi0 n (input-addi1 n)
+
+inputnn1-i1 : (i : ℕ) → List In2 → Bool
+inputnn1-i1 zero [] = true
+inputnn1-i1 (suc _) [] = false
+inputnn1-i1 zero (i1 ∷ x)  = false
+inputnn1-i1 (suc i) (i1 ∷ x)  = inputnn1-i1 i x
+inputnn1-i1 zero (i0 ∷ x)  = false
+inputnn1-i1 (suc _) (i0 ∷ x)  = false
+
+inputnn1-i0 : (i : ℕ) → List In2 → ℕ ∧ List In2
+inputnn1-i0 i [] = ⟪ i , [] ⟫
+inputnn1-i0 i (i1 ∷ x)  = ⟪ i , (i1 ∷ x)  ⟫
+inputnn1-i0 i (i0 ∷ x)  = inputnn1-i0 (suc i) x
+
+open _∧_
+
+inputnn1 : List In2 → Bool
+inputnn1 x = inputnn1-i1 (proj1 (inputnn1-i0 0 x)) (proj2 (inputnn1-i0 0 x))
 
 t1 = inputnn1 ( i0 ∷ i1 ∷ [] )
 t2 = inputnn1 ( i0 ∷ i0 ∷ i1 ∷ i1 ∷ [] )
 t3 = inputnn1 ( i0 ∷ i0 ∷ i0 ∷ i1 ∷ i1 ∷ [] )
 
-inputnn0 : ( n :  ℕ )  →  { Σ : Set  } → ( x y : Σ ) → List  Σ → List  Σ 
-inputnn0 zero {_} _ _ s = s
-inputnn0 (suc n) x y s = x  ∷ ( inputnn0 n x y ( y  ∷ s ) )
-
-t4 : inputnn1 ( inputnn0 5 i0 i1 [] ) ≡ true
+t4 : inputnn1 ( inputnn0 5  )  ≡ true
 t4 = refl
 
 t5 : ( n : ℕ ) → Set
-t5 n = inputnn1 ( inputnn0 n i0 i1 [] ) ≡ true
+t5 n = inputnn1 ( inputnn0 n  )  ≡ true
 
-nn01  : (i : ℕ) → inputnn1 ( inputnn0 i i0 i1 [] ) ≡ true
-nn01 zero = refl
-nn01 (suc i) = {!!} where 
-      nn02 : (i : ℕ) → ( x : List In2) → inputnn ( inputnn0 i i0 i1 x ) ≡ inputnn x
-      nn02 zero _ = refl
-      nn02 (suc i) x with inputnn (inputnn0 (suc i) i0 i1 x)
-      ... | nothing = {!!}
-      ... | just []  = {!!}
-      ... | just (i0 ∷ t1)   = {!!}
-      ... | just (i1 ∷ t1)   = {!!}
+cons-inject : {A : Set} {x1 x2 : List A } { a : A } → a ∷ x1 ≡ a ∷ x2 → x1 ≡ x2
+cons-inject refl = refl
+
+append-[] : {A : Set} {x1 : List A } → x1 ++ [] ≡ x1
+append-[] {A} {[]} = refl
+append-[] {A} {x ∷ x1} = cong (λ k → x ∷ k) (append-[] {A} {x1} )
+
+open import Data.Nat.Properties
+open import  Relation.Binary.Definitions
+open import Relation.Binary.PropositionalEquality
+
+nn30 : (y : List In2) → (j : ℕ) → proj2 (inputnn1-i0 (suc j) y) ≡ proj2 (inputnn1-i0 j y )
+nn30 [] _ = refl
+nn30 (i0 ∷ y) j = nn30 y (suc j)
+nn30 (i1 ∷ y) _ = refl
+
+nn31 : (y : List In2) → (j : ℕ) → proj1 (inputnn1-i0 (suc j) y) ≡ suc (proj1 (inputnn1-i0 j y ))
+nn31 [] _ = refl
+nn31 (i0 ∷ y) j = nn31 y (suc j)
+nn31 (i1 ∷ y) _ = refl
+
+nn01  : (i : ℕ) → inputnn1 ( inputnn0 i  ) ≡ true
+nn01  i = subst₂ (λ j k → inputnn1-i1 j k ≡ true) (sym (nn07 i 0 refl)) (sym (nn09 i)) (nn04 i)  where
+     nn07 : (j x : ℕ) → x + j ≡ i  → proj1 ( inputnn1-i0 x (input-addi0 j (input-addi1 i))) ≡ x + j
+     nn07 zero x eq with input-addi1 i | inspect input-addi1 i
+     ... | [] | _ = +-comm 0 _
+     ... | i0 ∷ t | record { eq = eq1 } = ⊥-elim ( nn08 i eq1 ) where
+          nn08 : (i : ℕ) → ¬ (input-addi1 i ≡ i0 ∷ t )
+          nn08 zero ()
+          nn08 (suc i) ()
+     ... | i1 ∷ t | _ = +-comm 0 _
+     nn07 (suc j) x eq = trans (nn07 j (suc x) (trans (cong (λ k → k + j) (+-comm 1 _ )) (trans (+-assoc x _ _) eq)) )
+                                               (trans (+-assoc 1 x _) (trans (cong (λ k → k + j) (+-comm 1 _) ) (+-assoc x 1 _) ))
+     nn09 : (x : ℕ) → proj2 ( inputnn1-i0 0 (input-addi0 x (input-addi1 i))) ≡ input-addi1 i
+     nn09 zero with input-addi1 i | inspect input-addi1 i
+     ... | [] | _ = refl
+     ... | i0 ∷ t | record { eq = eq1 } = ⊥-elim ( nn08 i eq1 ) where
+          nn08 : (i : ℕ) → ¬ (input-addi1 i ≡ i0 ∷ t )
+          nn08 zero ()
+          nn08 (suc i) ()
+     ... | i1 ∷ t | _ = refl
+     nn09 (suc j) = trans (nn30 (input-addi0 j (input-addi1 i)) 0) (nn09 j )
+     nn04 : (i : ℕ) → inputnn1-i1 i (input-addi1 i) ≡ true
+     nn04 zero = refl
+     nn04 (suc i) = nn04 i
+
 --
 --  if there is an automaton with n states , which accespt inputnn1, it has a trasition function.
 --  The function is determinted by inputs,
@@ -66,227 +122,243 @@ open Automaton
 
 open _∧_
 
-data Trace { Q : Set } { Σ : Set  } (fa : Automaton Q  Σ ) : (is : List Σ) → Q → Set where
-    tend  : {q : Q} → aend fa q ≡ true → Trace fa [] q
-    tnext : (q : Q) → {i : Σ} { is : List Σ} 
-        → Trace fa is (δ fa q i) → Trace fa (i ∷ is) q 
-
-tr-len :  { Q : Set } { Σ : Set  }
-    → (fa : Automaton Q  Σ )
-    → (is : List Σ) → (q : Q) → Trace fa is q → suc (length is) ≡ length (trace fa q is ) 
-tr-len {Q} {Σ} fa .[] q (tend x) = refl 
-tr-len {Q} {Σ} fa (i ∷ is) q (tnext .q t) = cong suc (tr-len {Q} {Σ} fa is (δ fa q i) t)
-
-tr-accept→ : { Q : Set } { Σ : Set  }
-    → (fa : Automaton Q  Σ )
-    → (is : List Σ) → (q : Q) → Trace fa is q → accept fa q is ≡ true
-tr-accept→ {Q} {Σ} fa [] q (tend x)  = x
-tr-accept→ {Q} {Σ} fa (i ∷ is) q  (tnext _ tr) = tr-accept→ {Q} {Σ} fa is (δ fa q i) tr
-
-tr-accept← : { Q : Set } { Σ : Set  }
-    → (fa : Automaton Q  Σ )
-    → (is : List Σ) → (q : Q)  → accept fa q is ≡ true → Trace fa is q
-tr-accept← {Q} {Σ} fa [] q ac = tend ac
-tr-accept← {Q} {Σ} fa (x ∷ []) q ac = tnext _ (tend ac )
-tr-accept← {Q} {Σ} fa (x ∷ x1 ∷ is) q ac = tnext _ (tr-accept← fa (x1 ∷ is)  (δ fa q x)  ac) 
-
-tr→qs : { Q : Set } { Σ : Set  }
-    → (fa : Automaton Q  Σ )
-    → (is : List Σ) → (q : Q) → Trace fa is q → List Q
-tr→qs fa [] q (tend x) = []
-tr→qs fa (i ∷ is) q (tnext q tr) = q ∷ tr→qs fa is (δ fa q i) tr 
-
-tr→qs=is : { Q : Set } { Σ : Set  }
-    → (fa : Automaton Q  Σ )
-    → (is : List Σ) → (q : Q) → (tr : Trace fa is q ) → length is ≡  length (tr→qs fa is q tr)
-tr→qs=is fa .[] q (tend x) = refl
-tr→qs=is fa (i ∷ is) q (tnext .q tr) = cong suc (tr→qs=is fa is  (δ fa q i) tr)
-
-open Data.Maybe
-
-open import Relation.Binary.HeterogeneousEquality as HE using (_≅_ ) 
-open import Relation.Binary.Definitions
-open import Data.Unit using (⊤ ; tt)
-open import Data.Nat.Properties
-
-data QDSEQ { Q : Set } { Σ : Set  } { fa : Automaton  Q  Σ} ( finq : FiniteSet Q) (qd : Q) (z1 :  List Σ) :
-       {q : Q} {y2 : List Σ} → Trace fa (y2 ++ z1) q → Set where
-   qd-nil :  (q : Q) → (tr : Trace fa z1 q) → equal? finq qd q ≡ true → QDSEQ finq qd z1 tr
-   qd-next : {i : Σ} (y2 : List Σ) → (q : Q) → (tr : Trace fa (y2 ++ z1) (δ fa q i)) → equal? finq qd q ≡ false
-       → QDSEQ finq qd z1 tr 
-       → QDSEQ finq qd z1 (tnext q tr)
-
-record TA1 { Q : Set } { Σ : Set  } (fa : Automaton Q  Σ ) (finq : FiniteSet Q)  ( q qd : Q ) (is : List Σ)  : Set where
-    field
-       y z : List Σ
-       yz=is : y ++ z ≡ is 
-       trace-z    : Trace fa z  qd
-       trace-yz   : Trace fa (y ++ z)  q
-       q=qd : QDSEQ finq qd z trace-yz
-
---
--- using accept ≡ true may simplify the pumping-lemma
--- QDSEQ is too complex, should we generate (lengty y ≡ 0 → equal ) ∧  ...
---
--- like this ...
--- record TA2 { Q : Set } { Σ : Set  } (fa : Automaton Q  Σ ) (finq : FiniteSet Q)  ( q qd : Q ) (is : List Σ)  : Set where
---     field
---        y z : List Σ
---        yz=is : y ++ z ≡ is 
---        trace-z    : accpet fa z qd ≡ true
---        trace-yz   : accept fa (y ++ z)  q ≡ true
---        q=qd  : last (tr→qs fa q trace-yz) ≡ just qd 
---        ¬q=qd : non-last (tr→qs fa q trace-yz) ≡ just qd 
-
-record TA { Q : Set } { Σ : Set  } (fa : Automaton Q  Σ )   ( q : Q ) (is : List Σ)  : Set where
-    field
-       x y z : List Σ
-       xyz=is : x ++ y ++ z ≡ is 
-       trace-xyz  : Trace fa (x ++ y ++ z)  q
-       trace-xyyz : Trace fa (x ++ y ++ y ++ z) q
-       non-nil-y : ¬ (y ≡ [])
-
-pumping-lemma : { Q : Set } { Σ : Set  } (fa : Automaton Q  Σ ) (finq : FiniteSet Q) (q qd : Q) (is : List Σ) 
-     → (tr : Trace fa is q )
-     → dup-in-list finq qd (tr→qs fa is q tr) ≡ true
-     → TA fa q is
-pumping-lemma {Q} {Σ} fa finq q qd is tr dup = tra-phase1 q is tr dup where
-   open TA
-   tra-phase2 : (q : Q)  → (is : List Σ)  → (tr : Trace fa is  q )
-       → phase2 finq qd (tr→qs fa is q tr) ≡ true → TA1 fa finq q qd is
-   tra-phase2 q (i ∷ is) (tnext q tr) p with equal? finq qd q | inspect ( equal? finq qd) q
-   ... | true | record { eq = eq } = record { y = [] ; z = i ∷ is ; yz=is = refl ; q=qd = qd-nil q (tnext q tr) eq
-        ; trace-z  = subst (λ k → Trace fa (i ∷ is) k ) (sym (equal→refl finq eq)) (tnext q tr) ; trace-yz = tnext q tr }
-   ... | false | record { eq = ne } = record { y = i ∷ TA1.y ta ; z = TA1.z ta ; yz=is = cong (i ∷_ ) (TA1.yz=is ta )
-       ; q=qd = tra-08
-       ; trace-z = TA1.trace-z ta ; trace-yz = tnext q ( TA1.trace-yz ta ) } where
-            ta : TA1 fa finq (δ fa q i) qd is
-            ta = tra-phase2 (δ fa q i) is tr p 
-            tra-07 : Trace fa (TA1.y ta ++ TA1.z ta) (δ fa q i)
-            tra-07 = subst (λ k → Trace fa k (δ fa q i)) (sym (TA1.yz=is ta)) tr
-            tra-08 : QDSEQ finq qd (TA1.z ta) (tnext q (TA1.trace-yz ta))
-            tra-08 = qd-next (TA1.y ta) q (TA1.trace-yz (tra-phase2 (δ fa q i) is tr p))  ne (TA1.q=qd ta)
-   tra-phase1 : (q : Q)  → (is : List Σ)  → (tr : Trace fa is  q ) → phase1 finq qd (tr→qs fa is q tr) ≡ true  → TA fa q is
-   tra-phase1 q (i ∷ is) (tnext q tr) p with equal? finq qd q | inspect (equal? finq qd) q
-   ... | true | record { eq = eq } = record { x = [] ; y = i ∷ TA1.y ta ;  z = TA1.z ta ; xyz=is =  cong (i ∷_ ) (TA1.yz=is ta)
-           ; non-nil-y = λ ()
-           ; trace-xyz  = tnext q (TA1.trace-yz ta)
-           ; trace-xyyz = tnext q tra-05 } where
-        ta : TA1 fa finq (δ fa q i ) qd is
-        ta = tra-phase2 (δ fa q i ) is tr p 
-        y1 = TA1.y ta
-        z1 = TA1.z ta
-        tryz0 : Trace fa (y1 ++ z1) (δ fa qd i)
-        tryz0 = subst₂ (λ j k → Trace fa k (δ fa j i) ) (sym (equal→refl finq eq)) (sym (TA1.yz=is ta)) tr
-        tryz : Trace fa (i ∷ y1 ++ z1) qd
-        tryz = tnext qd tryz0
-        -- create Trace (y ++ y ++ z)
-        tra-04 : (y2 : List Σ) → (q : Q) → (tr : Trace fa (y2 ++ z1) q)
-               →  QDSEQ finq qd z1 {q} {y2} tr 
-               → Trace fa (y2 ++ (i ∷ y1) ++ z1) q
-        tra-04 [] q tr (qd-nil q _ x₁) with equal? finq qd q | inspect (equal? finq qd) q
-        ... | true | record { eq = eq } = subst (λ k → Trace fa (i ∷ y1 ++ z1) k) (equal→refl finq eq) tryz
-        ... | false | record { eq = ne } = ⊥-elim ( ¬-bool  refl x₁ ) 
-        tra-04 (y0 ∷ y2) q (tnext q tr) (qd-next _ _  _ x₁ qdseq) with equal? finq qd q | inspect (equal? finq qd) q
-        ... | true | record { eq = eq } = ⊥-elim ( ¬-bool x₁ refl ) 
-        ... | false | record { eq = ne } = tnext q (tra-04 y2 (δ fa q y0) tr qdseq ) 
-        tra-05 : Trace fa (TA1.y ta ++ (i ∷ TA1.y ta) ++ TA1.z ta) (δ fa q i)
-        tra-05 with equal→refl finq eq
-        ... | refl = tra-04 y1  (δ fa qd i) (TA1.trace-yz ta) (TA1.q=qd ta)
-   ... | false | _ = record { x = i ∷ x ta ; y = y ta ; z = z ta ; xyz=is = cong (i ∷_ ) (xyz=is ta) 
-           ; non-nil-y = non-nil-y ta
-            ; trace-xyz = tnext q (trace-xyz ta ) ; trace-xyyz = tnext q (trace-xyyz ta )} where
-        ta : TA fa (δ fa q i ) is
-        ta = tra-phase1 (δ fa q i ) is tr p
 
 open RegularLanguage
 open import Data.Nat.Properties
+open import Data.List.Properties
 open import nat
 
-lemmaNN : (r : RegularLanguage In2 ) → ¬ ( (s : List In2)  → isRegular inputnn1  s r ) 
-lemmaNN r Rg = tann {TA.x TAnn} (TA.non-nil-y TAnn ) {!!} (tr-accept→ (automaton r) _  (astart r) (TA.trace-xyz TAnn) )
+lemmaNN : (r : RegularLanguage In2 ) → ¬ ( (s : List In2)  → isRegular inputnn1  s r )
+lemmaNN r Rg = tann {TA.x TAnn} (TA.non-nil-y TAnn ) (TA.xyz=is TAnn) (tr-accept→ (automaton r) _  (astart r) (TA.trace-xyz TAnn) )
        (tr-accept→ (automaton r) _  (astart r) (TA.trace-xyyz TAnn) ) where
     n : ℕ
     n = suc (finite (afin r))
-    nn =  inputnn0 n i0 i1 []
+    nn =  inputnn0 n
     nn03 : accept (automaton r) (astart r) nn ≡ true
     nn03 = subst (λ k → k ≡ true ) (Rg nn ) (nn01 n)
     nn09 : (n m : ℕ) → n ≤ n + m
     nn09 zero m = z≤n
     nn09 (suc n) m = s≤s (nn09 n m)
     nn04 :  Trace (automaton r) nn (astart r)
-    nn04 = tr-accept← (automaton r) nn (astart r) nn03 
+    nn04 = tr-accept← (automaton r) nn (astart r) nn03
     nntrace = tr→qs (automaton r) nn (astart r) nn04
-    nn07 : (n : ℕ) →  length (inputnn0 n i0 i1 []) ≡ n + n 
-    nn07 n = subst (λ k → length (inputnn0 n i0 i1 []) ≡ k) (+-comm (n + n) _ ) (nn08 n [] )where
-       nn08 : (n : ℕ) → (s : List In2) → length (inputnn0 n i0 i1 s) ≡ n + n + length s
-       nn08 zero s = refl
-       nn08 (suc n) s = begin
-         length (inputnn0 (suc n) i0 i1 s) ≡⟨ refl ⟩
-         suc (length (inputnn0 n i0 i1 (i1 ∷ s))) ≡⟨ cong suc (nn08 n (i1 ∷ s)) ⟩
-         suc (n + n + suc (length s)) ≡⟨ +-assoc (suc n) n _  ⟩
-         suc n + (n + suc (length s)) ≡⟨ cong (λ k → suc n + k) (sym (+-assoc n  _ _))  ⟩
-         suc n + ((n + 1) + length s) ≡⟨ cong (λ k → suc n + (k + length s)) (+-comm n _) ⟩
-         suc n + (suc n + length s) ≡⟨ sym (+-assoc (suc n)  _ _) ⟩
-         suc n + suc n + length s  ∎  where open ≡-Reasoning
+    nn07 : (n : ℕ) →  length (inputnn0 n  ) ≡ n + n
+    nn07 i = nn19 i where
+        nn17 : (i : ℕ) → length (input-addi1 i) ≡ i
+        nn17 zero = refl
+        nn17 (suc i)= cong suc (nn17 i)
+        nn18 : (i j : ℕ) →  length (input-addi0 j (input-addi1 i)) ≡ j +  length (input-addi1 i )
+        nn18 i zero = refl
+        nn18 i (suc j)= cong suc (nn18 i j)
+        nn19 : (i : ℕ) → length (input-addi0 i ( input-addi1 i )) ≡ i + i
+        nn19 i = begin
+            length (input-addi0 i ( input-addi1 i )) ≡⟨ nn18 i i ⟩
+            i + length (input-addi1 i)  ≡⟨ cong (λ k → i + k) ( nn17 i) ⟩
+            i + i  ∎ where open ≡-Reasoning
     nn05 : length nntrace > finite (afin r)
     nn05 = begin
          suc (finite (afin r))  ≤⟨ nn09 _ _ ⟩
          n + n   ≡⟨ sym (nn07 n) ⟩
-         length (inputnn0 n i0 i1 []) ≡⟨ tr→qs=is (automaton r) (inputnn0 n i0 i1 []) (astart r) nn04 ⟩
+         length (inputnn0 n  ) ≡⟨ tr→qs=is (automaton r) (inputnn0 n  ) (astart r) nn04 ⟩
          length nntrace ∎  where open ≤-Reasoning
     nn06 : Dup-in-list ( afin r) (tr→qs (automaton r) nn (astart r) nn04)
     nn06 = dup-in-list>n (afin r) nntrace nn05
+
     TAnn : TA (automaton r) (astart r) nn
     TAnn = pumping-lemma (automaton r) (afin r) (astart r) (Dup-in-list.dup nn06) nn nn04 (Dup-in-list.is-dup nn06)
-    count : In2 → List In2 → ℕ
-    count _ [] = 0
-    count i0 (i0 ∷ s) = suc (count i0 s)
-    count i1 (i1 ∷ s) = suc (count i1 s)
-    count x (_ ∷ s) = count x s
-    nn11 : {x : In2} → (s t : List In2) → count x (s ++ t) ≡ count x s + count x t
-    nn11 {x} [] t = refl
-    nn11 {i0} (i0 ∷ s) t = cong suc ( nn11 s t )
-    nn11 {i0} (i1 ∷ s) t = nn11 s t 
-    nn11 {i1} (i0 ∷ s) t = nn11 s t 
-    nn11 {i1} (i1 ∷ s) t = cong suc ( nn11 s t )
-    nn10 : (s : List In2) → accept (automaton r) (astart r) s ≡ true → count i0 s ≡ count i1 s
-    nn10 s p = nn101 s (subst (λ k → k ≡ true) (sym (Rg s)) p ) where
-        nn101 : (s : List In2) → inputnn1 s ≡ true →  count i0 s ≡ count i1 s
-        nn101 [] p = refl
-        nn101 (x ∷ s) p = {!!}
-    i1-i0? : List In2 → Bool
-    i1-i0? [] = false
-    i1-i0? (i1 ∷ []) = false
-    i1-i0? (i0 ∷ []) = false
-    i1-i0? (i1 ∷ i0 ∷ s) = true
-    i1-i0? (_ ∷ s0 ∷ s1) = i1-i0? (s0 ∷ s1)  
-    nn20 : {s s0 s1 : List In2} → accept (automaton r) (astart r) s ≡ true → ¬ ( s ≡ s0 ++ i1 ∷ i0 ∷ s1 )
-    nn20 {s} {s0} {s1} p np = {!!}
-    mono-color : List In2 → Bool
-    mono-color [] = true
-    mono-color (i0 ∷ s) = mono-color0 s where
-        mono-color0 : List In2 → Bool
-        mono-color0 [] = true
-        mono-color0 (i1 ∷ s) = false
-        mono-color0 (i0 ∷ s) = mono-color0 s
-    mono-color (i1 ∷ s) = mono-color1 s where
-        mono-color1 : List In2 → Bool
-        mono-color1 [] = true
-        mono-color1 (i0 ∷ s) = false
-        mono-color1 (i1 ∷ s) = mono-color1 s
-    record Is10 (s : List In2) : Set where
-       field
-           s0 s1 : List In2
-           is-10 :  s ≡ s0 ++ i1 ∷ i0 ∷ s1
-    not-mono : { s : List In2 } → ¬ (mono-color s ≡ true)  → Is10 (s ++ s)
-    not-mono = {!!}
-    mono-count : { s : List In2 } → mono-color s ≡ true   → (length s ≡ count i0 s) ∨ ( length s ≡ count i1 s)
-    mono-count = {!!}
+
+    open import Tactic.MonoidSolver using (solve; solve-macro)
+
+    -- there is a counter example
+    --
     tann : {x y z : List In2} → ¬ y ≡ []
        → x ++ y ++ z ≡ nn
        → accept (automaton r) (astart r) (x ++ y ++ z) ≡ true → ¬ (accept (automaton r) (astart r) (x ++ y ++ y ++ z)  ≡ true )
-    tann {x} {y} {z} ny eq axyz axyyz with mono-color y
-    ... | true = {!!}
-    ... | false = {!!}
+    tann {x} {y} {z} ny eq axyz axyyz = ¬-bool (nn10 x y z ny (trans (Rg (x ++ y ++ z)) axyz ) ) (trans (Rg (x ++ y ++ y ++ z)) axyyz ) where
+          count0 : (x : List In2) → ℕ
+          count0 [] = 0
+          count0 (i0 ∷ x) = suc (count0 x)
+          count0 (i1 ∷ x) = count0 x
+          count1 : (x : List In2) → ℕ
+          count1 [] = 0
+          count1 (i1 ∷ x) = suc (count1 x)
+          count1 (i0 ∷ x) = count1 x
+          -- 
+          -- prove some obvious fact
+          --
+          c0+1=n : (x : List In2 ) → count0 x + count1 x ≡ length x
+          c0+1=n [] = refl
+          c0+1=n (i0 ∷ t) = cong suc ( c0+1=n t )
+          c0+1=n (i1 ∷ t) = begin
+             count0 t + suc (count1 t) ≡⟨ sym (+-assoc (count0 t) _ _) ⟩
+             (count0 t + 1 ) + count1 t ≡⟨ cong (λ k → k + count1 t) (+-comm _ 1 ) ⟩
+             suc (count0 t + count1 t) ≡⟨ cong suc ( c0+1=n t )  ⟩
+             suc (length t) ∎ where open  ≡-Reasoning
+          --
+          nn15 : (x : List In2 ) → inputnn1 x ≡ true → count0 x ≡ count1 x
+          nn15 x eq = nn18 where
+               nn17 : (x : List In2 ) → (count0 x ≡ proj1 (inputnn1-i0 0 x) + count0 (proj2 (inputnn1-i0 0 x)))
+                                      ∧ (count1 x ≡ 0                       + count1 (proj2 (inputnn1-i0 0 x)))
+               nn17 [] = ⟪ refl , refl ⟫
+               nn17 (i0 ∷ t ) with nn17 t
+               ... | ⟪ eq1 , eq2 ⟫ = ⟪ begin
+                     suc (count0 t ) ≡⟨ cong suc eq1 ⟩
+                     suc (proj1 (inputnn1-i0 0 t) + count0 (proj2 (inputnn1-i0 0 t))) ≡⟨ cong₂ _+_ (sym (nn31 t 0)) (cong count0 (sym (nn30 t 0)))  ⟩
+                          proj1 (inputnn1-i0 1 t) + count0 (proj2 (inputnn1-i0 1 t)) ∎
+                       , trans eq2 (cong count1 (sym (nn30 t 0)))  ⟫ where
+                  open ≡-Reasoning
+                  nn20 : proj2 (inputnn1-i0 1 t) ≡ proj2 (inputnn1-i0 0 t)
+                  nn20 = nn30 t 0
+               nn17 (i1 ∷ x₁) = ⟪ refl , refl  ⟫
+               nn19 : (n : ℕ) → (y : List In2 ) → inputnn1-i1 n y ≡ true → (count0 y ≡ 0) ∧ (count1 y ≡ n)
+               nn19 zero [] eq = ⟪ refl , refl ⟫
+               nn19 zero (i0 ∷ y) ()
+               nn19 zero (i1 ∷ y) ()
+               nn19 (suc i) (i1 ∷ y) eq with nn19 i y eq
+               ... | t = ⟪ proj1 t , cong suc (proj2 t ) ⟫
+               nn18 :  count0 x ≡ count1 x
+               nn18 = begin
+                     count0 x ≡⟨ proj1 (nn17 x) ⟩
+                     proj1 (inputnn1-i0 0 x) + count0 (proj2 (inputnn1-i0 0 x))  ≡⟨ cong (λ k → proj1 (inputnn1-i0 0 x) + k)
+                                                              (proj1 (nn19 (proj1 (inputnn1-i0 0 x)) (proj2 (inputnn1-i0 0 x)) eq)) ⟩
+                     proj1 (inputnn1-i0 0 x) + 0                                 ≡⟨ +-comm _ 0 ⟩
+                     0                       + proj1 (inputnn1-i0 0 x)           ≡⟨ cong (λ k → 0 + k) (sym (proj2 (nn19 _ _ eq))) ⟩
+                     0                       + count1 (proj2 (inputnn1-i0 0 x))  ≡⟨ sym (proj2 (nn17 x)) ⟩
+                     count1 x ∎ where open ≡-Reasoning
+          distr0 : (x y : List In2 ) → count0 (x ++ y ) ≡ count0 x + count0 y
+          distr0 [] y = refl
+          distr0 (i0 ∷ x)  y = cong suc (distr0 x y)
+          distr0 (i1 ∷ x)  y = distr0 x y
+          distr1 : (x y : List In2 ) → count1 (x ++ y ) ≡ count1 x + count1 y
+          distr1 [] y = refl
+          distr1 (i1 ∷ x)  y = cong suc (distr1 x y)
+          distr1 (i0 ∷ x)  y = distr1 x y
+          --
+          --  i0 .. i0 ∷ i1 .. i1 sequece does not contains i1 → i0 transition
+          --
+          record i1i0 (z : List In2) : Set where
+             field
+                a b : List In2
+                i10 : z ≡ a ++ (i1 ∷ i0 ∷ b )
+          nn12 : (x : List In2 ) → inputnn1 x ≡ true → ¬ i1i0 x
+          nn12 x eq = nn17 x 0 eq  where
+               nn17 : (x : List In2 ) → (i : ℕ)
+                  → inputnn1-i1 (proj1 (inputnn1-i0 i x)) (proj2 (inputnn1-i0 i x)) ≡ true   → ¬ i1i0 x
+               nn17 [] i eq li with i1i0.a li | i1i0.i10 li
+               ... | [] | ()
+               ... | x ∷ s | ()
+               nn17 (i0 ∷ x₁) i eq li = nn17 x₁ (suc i) eq record { a = nn18 (i1i0.a li) (i1i0.i10 li) ; b = i1i0.b li
+                 ; i10 = nn19 (i1i0.a li) (i1i0.i10 li) } where
+                    -- first half
+                    nn18 : (a : List In2 ) → i0 ∷ x₁ ≡ a ++ ( i1 ∷ i0 ∷ i1i0.b li) → List In2
+                    nn18 (i0 ∷ t) eq = t
+                    nn19 : (a : List In2 ) → (eq : i0 ∷ x₁ ≡ a ++ ( i1 ∷ i0 ∷ i1i0.b li)  )
+                       → x₁ ≡ nn18 a eq ++ i1 ∷ i0 ∷ i1i0.b li
+                    nn19 (i0 ∷ a) eq = cons-inject eq
+               nn17 (i1 ∷ x₁) i eq li = nn20 (i1 ∷ x₁) i eq li where
+                    -- second half
+                    nn20 : (x : List In2) → (i : ℕ) → inputnn1-i1 i x ≡ true → i1i0 x → ⊥
+                    nn20 x i eq li = nn21 (i1i0.a li) x i eq (i1i0.i10 li)  where
+                       nn21 : (a x : List In2) → (i : ℕ) → inputnn1-i1 i x ≡ true  → x ≡ a ++ i1 ∷ i0 ∷ i1i0.b li → ⊥
+                       nn21 [] [] zero eq1 ()
+                       nn21 (i0 ∷ a) [] zero eq1 ()
+                       nn21 (i1 ∷ a) [] zero eq1 ()
+                       nn21 a (i0 ∷ x₁) zero () eq0
+                       nn21 [] (i0 ∷ x₁) (suc i) () eq0
+                       nn21 (x ∷ a) (i0 ∷ x₁) (suc i) () eq0
+                       nn21 [] (i1 ∷ i0 ∷ x₁) (suc zero) () eq0
+                       nn21 [] (i1 ∷ i0 ∷ x₁) (suc (suc i)) () eq0
+                       nn21 (i1 ∷ a) (i1 ∷ x₁) (suc i) eq1 eq0 = nn21 a x₁ i eq1 (cons-inject eq0)
+          nn11 : (x y z : List In2 ) → ¬ y ≡ [] → inputnn1  (x ++ y ++ z) ≡ true → ¬ ( inputnn1  (x ++ y ++ y ++ z) ≡ true )
+          nn11 x y z ny xyz xyyz = ⊥-elim ( nn12 (x ++ y ++ y ++ z ) xyyz record { a = x ++ i1i0.a (bb23 bb22 )
+                                                 ; b = i1i0.b (bb23 bb22) ++ z ; i10 = bb24 } )  where
+               --
+               -- we need simple calcuraion to obtain count0 y ≡ count1 y
+               --
+               nn21 : count0 x + count0 y + count0 y + count0 z ≡ count1 x + count1 y + count1 y + count1 z
+               nn21 = begin
+                    (count0 x + count0 y + count0 y) + count0 z ≡⟨ solve +-0-monoid ⟩
+                    count0 x + (count0 y + (count0 y + count0 z))  ≡⟨ sym (cong (λ k → count0 x + (count0 y + k)) (distr0  y _ )) ⟩
+                    count0 x + (count0 y + count0 (y ++ z))  ≡⟨ sym (cong (λ k → count0 x + k) (distr0  y _ )) ⟩
+                    count0 x + (count0 (y ++ y ++ z))  ≡⟨ sym (distr0  x _ ) ⟩
+                    count0 (x ++ y ++ y ++ z) ≡⟨ nn15 (x ++ y ++ y ++ z) xyyz ⟩
+                    count1 (x ++ y ++ y ++ z) ≡⟨ distr1 x _ ⟩
+                    count1 x + (count1 (y ++ y ++ z))  ≡⟨ cong (λ k → count1 x + k) (distr1  y _ ) ⟩
+                    count1 x + (count1 y + count1 (y ++ z))  ≡⟨ (cong (λ k → count1 x + (count1 y + k)) (distr1  y _ )) ⟩
+                    count1 x + (count1 y + (count1 y + count1 z))  ≡⟨ solve +-0-monoid ⟩
+                    count1 x + count1 y + count1 y + count1 z ∎ where open ≡-Reasoning
+               nn20 : count0 x + count0 y + count0 z ≡ count1 x + count1 y + count1 z
+               nn20 = begin
+                    count0 x + count0 y + count0 z ≡⟨ solve +-0-monoid ⟩
+                    count0 x + (count0 y + count0 z) ≡⟨ cong (λ k → count0 x + k) (sym (distr0 y z)) ⟩
+                    count0 x + (count0 (y ++ z)) ≡⟨ sym (distr0 x _) ⟩
+                    count0 (x ++ (y ++ z))  ≡⟨ nn15 (x ++ y ++ z) xyz ⟩
+                    count1 (x ++ (y ++ z))  ≡⟨ distr1 x _  ⟩
+                    count1 x + count1 (y ++ z)  ≡⟨ cong (λ k → count1 x + k) (distr1 y z) ⟩
+                    count1 x + (count1 y + count1 z)  ≡⟨ solve +-0-monoid ⟩
+                    count1 x + count1 y + count1 z ∎ where open ≡-Reasoning
+               -- this takes very long time to check and needs 10GB
+               bb22 : count0 y ≡ count1 y
+               bb22 = begin
+                    count0 y ≡⟨ sym ( +-cancelʳ-≡  {count1 z  + count0 x + count0 y + count0 z} (count1 y) (count0 y)  (+-cancelˡ-≡ (count1 x + count1 y) (
+                       begin
+                       count1 x + count1 y + (count1 y + (count1 z + count0 x + count0 y + count0 z))  ≡⟨ solve +-0-monoid  ⟩
+                       (count1 x + count1 y + count1 y + count1 z)  + (count0 x + count0 y + count0 z) ≡⟨ sym (cong₂ _+_ nn21 (sym nn20)) ⟩
+                       (count0 x + count0 y + count0 y + count0 z)  + (count1 x + count1 y + count1 z) ≡⟨  +-comm _ (count1 x + count1 y + count1 z) ⟩
+                       (count1 x + count1 y + count1 z) + (count0 x + count0 y + count0 y + count0 z)    ≡⟨  solve +-0-monoid ⟩
+                        count1 x + count1 y + (count1 z + (count0 x + count0 y)) + count0 y + count0 z
+                            ≡⟨  cong (λ k → count1 x + count1 y + (count1 z + k) + count0 y + count0 z) (+-comm (count0 x) _) ⟩
+                        count1 x + count1 y + (count1 z + (count0 y + count0 x)) + count0 y + count0 z    ≡⟨ solve +-0-monoid ⟩
+                        count1 x + count1 y + ((count1 z + count0 y) + count0 x) + count0 y + count0 z
+                            ≡⟨  cong (λ k → count1 x + count1 y + (k + count0 x) + count0 y + count0 z    ) (+-comm (count1 z) _) ⟩
+                        count1 x + count1 y + (count0 y + count1 z + count0 x) + count0 y + count0 z    ≡⟨  solve +-0-monoid ⟩
+                        count1 x + count1 y + (count0 y + (count1 z + count0 x + count0 y + count0 z))    ∎ ))) ⟩
+                    count1 y ∎ where open ≡-Reasoning
+               --
+               --  y contains i0 and i1 , so we have i1 → i0 transition in y ++ y
+               --
+               bb23 : count0 y ≡ count1 y → i1i0 (y ++ y)
+               bb23 eq = bb25 y y bb26 (subst (λ k → 0 < k ) (sym eq) bb26)  where
+                    bb26 : 0 < count1 y
+                    bb26 with <-cmp 0 (count1 y)
+                    ... | tri< a ¬b ¬c = a
+                    ... | tri≈ ¬a b ¬c = ⊥-elim (nat-≡< (sym bb27 ) (0<ly y ny) ) where
+                         0<ly : (y : List In2) → ¬ y ≡ []  → 0 < length y
+                         0<ly [] ne = ⊥-elim ( ne refl )
+                         0<ly (x ∷ y) ne = s≤s z≤n
+                         bb27 : length y ≡ 0
+                         bb27 = begin
+                            length y ≡⟨ sym (c0+1=n y) ⟩
+                            count0 y + count1 y ≡⟨ cong (λ k → k + count1 y ) eq  ⟩
+                            count1 y + count1 y ≡⟨ cong₂ _+_ (sym b) (sym b) ⟩
+                            0 ∎ where open ≡-Reasoning
+                    bb25 : (x y : List In2 ) →  0 < count1 x → 0 < count0 y → i1i0 (x ++ y)
+                    bb25 (i0 ∷ x₁) y 0<x 0<y with bb25 x₁ y 0<x 0<y
+                    ... | t = record { a = i0 ∷ i1i0.a t ; b = i1i0.b t ; i10 = cong (i0 ∷_) (i1i0.i10 t) }
+                    bb25 (i1 ∷ []) y 0<x 0<y = bb27 y 0<y where
+                        bb27 : (y : List In2 ) → 0 < count0 y → i1i0 (i1 ∷ y )
+                        bb27 (i0 ∷ y) 0<y = record { a = [] ; b = y ; i10 = refl }
+                        bb27 (i1 ∷ y) 0<y with bb27 y 0<y
+                        ... | t = record { a = i1 ∷ i1i0.a t ; b = i1i0.b t ; i10 = cong (i1 ∷_) (i1i0.i10 t) }
+                    bb25 (i1 ∷ i0 ∷ x₁) y 0<x 0<y = record { a = [] ; b = x₁ ++ y ; i10 = refl }
+                    bb25 (i1 ∷ i1 ∷ x₁) y (s≤s z≤n) 0<y with bb25 (i1 ∷ x₁) y (s≤s z≤n) 0<y
+                    ... | t = record { a = i1 ∷ i1i0.a t ; b = i1i0.b t ; i10 = cong (i1 ∷_) (i1i0.i10 t) }
+               bb24 : x ++ y ++ y ++ z ≡ (x ++ i1i0.a (bb23 bb22)) ++ i1 ∷ i0 ∷ i1i0.b (bb23 bb22) ++ z
+               bb24 = begin
+                    x ++ y ++ y ++ z ≡⟨ solve (++-monoid In2) ⟩
+                    x ++ (y ++ y) ++ z ≡⟨ cong (λ k → x ++ k ++ z) (i1i0.i10 (bb23 bb22)) ⟩
+                    x ++ (i1i0.a (bb23 bb22) ++ i1 ∷ i0 ∷ i1i0.b (bb23 bb22)) ++ z ≡⟨ cong (λ k → x ++ k)  -- solver does not work here
+                            (++-assoc (i1i0.a (bb23 bb22)) (i1 ∷ i0 ∷ i1i0.b (bb23 bb22)) z ) ⟩
+                    x ++ (i1i0.a (bb23 bb22) ++ (i1 ∷ i0 ∷ i1i0.b (bb23 bb22) ++ z)) ≡⟨ sym (++-assoc x _ _ ) ⟩
+                    (x ++ i1i0.a (bb23 bb22)) ++ i1 ∷ i0 ∷ i1i0.b (bb23 bb22) ++ z ∎ where open ≡-Reasoning
+
+          nn10 : (x y z : List In2 ) → ¬ y ≡ [] → inputnn1  (x ++ y ++ z) ≡ true → inputnn1  (x ++ y ++ y ++ z) ≡ false
+          nn10 x y z my eq with inputnn1  (x ++ y ++ y ++ z)  | inspect inputnn1  (x ++ y ++ y ++ z)
+          ... | true | record { eq = eq1 } = ⊥-elim ( nn11 x y z my eq eq1 )
+          ... | false | _ = refl
+
+
+
+
+
 

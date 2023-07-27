@@ -15,13 +15,13 @@ module pet-research where
   open import Relation.Nullary
   open import Data.Empty
 
-  postulate 
+  postulate   -- the law of exclude middle
      lem : (a : Set) → a ∨ ( ¬ a )
 
   record PetResearch ( Cat Dog Goat Rabbit : Set ) : Set where
      field
-        fact1 : ( Cat ∨ Dog ) → ¬ Goat
-        fact2 : ¬ Cat →  ( Dog ∨ Rabbit )
+        fact1 :  Cat ∨ Dog  → ¬ Goat
+        fact2 : ¬ Cat →   Dog ∨ Rabbit 
         fact3 : ¬ ( Cat ∨ Goat ) →  Rabbit
 
   module tmp ( Cat Dog Goat Rabbit : Set ) (p :  PetResearch  Cat Dog Goat Rabbit ) where
@@ -31,7 +31,7 @@ module pet-research where
     problem0 : Cat ∨ Dog ∨ Goat ∨ Rabbit
     problem0 with lem Cat | lem Goat
     ... | case1 c | g = case1 c
-    ... | c | case1 g = case2 ( case2 ( case1 g ) )
+    ... | case2 ¬c | case1 g = case2 ( case2 ( case1 g ) )
     ... | case2 ¬c | case2 ¬g  = case2 ( case2 ( case2 ( fact3 p lemma1 ))) where
         lemma1 : ¬ ( Cat ∨ Goat )
         lemma1 (case1 c) = ¬c c
@@ -71,7 +71,7 @@ module pet-research1 ( Cat Dog Goat Rabbit : Set ) where
 
   _=>_ :  Bool → Bool → Bool
   _ => true = true
-  false => _ = true
+  false => false = true
   true => false = false
 
   ¬_ : Bool → Bool

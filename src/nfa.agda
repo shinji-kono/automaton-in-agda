@@ -38,14 +38,15 @@ LStates1 = sr ∷ ss ∷ st ∷ []
 existsS1 : ( States1 → Bool ) → Bool            
 existsS1 qs = qs sr \/ qs ss \/ qs st
 
--- extract list of q which qs q is true
-to-listS1 : ( States1 → Bool ) → List States1
-to-listS1 qs = ss1 LStates1 where
-   ss1 : List States1 → List States1
-   ss1 [] = []
-   ss1 (x ∷ t) with qs x
-   ... | true   = x ∷ ss1 t
-   ... | false  = ss1 t 
+-- given list of all states, extract list of q which qs q is true
+
+to-list : {Q : Set} → List Q → ( Q → Bool ) → List Q
+to-list {Q} x exists = to-list1 x [] where
+   to-list1 : List Q → List Q → List Q 
+   to-list1 [] x = x
+   to-list1  (q ∷ qs) x with exists q
+   ... | true  = to-list1 qs (q ∷ x )
+   ... | false = to-list1 qs x
 
 Nmoves : { Q : Set } { Σ : Set  }
     → NAutomaton Q  Σ
@@ -63,7 +64,7 @@ Naccept M exists sb (i ∷ t ) = Naccept M exists (λ q →  exists ( λ qn → 
 {-# TERMINATING #-}
 NtraceDepth : { Q : Set } { Σ : Set  } 
     → NAutomaton Q  Σ
-    → (Nstart : Q → Bool) → List Q  → List  Σ → List (List ( Σ ∧ Q ))
+    → (Nstart : Q → Bool) → (all-states : List Q ) → List  Σ → List (List ( Σ ∧ Q ))
 NtraceDepth {Q} {Σ} M sb all is = ndepth all sb is [] [] where
     ndepth : List Q → (q : Q → Bool ) → List Σ  → List ( Σ ∧ Q )  →  List (List ( Σ ∧ Q )  ) →  List (List ( Σ ∧ Q )  )
     ndepth1 : Q → Σ → List Q →  List Σ  → List ( Σ ∧ Q )  →  List ( List ( Σ ∧ Q )) →  List ( List ( Σ ∧ Q ))
@@ -77,17 +78,40 @@ NtraceDepth {Q} {Σ} M sb all is = ndepth all sb is [] [] where
     ... | true  = ndepth qs sb (i ∷ is) t (ndepth1 q i all is t t1 )
     ... | false = ndepth qs sb (i ∷ is) t t1
 
+NtraceDepth1 : { Q : Set } { Σ : Set  } 
+    → NAutomaton Q  Σ
+    → (Nstart : Q → Bool) → (all-states : List Q ) → List  Σ → Bool ∧ List (List ( Σ ∧ Q ))
+NtraceDepth1 {Q} {Σ} M sb all is = ndepth all sb is [] [] where
+    exists : (Q → Bool) → Bool 
+    exists p = exists1 all where
+        exists1 : List Q → Bool 
+        exists1 [] = false
+        exists1 (q ∷ qs) with p q
+        ... | true = true
+        ... | false = exists1 qs
+    ndepth : List Q → (q : Q → Bool ) → List Σ  → List ( Σ ∧ Q )  →  List (Bool ∧ List ( Σ ∧ Q )  ) → Bool ∧  List (List ( Σ ∧ Q )  )
+    ndepth1 : Q → Σ → List Q →  List Σ  → List ( Σ ∧ Q )  →  List ( Bool ∧ List ( Σ ∧ Q )) →  List ( Bool ∧ List ( Σ ∧ Q ))
+    ndepth1 q i [] is t t1 = t1
+    ndepth1 q i (x ∷ qns) is t t1 =  ? -- ndepth all (Nδ M x i) is (⟪ i , q ⟫ ∷ t) (ndepth1 q i qns is t t1 )
+    ndepth [] sb is t t1 =  ? -- ⟪ exists (λ q → Nend M q /\ sb q)  ? ⟫
+    ndepth (q ∷ qs) sb [] t t1 with sb q /\ Nend M q
+    ... | true =  ndepth qs sb [] t ( ?  ∷ t1 )
+    ... | false =  ndepth qs sb [] t t1
+    ndepth (q ∷ qs) sb (i ∷ is) t t1 with sb q 
+    ... | true  = ndepth qs sb (i ∷ is) t (ndepth1 q i all is t t1 )
+    ... | false = ndepth qs sb (i ∷ is) t t1
+
 -- trace in state set
 --
 Ntrace : { Q : Set } { Σ : Set  } 
     → NAutomaton Q  Σ
+    → (all-states : List Q )
     → (exists : ( Q → Bool ) → Bool)
-    → (to-list : ( Q → Bool ) → List Q )
     → (Nstart : Q → Bool) → List  Σ → List (List Q)
-Ntrace M exists to-list sb []  = to-list ( λ q → sb q /\ Nend M q ) ∷ []
-Ntrace M exists to-list sb (i ∷ t ) =
-    to-list (λ q →  sb q ) ∷
-    Ntrace M exists to-list (λ q →  exists ( λ qn → (sb qn /\ ( Nδ M qn i q )  ))) t
+Ntrace M all-states exists sb []  = to-list all-states ( λ q → sb q /\ Nend M q ) ∷ []
+Ntrace M all-states exists sb (i ∷ t ) =
+    to-list all-states (λ q →  sb q ) ∷
+    Ntrace M all-states exists (λ q →  exists ( λ qn → (sb qn /\ ( Nδ M qn i q )  ))) t
 
 data-fin-00 : ( Fin 3 ) → Bool 
 data-fin-00 zero = true
@@ -117,7 +141,7 @@ fin1 ss = false
 fin1 sr = false
 
 test5 = existsS1  (λ q → fin1 q )
-test6 = to-listS1 (λ q → fin1 q )
+test6 = to-list LStates1 (λ q → fin1 q )
 
 start1 : States1 → Bool
 start1 sr = true
@@ -130,8 +154,8 @@ example2-1 = Naccept am2 existsS1 start1 ( i0  ∷ i1  ∷ i0  ∷ [] )
 example2-2 = Naccept am2 existsS1 start1 ( i1  ∷ i1  ∷ i1  ∷ [] ) 
 
 t-1 : List ( List States1 )
-t-1 = Ntrace am2 existsS1 to-listS1 start1 ( i1  ∷ i1  ∷ i1  ∷ [] )  -- (sr ∷ []) ∷ (sr ∷ ss ∷ []) ∷ (sr ∷ ss ∷ st ∷ []) ∷ (st ∷ []) ∷ []
-t-2 = Ntrace am2 existsS1 to-listS1 start1 ( i0  ∷ i1  ∷ i0  ∷ [] )  -- (sr ∷ []) ∷ (sr ∷ []) ∷ (sr ∷ ss ∷ []) ∷ [] ∷ []
+t-1 = Ntrace am2 LStates1  existsS1 start1 ( i1  ∷ i1  ∷ i1  ∷ [] )  -- (sr ∷ []) ∷ (sr ∷ ss ∷ []) ∷ (sr ∷ ss ∷ st ∷ []) ∷ (st ∷ []) ∷ []
+t-2 = Ntrace am2 LStates1 existsS1  start1 ( i0  ∷ i1  ∷ i0  ∷ [] )  -- (sr ∷ []) ∷ (sr ∷ []) ∷ (sr ∷ ss ∷ []) ∷ [] ∷ []
 t-3 = NtraceDepth am2 start1 LStates1 ( i1  ∷ i1  ∷ i1  ∷ [] ) 
 t-4 = NtraceDepth am2 start1 LStates1 ( i0  ∷ i1  ∷ i0  ∷ [] ) 
 t-5 = NtraceDepth am2 start1 LStates1 ( i0  ∷ i1 ∷ [] ) 
@@ -236,48 +260,4 @@ to-list1 qs (x ∷ all)  with qs x  | inspect qs x
 
 existsS1-valid : ¬ ( (qs : States1 → Bool ) →  ( existsS1 qs ≡ true ) )
 existsS1-valid n = ¬-bool refl ( n ( λ x → false ))
-
---
---  using finiteSet
---
-
-open import finiteSet
-open import finiteSetUtil
-open FiniteSet
-
-allQ : {Q : Set } (finq : FiniteSet Q) → List Q
-allQ {Q} finq = to-list finq (λ x → true)
-
-existQ : {Q : Set } (finq : FiniteSet Q) → (Q → Bool) → Bool
-existQ finq qs = exists finq qs
-
-eqQ? : {Q : Set } (finq : FiniteSet Q) → (x y : Q ) → Bool
-eqQ? finq x y = equal? finq x y
-
-finState1 : FiniteSet States1
-finState1 = record {
-     finite = finite0
-   ; Q←F = Q←F0 
-   ; F←Q = F←Q0 
-   ; finiso→ = finiso→0
-   ; finiso← = finiso←0
- } where
-     finite0 : ℕ
-     finite0 = 3
-     Q←F0 : Fin finite0 → States1
-     Q←F0 zero = sr
-     Q←F0 (suc zero) = ss
-     Q←F0 (suc (suc zero)) = st
-     F←Q0 : States1 → Fin finite0
-     F←Q0 sr = # 0
-     F←Q0 ss = # 1
-     F←Q0 st = # 2
-     finiso→0 : (q : States1) → Q←F0 ( F←Q0 q ) ≡ q
-     finiso→0 sr = refl
-     finiso→0 ss = refl
-     finiso→0 st = refl
-     finiso←0 : (f : Fin finite0 ) → F←Q0 ( Q←F0 f ) ≡ f
-     finiso←0 zero = refl
-     finiso←0 (suc zero) = refl
-     finiso←0 (suc (suc zero)) = refl
 
