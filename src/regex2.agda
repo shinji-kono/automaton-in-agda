@@ -1,4 +1,6 @@
-{-# OPTIONS --allow-unsolved-metas #-}
+{-# OPTIONS --cubical-compatible --safe #-}
+
+-- {-# OPTIONS --allow-unsolved-metas #-}
 
 open import Relation.Binary.PropositionalEquality hiding ( [_] )
 open import Relation.Nullary using (¬_; Dec; yes; no)

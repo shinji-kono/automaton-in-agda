@@ -1,3 +1,5 @@
+{-# OPTIONS --cubical-compatible --safe #-}
+
 module deriveUtil where
 
 open import Level renaming ( suc to succ ; zero to Zero )

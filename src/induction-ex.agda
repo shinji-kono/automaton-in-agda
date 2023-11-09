@@ -1,4 +1,5 @@
-{-# OPTIONS --guardedness --sized-types #-}
+{-# OPTIONS --cubical-compatible --guardedness --sized-types #-}
+
 module induction-ex where
 
 open import Relation.Binary.PropositionalEquality

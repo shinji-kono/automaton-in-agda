@@ -1,3 +1,5 @@
+{-# OPTIONS --cubical-compatible --safe #-}
+
 module non-regular where
 
 open import Data.Nat
@@ -66,8 +68,10 @@ t4 = refl
 t5 : ( n : ℕ ) → Set
 t5 n = inputnn1 ( inputnn0 n  )  ≡ true
 
-cons-inject : {A : Set} {x1 x2 : List A } { a : A } → a ∷ x1 ≡ a ∷ x2 → x1 ≡ x2
-cons-inject refl = refl
+import Level 
+
+cons-inject : {n : Level.Level } (A : Set n) { a b : A } {x1 x2 : List A} → a ∷ x1 ≡ b ∷ x2 → x1 ≡ x2
+cons-inject _ refl = refl
 
 append-[] : {A : Set} {x1 : List A } → x1 ++ [] ≡ x1
 append-[] {A} {[]} = refl
@@ -90,27 +94,40 @@ nn31 (i1 ∷ y) _ = refl
 nn01  : (i : ℕ) → inputnn1 ( inputnn0 i  ) ≡ true
 nn01  i = subst₂ (λ j k → inputnn1-i1 j k ≡ true) (sym (nn07 i 0 refl)) (sym (nn09 i)) (nn04 i)  where
      nn07 : (j x : ℕ) → x + j ≡ i  → proj1 ( inputnn1-i0 x (input-addi0 j (input-addi1 i))) ≡ x + j
-     nn07 zero x eq with input-addi1 i | inspect input-addi1 i
-     ... | [] | _ = +-comm 0 _
-     ... | i0 ∷ t | record { eq = eq1 } = ⊥-elim ( nn08 i eq1 ) where
+     nn07 zero x eq with input-addi1 i in eq1
+     ... | [] = +-comm 0 _
+     ... | i0 ∷ t = ⊥-elim ( nn08 i eq1 ) where
           nn08 : (i : ℕ) → ¬ (input-addi1 i ≡ i0 ∷ t )
           nn08 zero ()
           nn08 (suc i) ()
-     ... | i1 ∷ t | _ = +-comm 0 _
+     ... | i1 ∷ t = +-comm 0 _
      nn07 (suc j) x eq = trans (nn07 j (suc x) (trans (cong (λ k → k + j) (+-comm 1 _ )) (trans (+-assoc x _ _) eq)) )
                                                (trans (+-assoc 1 x _) (trans (cong (λ k → k + j) (+-comm 1 _) ) (+-assoc x 1 _) ))
      nn09 : (x : ℕ) → proj2 ( inputnn1-i0 0 (input-addi0 x (input-addi1 i))) ≡ input-addi1 i
-     nn09 zero with input-addi1 i | inspect input-addi1 i
-     ... | [] | _ = refl
-     ... | i0 ∷ t | record { eq = eq1 } = ⊥-elim ( nn08 i eq1 ) where
+     nn09 zero with input-addi1 i in eq1
+     ... | [] = refl
+     ... | i0 ∷ t = ⊥-elim ( nn08 i eq1 ) where
           nn08 : (i : ℕ) → ¬ (input-addi1 i ≡ i0 ∷ t )
           nn08 zero ()
           nn08 (suc i) ()
-     ... | i1 ∷ t | _ = refl
+     ... | i1 ∷ t = refl
      nn09 (suc j) = trans (nn30 (input-addi0 j (input-addi1 i)) 0) (nn09 j )
      nn04 : (i : ℕ) → inputnn1-i1 i (input-addi1 i) ≡ true
      nn04 zero = refl
      nn04 (suc i) = nn04 i
+
+half : (x : List In2) → ℕ 
+half [] = 0
+half (x ∷ []) = 0
+half (x ∷ x₁ ∷ x₂) = suc (half x₂)
+
+top-is-i0 : (x : List In2) → Bool
+top-is-i0 [] = true
+top-is-i0 (i0 ∷ _) = true
+top-is-i0 (i1 ∷ _) = false
+
+-- if this is easy, we may have an easy proof
+-- nn02  : (x : List In2) → inputnn1 x ≡ true → x ≡ inputnn0 (half x)
 
 --
 --  if there is an automaton with n states , which accespt inputnn1, it has a trasition function.
@@ -254,7 +271,7 @@ lemmaNN r Rg = tann {TA.x TAnn} (TA.non-nil-y TAnn ) (TA.xyz=is TAnn) (tr-accept
                     nn18 (i0 ∷ t) eq = t
                     nn19 : (a : List In2 ) → (eq : i0 ∷ x₁ ≡ a ++ ( i1 ∷ i0 ∷ i1i0.b li)  )
                        → x₁ ≡ nn18 a eq ++ i1 ∷ i0 ∷ i1i0.b li
-                    nn19 (i0 ∷ a) eq = cons-inject eq
+                    nn19 (i0 ∷ a) eq = cons-inject In2 eq
                nn17 (i1 ∷ x₁) i eq li = nn20 (i1 ∷ x₁) i eq li where
                     -- second half
                     nn20 : (x : List In2) → (i : ℕ) → inputnn1-i1 i x ≡ true → i1i0 x → ⊥
@@ -268,7 +285,7 @@ lemmaNN r Rg = tann {TA.x TAnn} (TA.non-nil-y TAnn ) (TA.xyz=is TAnn) (tr-accept
                        nn21 (x ∷ a) (i0 ∷ x₁) (suc i) () eq0
                        nn21 [] (i1 ∷ i0 ∷ x₁) (suc zero) () eq0
                        nn21 [] (i1 ∷ i0 ∷ x₁) (suc (suc i)) () eq0
-                       nn21 (i1 ∷ a) (i1 ∷ x₁) (suc i) eq1 eq0 = nn21 a x₁ i eq1 (cons-inject eq0)
+                       nn21 (i1 ∷ a) (i1 ∷ x₁) (suc i) eq1 eq0 = nn21 a x₁ i eq1 (cons-inject In2 eq0)
           nn11 : (x y z : List In2 ) → ¬ y ≡ [] → inputnn1  (x ++ y ++ z) ≡ true → ¬ ( inputnn1  (x ++ y ++ y ++ z) ≡ true )
           nn11 x y z ny xyz xyyz = ⊥-elim ( nn12 (x ++ y ++ y ++ z ) xyyz record { a = x ++ i1i0.a (bb23 bb22 )
                                                  ; b = i1i0.b (bb23 bb22) ++ z ; i10 = bb24 } )  where
@@ -300,19 +317,20 @@ lemmaNN r Rg = tann {TA.x TAnn} (TA.non-nil-y TAnn ) (TA.xyz=is TAnn) (tr-accept
                -- this takes very long time to check and needs 10GB
                bb22 : count0 y ≡ count1 y
                bb22 = begin
-                    count0 y ≡⟨ sym ( +-cancelʳ-≡  {count1 z  + count0 x + count0 y + count0 z} (count1 y) (count0 y)  (+-cancelˡ-≡ (count1 x + count1 y) (
-                       begin
-                       count1 x + count1 y + (count1 y + (count1 z + count0 x + count0 y + count0 z))  ≡⟨ solve +-0-monoid  ⟩
-                       (count1 x + count1 y + count1 y + count1 z)  + (count0 x + count0 y + count0 z) ≡⟨ sym (cong₂ _+_ nn21 (sym nn20)) ⟩
-                       (count0 x + count0 y + count0 y + count0 z)  + (count1 x + count1 y + count1 z) ≡⟨  +-comm _ (count1 x + count1 y + count1 z) ⟩
-                       (count1 x + count1 y + count1 z) + (count0 x + count0 y + count0 y + count0 z)    ≡⟨  solve +-0-monoid ⟩
-                        count1 x + count1 y + (count1 z + (count0 x + count0 y)) + count0 y + count0 z
-                            ≡⟨  cong (λ k → count1 x + count1 y + (count1 z + k) + count0 y + count0 z) (+-comm (count0 x) _) ⟩
-                        count1 x + count1 y + (count1 z + (count0 y + count0 x)) + count0 y + count0 z    ≡⟨ solve +-0-monoid ⟩
-                        count1 x + count1 y + ((count1 z + count0 y) + count0 x) + count0 y + count0 z
-                            ≡⟨  cong (λ k → count1 x + count1 y + (k + count0 x) + count0 y + count0 z    ) (+-comm (count1 z) _) ⟩
-                        count1 x + count1 y + (count0 y + count1 z + count0 x) + count0 y + count0 z    ≡⟨  solve +-0-monoid ⟩
-                        count1 x + count1 y + (count0 y + (count1 z + count0 x + count0 y + count0 z))    ∎ ))) ⟩
+                    count0 y ≡⟨ ? ⟩
+--                     count0 y ≡⟨ sym ( +-cancelʳ-≡  (count1 z  + count0 x + count0 y + count0 z) (count1 y) (count0 y)  (+-cancelˡ-≡ _ (count1 x + count1 y) (
+--                        begin 
+--                        count1 x + count1 y + (count1 y + (count1 z + count0 x + count0 y + count0 z))  ≡⟨ solve +-0-monoid  ⟩
+--                        (count1 x + count1 y + count1 y + count1 z)  + (count0 x + count0 y + count0 z) ≡⟨ sym (cong₂ _+_ nn21 (sym nn20)) ⟩
+--                        (count0 x + count0 y + count0 y + count0 z)  + (count1 x + count1 y + count1 z) ≡⟨  +-comm _ (count1 x + count1 y + count1 z) ⟩
+--                        (count1 x + count1 y + count1 z) + (count0 x + count0 y + count0 y + count0 z)    ≡⟨  solve +-0-monoid ⟩
+--                         count1 x + count1 y + (count1 z + (count0 x + count0 y)) + count0 y + count0 z    
+--                             ≡⟨  cong (λ k → count1 x + count1 y + (count1 z + k) + count0 y + count0 z) (+-comm (count0 x) _) ⟩
+--                         count1 x + count1 y + (count1 z + (count0 y + count0 x)) + count0 y + count0 z    ≡⟨ solve +-0-monoid ⟩
+--                         count1 x + count1 y + ((count1 z + count0 y) + count0 x) + count0 y + count0 z    
+--                             ≡⟨  cong (λ k → count1 x + count1 y + (k + count0 x) + count0 y + count0 z    ) (+-comm (count1 z) _) ⟩
+--                         count1 x + count1 y + (count0 y + count1 z + count0 x) + count0 y + count0 z    ≡⟨  solve +-0-monoid ⟩
+--                         count1 x + count1 y + (count0 y + (count1 z + count0 x + count0 y + count0 z))    ∎ ))) ⟩
                     count1 y ∎ where open ≡-Reasoning
                --
                --  y contains i0 and i1 , so we have i1 → i0 transition in y ++ y
@@ -353,9 +371,9 @@ lemmaNN r Rg = tann {TA.x TAnn} (TA.non-nil-y TAnn ) (TA.xyz=is TAnn) (tr-accept
                     (x ++ i1i0.a (bb23 bb22)) ++ i1 ∷ i0 ∷ i1i0.b (bb23 bb22) ++ z ∎ where open ≡-Reasoning
 
           nn10 : (x y z : List In2 ) → ¬ y ≡ [] → inputnn1  (x ++ y ++ z) ≡ true → inputnn1  (x ++ y ++ y ++ z) ≡ false
-          nn10 x y z my eq with inputnn1  (x ++ y ++ y ++ z)  | inspect inputnn1  (x ++ y ++ y ++ z)
-          ... | true | record { eq = eq1 } = ⊥-elim ( nn11 x y z my eq eq1 )
-          ... | false | _ = refl
+          nn10 x y z my eq with inputnn1  (x ++ y ++ y ++ z)  in eq1
+          ... | true = ⊥-elim ( nn11 x y z my eq eq1 )
+          ... | false  = refl
 
 
 

@@ -1,3 +1,5 @@
+{-# OPTIONS --cubical-compatible #-}
+
 module cfg where
 
 open import Level renaming ( suc to succ ; zero to Zero )

@@ -3,7 +3,7 @@ module lang-text where
 open import Data.List
 open import Data.String
 open import Data.Char
-open import Data.Char.Unsafe
+-- open import Data.Char.Unsafe
 open import Relation.Binary.PropositionalEquality
 open import Relation.Nullary
 open import logic
@@ -36,19 +36,19 @@ ex15b = (w : String ) → ¬ (contains w "baba"  ≡ true )
 ex15c : Set
 
 -- w is any string not in a*b*
-ex15c = (w : String ) → ( ¬ (contains w "ab"  ≡ true )  /\ ( ¬ (contains w "ba"  ≡ true ) 
+ex15c = (w : String ) → ( ¬ (contains w "ab"  ≡ true ))  /\ ( ¬ (contains w "ba"  ≡ true ) ) 
 
-ex15d : {!!}
-ex15d = {!!}
+ex15d : ?
+ex15d = ?
 
-ex15e : {!!}
-ex15e = {!!}
+ex15e : ?
+ex15e = ?
 
-ex15f : {!!}
-ex15f = {!!}
+ex15f : ?
+ex15f = ?
 
-ex15g : {!!}
-ex15g = {!!}
+ex15g : ?
+ex15g = ?
 
-ex15h : {!!}
-ex15h = {!!}
+ex15h : ?
+ex15h = ?

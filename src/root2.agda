@@ -1,3 +1,5 @@
+{-# OPTIONS --cubical-compatible --safe #-}
+
 module root2 where
 
 open import Data.Nat 
@@ -86,7 +88,7 @@ root-prime-irrational n m (suc p0) n>1 pn m>1 pnm = rot13 ( gcd-div1 n m (suc p0
     df = Dividable.factor dm
     dn : Dividable p n
     dn = divdable^2 n p 1<sp n>1 pn record { factor = df * df  ; is-factor = begin
-        df * df * p + 0  ≡⟨ *-cancelʳ-≡ _ _ {p0} ( begin 
+        df * df * p + 0  ≡⟨ *-cancelʳ-≡ _ _ (suc p0) ( begin 
           (df * df * p + 0) * p ≡⟨  cong (λ k → k * p)  (+-comm (df * df * p) 0)  ⟩
           ((df * df) * p  ) * p ≡⟨ cong (λ k → k * p) (*-assoc df df p ) ⟩
             (df * (df * p)) * p ≡⟨ cong (λ k → (df * k ) * p) (*-comm df p)  ⟩
@@ -195,8 +197,24 @@ r3 p p>0 r rr = r4 where
       d2 * (Rational.i r * Rational.i r) ∎ ) ⟩
       Rational.i r * Rational.i r  ∎ where open ≡-Reasoning
 
+-- data _≤_ : (i j : ℕ) → Set where
+--    z≤n : {n : ℕ} → zero ≤ n
+--    s≤s : {i j : ℕ} → i ≤ j → (suc i) ≤ (suc j)
+
 *<-2 : {x y z : ℕ} → z > 0  → x < y → z * x < z * y   
-*<-2 {x} {y} {suc z} (s≤s z>0) x<y = *-monoʳ-< z x<y
+*<-2 {zero} {suc y} {suc z} (s≤s z>0) x<y = begin
+   suc (z * zero) ≡⟨ cong suc (*-comm z _) ⟩ 
+   suc (zero * z) ≡⟨ refl ⟩ 
+   suc zero ≤⟨ s≤s z≤n ⟩ 
+   suc (y + z * suc y) ∎ where open ≤-Reasoning
+*<-2 {x} {y} {suc zero} (s≤s z>0) x<y = begin
+   suc (x + zero) ≡⟨ cong suc (+-comm x _) ⟩
+   suc x  ≤⟨ x<y ⟩
+   y  ≡⟨ +-comm zero _ ⟩
+   y + zero  ∎ where open ≤-Reasoning
+*<-2 {x} {y} {suc (suc z)} (s≤s z>0) x<y = begin
+   suc (x + (x + z * x))  <⟨ +-mono-≤-< x<y (*<-2 {x} {y} {suc z} (s≤s z≤n) x<y) ⟩
+   y + (y + z * y)  ∎ where open ≤-Reasoning
 
 r15 : {p : ℕ} → p > 1 → p < p * p
 r15 {p} p>1 = subst (λ k → k < p * p ) m*1=m (*<-2 (<-trans a<sa p>1) p>1 )

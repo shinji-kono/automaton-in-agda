@@ -1,3 +1,5 @@
+{-# OPTIONS --cubical-compatible --safe #-}
+
 module regular-language where
 
 open import Level renaming ( suc to Suc ; zero to Zero )
@@ -31,22 +33,38 @@ split x y (h  ∷ t) = (x [] /\ y (h  ∷ t)) \/
 Concat : {Σ : Set} → ( A B : language {Σ} ) → language {Σ}
 Concat {Σ} A B = split A B
 
-{-# TERMINATING #-}
-Star1 : {Σ : Set} → ( A : language {Σ} ) → language {Σ}
-Star1 {Σ} A [] = true
-Star1 {Σ} A (h ∷ t) = split A ( Star1 {Σ} A ) (h ∷ t)
+-- {-# TERMINATING #-}
+-- Star1 : {Σ : Set} → ( A : language {Σ} ) → language {Σ}
+-- Star1 {Σ} A [] = true
+-- Star0 {Σ} A (h ∷ t) = split A ( Star1 {Σ} A ) (h ∷ t)
 
+-- Terminating version of Star1
+--
 repeat : {Σ : Set} → (x : List Σ → Bool) → (y : List Σ ) → Bool 
+repeat2 : {Σ : Set} → (x : List Σ → Bool) → (pre y : List Σ ) → Bool
+repeat2 x pre [] = false
+repeat2 x pre (h ∷ y) = 
+   (x (pre ++ (h ∷ [])) /\ repeat x y )
+   \/ repeat2 x (pre ++ (h ∷ [])) y 
+
 repeat {Σ} x [] = true
-repeat {Σ} x (h ∷ y) = repeat2 [] (h ∷ y) where
-    repeat2 : (pre y : List Σ ) → Bool
-    repeat2 pre [] = false
-    repeat2 pre (h ∷ y) = 
-       (x (pre ++ (h ∷ [])) /\ repeat x y )
-       \/ repeat2 (pre ++ (h ∷ [])) y 
+repeat {Σ} x (h ∷ y) = repeat2 x [] (h ∷ y) 
 
 Star : {Σ : Set} → (x : List Σ → Bool) → (y : List Σ ) → Bool 
 Star {Σ} x y = repeat x y
+
+-- We have to prove definitions of Concat and Star are equivalent to the set theoretic definitions
+
+-- 1.  A ∪ B = { x | x ∈ A \/ x ∈ B }
+-- 2.  A ∘ B = { x | ∃ y ∈ A, z ∈ B, x = y ++ z }
+-- 3.  A* = { x | ∃ n ∈ ℕ, y1, y2, ..., yn ∈ A, x = y1 ++ y2 ++ ... ++ yn }
+
+-- lemma-Union : {Σ : Set} → ( A B : language {Σ} ) → ( x : List Σ ) → Union A B x ≡ ( A x \/ B x )
+-- lemma-Union = ?
+
+-- lemma-Concat : {Σ : Set} → ( A B : language {Σ} ) → ( x : List Σ ) 
+--    → Concat A B x ≡ ( ∃ λ y → ∃ λ z → A y /\ B z /\ x ≡ y ++ z )
+-- lemma-Concat = ?
 
 open import automaton-ex
 
@@ -113,4 +131,85 @@ closed-in-union {Σ} A B ( h ∷ t ) = lemma1 t ((δ (automaton A) (astart A) h)
        ≡ accept (automaton (M-Union A B)) (qa , qb) t
    lemma1 [] qa qb = refl
    lemma1 (h ∷ t ) qa qb = lemma1 t ((δ (automaton A) qa h)) ((δ (automaton B) qb h))
+
+
+       
+record Split {Σ : Set} (A : List Σ → Bool ) ( B : List Σ → Bool ) (x :  List Σ ) : Set where
+    field
+        sp0 sp1 : List Σ
+        sp-concat : sp0 ++ sp1 ≡ x
+        prop0 : A sp0 ≡ true
+        prop1 : B sp1 ≡ true
+
+open Split
+
+list-empty++ : {Σ : Set} → (x y : List Σ) → x ++ y ≡ [] → (x ≡ [] ) ∧ (y ≡ [] )
+list-empty++ [] [] refl = record { proj1 = refl ; proj2 = refl }
+list-empty++ [] (x ∷ y) ()
+list-empty++ (x ∷ x₁) y ()
+
+open _∧_
+
+open import Relation.Binary.PropositionalEquality hiding ( [_] )
+
+c-split-lemma : {Σ : Set} → (A B : List Σ → Bool ) → (h : Σ) → ( t : List Σ ) → split A B (h ∷ t ) ≡ true
+   → ( ¬ (A [] ≡ true )) ∨ ( ¬ (B ( h ∷ t ) ≡ true) )
+   → split (λ t1 → A (h ∷ t1)) B t ≡ true
+c-split-lemma {Σ} A B h t eq p = sym ( begin
+      true
+  ≡⟨  sym eq  ⟩
+      split A B (h ∷ t ) 
+  ≡⟨⟩
+      A [] /\ B (h ∷ t) \/ split (λ t1 → A (h ∷ t1)) B t
+  ≡⟨  cong ( λ k → k \/ split (λ t1 → A (h ∷ t1)) B t ) (lemma-p p ) ⟩
+      false \/ split (λ t1 → A (h ∷ t1)) B t
+  ≡⟨ bool-or-1 refl ⟩
+      split (λ t1 → A (h ∷ t1)) B t
+  ∎ ) where
+     open ≡-Reasoning 
+     lemma-p : ( ¬ (A [] ≡ true )) ∨ ( ¬ (B ( h ∷ t ) ≡ true) ) → A [] /\ B (h ∷ t) ≡ false
+     lemma-p (case1 ¬A ) = bool-and-1 ( ¬-bool-t ¬A )
+     lemma-p (case2 ¬B ) = bool-and-2 ( ¬-bool-t ¬B )
+
+split→AB :  {Σ : Set} → (A B : List Σ → Bool ) → ( x : List Σ ) → split A B x ≡ true → Split A B x
+split→AB {Σ} A B [] eq with bool-≡-? (A []) true | bool-≡-? (B []) true 
+split→AB {Σ} A B [] eq | yes eqa | yes eqb = 
+    record { sp0 = [] ; sp1 = [] ; sp-concat = refl ; prop0 = eqa ; prop1 = eqb }
+split→AB {Σ} A B [] eq | yes p | no ¬p = ⊥-elim (lemma-∧-1 eq (¬-bool-t ¬p ))
+split→AB {Σ} A B [] eq | no ¬p | t = ⊥-elim (lemma-∧-0 eq (¬-bool-t ¬p ))
+split→AB {Σ} A B (h ∷ t ) eq with bool-≡-? (A []) true | bool-≡-? (B (h ∷ t )) true
+... | yes px | yes py = record { sp0 = [] ; sp1 = h ∷ t ; sp-concat = refl ; prop0 = px ; prop1 = py }
+... | no px | _ with split→AB (λ t1 → A ( h ∷ t1 )) B t (c-split-lemma A B h t eq (case1 px) )
+... | S = record { sp0 = h ∷ sp0 S  ; sp1 = sp1 S ; sp-concat = cong ( λ k → h ∷ k) (sp-concat S) ; prop0 = prop0 S ; prop1 = prop1 S }
+split→AB {Σ} A B (h ∷ t ) eq  | _ | no px with split→AB (λ t1 → A ( h ∷ t1 )) B t (c-split-lemma A B h t eq (case2 px) )
+... | S = record { sp0 = h ∷ sp0 S  ; sp1 = sp1 S ; sp-concat = cong ( λ k → h ∷ k) (sp-concat S) ; prop0 = prop0 S ; prop1 = prop1 S }
+
+AB→split :  {Σ : Set} → (A B : List Σ → Bool ) → ( x y : List Σ ) → A x ≡ true → B y ≡ true → split A B (x ++ y ) ≡ true
+AB→split {Σ} A B [] [] eqa eqb = begin
+       split A B [] 
+     ≡⟨⟩
+       A [] /\ B []
+     ≡⟨ cong₂ (λ j k → j /\ k ) eqa eqb ⟩
+      true
+     ∎  where open ≡-Reasoning
+AB→split {Σ} A B [] (h ∷ y ) eqa eqb = begin
+      split A B (h ∷ y )
+     ≡⟨⟩
+      A [] /\ B (h ∷ y) \/ split (λ t1 → A (h ∷ t1)) B y
+     ≡⟨ cong₂ (λ j k → j /\ k \/ split (λ t1 → A (h ∷ t1)) B y ) eqa eqb ⟩
+      true /\ true \/ split (λ t1 → A (h ∷ t1)) B y
+     ≡⟨⟩
+      true \/ split (λ t1 → A (h ∷ t1)) B y
+     ≡⟨⟩
+      true
+     ∎  where open ≡-Reasoning
+AB→split {Σ} A B (h ∷ t) y eqa eqb = begin
+       split A B ((h ∷ t) ++ y)  
+     ≡⟨⟩
+       A [] /\ B (h ∷ t ++ y) \/ split (λ t1 → A (h ∷ t1)) B (t ++ y)
+     ≡⟨ cong ( λ k →  A [] /\ B (h ∷ t ++ y) \/ k ) (AB→split {Σ} (λ t1 → A (h ∷ t1)) B t y eqa eqb ) ⟩
+       A [] /\ B (h ∷ t ++ y) \/ true
+     ≡⟨ bool-or-3 ⟩
+      true
+     ∎  where open ≡-Reasoning
 

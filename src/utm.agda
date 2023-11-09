@@ -1,3 +1,5 @@
+{-# OPTIONS --cubical-compatible --safe #-}
+
 module utm where
 
 open import turing
@@ -232,9 +234,8 @@ short-input = $  ∷ ０  ∷ ０  ∷  ０ ∷  * ∷
     ^   ∷ ０  ∷  ０ ∷  １  ∷ １ ∷ []  
 
 utm-test1 : List  utmΣ → utmStates × ( List  utmΣ ) × ( List  utmΣ )
-utm-test1 inp = Turing.taccept U-TM  inp
+utm-test1 inp = Turing.taccept U-TM 10  inp
 
-{-# TERMINATING #-}
 utm-test2 : ℕ  → List  utmΣ  → utmStates × ( List  utmΣ ) × ( List  utmΣ )
 utm-test2 n inp  = loop n (Turing.tstart U-TM) inp []
   where
@@ -242,7 +243,7 @@ utm-test2 n inp  = loop n (Turing.tstart U-TM) inp []
         loop zero q L R = ( q , L , R )
         loop (suc n) q L R with  move {utmStates} {utmΣ} {０} {utmδ} q L R | q
         ... | nq , nL , nR | reads = loop n nq nL nR
-        ... | nq , nL , nR | _ = loop (suc n) nq nL nR
+        ... | nq , nL , nR | _ = loop n nq nL nR
 
 t1 = utm-test2 3 short-input 
 

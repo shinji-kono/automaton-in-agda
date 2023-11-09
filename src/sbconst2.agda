@@ -1,3 +1,5 @@
+{-# OPTIONS --cubical-compatible --safe #-}
+
 module sbconst2 where
 
 open import Level renaming ( suc to succ ; zero to Zero )
@@ -27,6 +29,14 @@ subset-construction : { Q : Set } { Σ : Set  } →
 subset-construction {Q} { Σ}  exists NFA = record {
         δ = λ q x → δconv exists ( Nδ NFA ) q x
      ;  aend = λ f → exists ( λ q → f q /\ Nend NFA q )
+   } 
+
+subset-construction' : { Q : Set } { Σ : Set  } → 
+    ( ( Q → Bool ) → Bool ) →
+    (NAutomaton Q  Σ ) → (Automaton (Q → Bool)  Σ )  
+subset-construction' {Q} { Σ}  exists NFA = record {
+        δ = λ f i q → exists ( λ r → f r /\ Nδ   NFA r i q )
+     ;  aend = λ f  → exists ( λ q → f q /\ Nend NFA q )
    } 
 
 test4 = subset-construction existsS1 am2 

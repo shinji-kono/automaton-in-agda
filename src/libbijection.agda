@@ -1,3 +1,5 @@
+{-# OPTIONS --cubical-compatible --safe #-}
+
 module libbijection where
 
 open import Level renaming ( zero to Zero ; suc to Suc )
@@ -7,7 +9,7 @@ open import Data.List hiding ([_] ; sum )
 open import Data.Nat.Properties
 open import Relation.Nullary
 open import Data.Empty
-open import Data.Unit hiding ( _≤_ )
+open import Data.Unit 
 open import  Relation.Binary.Core hiding (_⇔_)
 open import  Relation.Binary.Definitions
 open import Relation.Binary.PropositionalEquality

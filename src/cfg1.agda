@@ -1,3 +1,5 @@
+{-# OPTIONS --cubical-compatible  #-}
+
 module cfg1 where
 
 open import Level renaming ( suc to succ ; zero to Zero )
@@ -35,7 +37,7 @@ record CFGGrammer  (Symbol  : Set) : Set where
    field
       cfg : Symbol → Body Symbol 
       top : Symbol
-      eq? : Symbol → Symbol → Bool
+      eqP : Symbol → Symbol → Bool
       typeof : Symbol →  Node Symbol
 
 infixr  80 _｜_
@@ -64,11 +66,11 @@ cfg-language0 :  {Symbol  : Set} → CFGGrammer Symbol   → Body Symbol  →  L
 cfg-language1 :  {Symbol  : Set} → CFGGrammer Symbol   → Seq Symbol  →  List Symbol → Bool
 cfg-language1 cg Error x = false
 cfg-language1 cg (S ， seq) x with typeof cg S
-cfg-language1 cg (_ ， seq) (x' ∷ t) | T x =  eq? cg x x' /\ cfg-language1 cg seq t
+cfg-language1 cg (_ ， seq) (x' ∷ t) | T x =  eqP cg x x' /\ cfg-language1 cg seq t
 cfg-language1 cg (_ ， seq) [] | T x = false
 cfg-language1 cg (_ ， seq) x | N nonTerminal = split (cfg-language0 cg (cfg cg nonTerminal) )(cfg-language1 cg seq ) x
 cfg-language1 cg (S ．) x with typeof cg S
-cfg-language1 cg (_ ．) (x' ∷ []) | T x =  eq? cg x x'
+cfg-language1 cg (_ ．) (x' ∷ []) | T x =  eqP cg x x'
 cfg-language1 cg (_ ．) _ | T x = false
 cfg-language1 cg (_ ．) x | N nonTerminal = cfg-language0 cg (cfg cg nonTerminal) x
 
@@ -117,7 +119,7 @@ IFGrammer : CFGGrammer IFToken
 IFGrammer = record {
       cfg = cfg'
     ; top = statement
-    ; eq? = token-eq?
+    ; eqP = token-eq?
     ; typeof = typeof-IFG 
    } where
      cfg' : IFToken → Body IFToken 
@@ -168,7 +170,7 @@ E1Grammer : CFGGrammer E1Token
 E1Grammer = record {
       cfg = cfgE
     ; top = expr
-    ; eq? = E1-token-eq?
+    ; eqP = E1-token-eq?
     ; typeof = typeof-E1
    } where
      cfgE : E1Token → Body E1Token
@@ -286,7 +288,7 @@ pda→cfg :  {Symbol  : Set} { Q : Set} → (pda : PDA Q Symbol Q) → CFGGramme
 pda→cfg pda = record {
       cfg = {!!}
     ; top = {!!}
-    ; eq? = {!!}
+    ; eqP = {!!}
     ; typeof = {!!}
    } 
 
@@ -299,6 +301,6 @@ record CDGGrammer  (Symbol  : Set) : Set where
    field
       cdg : Seq Symbol  → Body Symbol 
       top : Symbol
-      eq? : Symbol → Symbol → Bool
+      eqP : Symbol → Symbol → Bool
       typeof : Symbol →  Node Symbol
 

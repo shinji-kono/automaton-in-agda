@@ -1,4 +1,35 @@
+{-# OPTIONS --cubical-compatible #-}
 {-# OPTIONS --sized-types #-}
+
+--
+-- induction
+--      data aaa where
+--          aend : aaa
+--          bb : (y : aaa) → aaa
+--          cc : (y : aaa) → aaa
+--
+--   (x : aaa) → bb → cc → aend
+--     induction : ( P : aaa → Set ) → (x : aaa) → P x
+--     induction P aend = ?
+--     induction P (bb y) = ? where
+--           lemma : P y
+--           lemma = induction P y 
+--     induction P (cc y) = ?
+--         
+--        ∙ 
+--       / \
+--      bb  cc
+--     /
+--    aend
+
+--
+-- coinduction
+--      record  AAA : Set where
+--        field
+--          bb : (y : AAA) 
+--          cc : (y : AAA) 
+
+
 open import Relation.Nullary
 open import Relation.Binary.PropositionalEquality
 module flcagl
@@ -9,6 +40,7 @@ open import Data.Bool hiding ( _≟_ )
 -- open import Data.Maybe
 open import Level renaming ( zero to Zero ; suc to succ )
 open import Size 
+open import Data.Empty
 
 module List where
 
@@ -48,6 +80,14 @@ module Lang where
         ν (trie f) = f []
         δ (trie f) a = trie (λ as → f (a ∷ as))
 
+        -- trie' : ∀{i}  (f : List i A → Bool) → Lang i
+        -- trie' {i} f = record { 
+        --     ν = f []
+        --   ; δ = λ {j} a → lem {j} a   -- we cannot write in this way
+        --   } where
+        --      lem :  {j : Size< i} → A → Lang j 
+        --      lem {j} a = trie' (λ as → f (a ∷ as))
+
         ∅ : ∀{i} → Lang i 
         ν ∅ = false
         δ ∅ x = ∅
@@ -75,6 +115,33 @@ module Lang where
         _·_ : ∀{i}  (k l : Lang i) → Lang i
         ν (k · l) = ν k ∧ ν l
         δ (k · l) x = let k′l =  δ k x  · l in if ν k then k′l ∪ δ l x else k′l
+
+        _+_ : ∀{i}  (k l : Lang i) → Lang i
+        ν (k + l) = ν k ∧ ν l
+        δ (k + l) x with ν k
+        ... | false = δ k x  + l 
+        ... | true  = (δ k x  + l )  ∪ δ l x 
+
+        language : { Σ : Set } → Set
+        language {Σ}  = List ∞ Σ → Bool
+
+        split : {Σ : Set} → {i : Size } → (x y : language {Σ} ) → language {Σ}
+        split x y  [] = x [] ∨  y []
+        split x y (h  ∷ t) = (x [] ∧ y (h  ∷ t)) ∨
+          split (λ t1 → x (  h ∷ t1 ))  (λ t2 → y t2 ) t
+
+        LtoSplit : (x y : Lang ∞ ) → (z : List ∞ A) → ((x + y ) ∋ z) ≡ true →   split (λ w → x ∋ w) (λ w → y ∋ w) z ≡ true
+        LtoSplit x y [] xy with ν x | ν y
+        ... | true | true = refl
+        LtoSplit x y (h ∷ z) xy = ?
+
+        SplitoL : (x y : Lang ∞ ) → (z : List ∞ A) → ((x + y ) ∋ z) ≡ false →   split (λ w → x ∋ w) (λ w → y ∋ w) z ≡ false
+        SplitoL x y [] xy with ν x | ν y 
+        ... | false | false = refl
+        ... | false | true = ?
+        ... | true | false = ?
+        SplitoL x y (h ∷ z) xy = ?
+
 
         _*_ : ∀{i} (k l : Lang i )  → Lang i
         ν (k * l) = ν k ∧ ν l
@@ -474,9 +541,9 @@ nlang : ∀{i} {S} (nfa : NAutomaton S A ) (s : S → Bool ) → Lang i
 Lang.ν (nlang nfa s) = exists ( λ x → (s x ∧ NAutomaton.Nend nfa x ))
 Lang.δ (nlang nfa s) a = nlang nfa (λ x → s x ∧ (NAutomaton.Nδ nfa x a) x) 
 
-nlang1 : ∀{i} {S} (nfa : NAutomaton S A ) (s : S → Bool ) → Lang i
-Lang.ν (nlang1 nfa s) = NAutomaton.Nend nfa  {!!}
-Lang.δ (nlang1 nfa s) a = nlang1 nfa (λ x → s x ∧ (NAutomaton.Nδ nfa x a) x) 
+-- nlang1 : ∀{i} {S} (nfa : NAutomaton S A ) (s : S → Bool ) → Lang i
+-- Lang.ν (nlang1 nfa s) = NAutomaton.Nend nfa  {!!}
+-- Lang.δ (nlang1 nfa s) a = nlang1 nfa (λ x → s x ∧ (NAutomaton.Nδ nfa x a) x) 
 
 -- nlang' : ∀{i} {S} (nfa : DA (S → Bool) ) (s : S → Bool ) → Lang i
 -- Lang.ν (nlang' nfa s) = DA.ν nfa  s

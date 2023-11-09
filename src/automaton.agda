@@ -1,3 +1,4 @@
+{-# OPTIONS --cubical-compatible --safe #-}
 module automaton where
 
 open import Data.Nat

@@ -74,7 +74,7 @@ closed-in-star {Σ} A B x = ≡-Bool-func closed-in-star→ closed-in-star← wh
     open Found
 
     closed-in-star← : contain (M-Star A ) x ≡ true → Star (contain A)  x ≡ true
-    closed-in-star← C with subset-construction-lemma← (SNFA-exist A ) NFA {!!} x C 
+    closed-in-star← C with subset-construction-lemma← (SNFA-exist A ) NFA (Star-NFA-start A) x C 
     ... | CC = {!!}
 
 

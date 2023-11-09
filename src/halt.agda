@@ -1,3 +1,5 @@
+{-# OPTIONS --cubical-compatible --safe #-}
+
 module halt where
 
 open import Level renaming ( zero to Zero ; suc to Suc )
@@ -14,36 +16,35 @@ open import Relation.Binary.PropositionalEquality
 
 open import logic
 
-record HBijection {n m : Level} (R : Set n) (S : Set m) : Set (n Level.⊔ m)  where
+record FBijection {n m : Level} (R : Set n) (S : Set m) : Set (n Level.⊔ m)  where
    field
-       fun←  :  S → R
-       fun→  :  R → S
-       fiso← : (x : R)  → fun← ( fun→ x )  ≡ x 
---  normal bijection required below, but we don't need this to show the inconsistency
---     fiso→ : (x : S ) → fun→ ( fun← x )  ≡ x 
+       ffun←  :  S → R → Bool
+       ffun→  :  (R → Bool) → S
+       ffiso← : (f : R → Bool ) → (x : R)  → ffun← ( ffun→ f ) x ≡ f x 
 
-injection' :  {n m : Level} (R : Set n) (S : Set m) (f : R → S ) → Set (n Level.⊔ m)
-injection' R S f = (x y : R) → f x ≡ f y → x ≡ y
+       -- ffun← ( ffun→ f )  ≡ f , if we have functional extensionality  but it is unsafe
 
-open HBijection 
+open FBijection 
 
-diag : {S : Set }  (b : HBijection  ( S → Bool ) S) → S → Bool
-diag b n = not (fun← b n n)
+fdiag : {S : Set }  (b : FBijection  S S) → S → Bool
+fdiag b n = not (ffun← b n n)
 
-diagonal : { S : Set } → ¬ HBijection  ( S → Bool ) S
-diagonal {S} b = diagn1 (fun→ b (diag b) ) refl where
-    diagn1 : (n : S ) → ¬ (fun→ b (diag b) ≡ n ) 
-    diagn1 n dn = ¬t=f (diag b n ) ( begin
-           not (diag b n)
-        ≡⟨⟩
-           not (not (fun← b n n))
-        ≡⟨ cong (λ k → not (k  n) ) (sym (fiso← b _)) ⟩
-           not (fun← b (fun→ b (diag b))  n)
-        ≡⟨ cong (λ k → not (fun← b k n) ) dn ⟩
-           not (fun← b n n)
-        ≡⟨⟩
-           diag b n 
-        ∎ ) where open ≡-Reasoning
+--
+--  ffun→ b (fiag b) is some S
+--  ffun← b (ffun→ b (fdiag b) ) is a function S → Bool
+--     is pointwise equal to fdiag b , which means not (ffun← b (ffun→ b (fdiag b) ) x ≡ (fdiag b) x )
+--     but is also means not (fdiag b) x ≡ (fdiag b) x , contradiction
+
+fdiagonal : { S : Set } → ¬ FBijection  S S
+fdiagonal {S} b =  ¬t=f _ (trans ff4 (sym (ff3 _) ) ) where
+    ff1 : S
+    ff1 = ffun→ b (fdiag b)
+    ff2 : S → Bool
+    ff2 = ffun← b (ffun→ b (fdiag b) ) 
+    ff3 : (x : S) → ffun← b (ffun→ b (fdiag b) ) x ≡ fdiag b x
+    ff3 x = ffiso← b (fdiag b) x
+    ff4 : not ( ffun← b (ffun→ b (fdiag b) ) (ffun→ b (fdiag b))) ≡ fdiag b (ffun→ b (fdiag b))
+    ff4  = refl   -- definition of fdiag b
 
 record TM : Set where
    field
@@ -61,9 +62,6 @@ open UTM
 
 open _∧_
 
-open import Axiom.Extensionality.Propositional
-postulate f-extensionality : { n : Level}  → Axiom.Extensionality.Propositional.Extensionality n n 
-
 record Halt : Set where
    field
       halt :  (t : TM ) → (x : List Bool ) → Bool
@@ -72,11 +70,11 @@ record Halt : Set where
 
 open Halt
 
-TNL : (halt : Halt ) → (utm : UTM) → HBijection (List Bool → Bool) (List Bool)
-TNL halt utm = record {
-       fun←  = λ tm x → Halt.halt halt (UTM.utm utm) (tm ++ x)
-     ; fun→  = λ h  → encode utm record { tm = h1 h } 
-     ; fiso← = λ h →  f-extensionality (λ y → TN1 h y )
+TNLF : (halt : Halt ) → (utm : UTM) → FBijection (List Bool) (List Bool)
+TNLF halt utm = record {
+       ffun←  = λ tm x → Halt.halt halt (UTM.utm utm) (tm ++ x)
+     ; ffun→  = λ h  → encode utm record { tm = h1 h } 
+     ; ffiso← = λ h y → TN1 h y 
   } where
      open ≡-Reasoning
      h1 : (h : List Bool → Bool) → (x : List Bool ) → Maybe Bool
@@ -92,8 +90,8 @@ TNL halt utm = record {
      h-just h y eq with h y
      h-just h y refl | true = refl
      TN1 :  (h : List Bool → Bool) → (y : List Bool ) → Halt.halt halt (UTM.utm utm) (tenc h y) ≡ h y
-     TN1 h y with h y | inspect h y
-     ... | true  | record { eq = eq1 } = begin
+     TN1 h y with h y in eq1
+     ... | true  = begin
         Halt.halt halt (UTM.utm utm)  (tenc h y) ≡⟨ proj2 (is-halt halt (UTM.utm utm) (tenc h y) ) (case1 (sym tm-tenc)) ⟩
         true ∎  where
           tm-tenc :  tm (UTM.utm utm) (tenc h y) ≡ just true
@@ -101,7 +99,7 @@ TNL halt utm = record {
               tm (UTM.utm utm) (tenc h y)  ≡⟨  is-tm utm _ y ⟩
               h1 h y ≡⟨ h-just h y eq1  ⟩
               just true  ∎  
-     ... | false | record { eq = eq1 } = begin
+     ... | false = begin
         Halt.halt halt (UTM.utm utm)  (tenc h y) ≡⟨ proj2 (is-not-halt halt (UTM.utm utm) (tenc h y) ) (sym tm-tenc) ⟩
         false ∎  where
           tm-tenc :  tm (UTM.utm utm) (tenc h y) ≡ nothing
@@ -109,10 +107,9 @@ TNL halt utm = record {
               tm (UTM.utm utm) (tenc h y)  ≡⟨  is-tm utm _ y ⟩
               h1 h y ≡⟨  h-nothing h y eq1 ⟩
               nothing  ∎  
-     -- the rest of bijection means encoding is unique
+     -- the rest of bijection means encoding is unique, but we don't need it
      -- fiso→ :  (y : List Bool ) → encode utm record { tm = λ x →  h1 (λ tm → Halt.halt halt (UTM.utm utm) tm  ) x } ≡ y
           
-TNL1 : UTM → ¬ Halt 
-TNL1 utm halt = diagonal ( TNL halt utm )
-
+TNLF1 : UTM → ¬ Halt 
+TNLF1 utm halt = fdiagonal ( TNLF halt utm )
 

@@ -1,4 +1,5 @@
-{-# OPTIONS --allow-unsolved-metas #-}
+{-# OPTIONS --cubical-compatible --safe #-}
+-- {-# OPTIONS --allow-unsolved-metas #-}
 module turing where
 
 open import Level renaming ( suc to succ ; zero to Zero )
@@ -31,10 +32,7 @@ data Move : Set  where
 -- left         push SR , pop      
 -- right        pop     , push SL      
 
-{-# TERMINATING #-}
 move : {Q Σ : Set } → { tnone : Σ} → {tδ : Q →  Σ → Q × ( Write  Σ ) ×  Move } → (q : Q ) ( L : List  Σ ) ( L : List   Σ ) → ( Q × List  Σ × List  Σ )
-move {Q} {Σ} {tnone} {tδ} q L [] = move {Q} {Σ} {tnone} {tδ} q  L  ( tnone  ∷ [] ) 
-move {Q} {Σ} {tnone} {tδ} q [] R = move {Q} {Σ} {tnone} {tδ} q  ( tnone  ∷ [] )  R 
 move {Q} {Σ} {tnone} {tδ} q ( LH  ∷ LT ) ( RH ∷ RT ) with  tδ q LH  
 ... | nq , write x , left  = ( nq , ( RH ∷ x  ∷ LT ) , RT )
 ... | nq , write x , right = ( nq , LT , ( x  ∷ RH  ∷ RT ) )
@@ -42,29 +40,67 @@ move {Q} {Σ} {tnone} {tδ} q ( LH  ∷ LT ) ( RH ∷ RT ) with  tδ q LH
 ... | nq , wnone , left    = ( nq , ( RH  ∷ LH  ∷ LT ) , RT  )
 ... | nq , wnone , right   = ( nq ,  LT , ( LH  ∷ RH  ∷ RT ) )
 ... | nq , wnone , mnone   = ( nq , ( LH  ∷ LT ) , (  RH ∷ RT )  )
-{-# TERMINATING #-}
-move-loop : {Q Σ : Set } → {tend :  Q → Bool}  → { tnone : Σ} → {tδ : Q →  Σ → Q × ( Write  Σ ) ×  Move }
+move {Q} {Σ} {tnone} {tδ} q ( LH  ∷ LT ) [] with  tδ q LH  
+... | nq , write x , left  = ( nq , ( tnone ∷ x  ∷ LT ) , [] )
+... | nq , write x , right = ( nq , LT , ( x  ∷ tnone  ∷ [] ) )
+... | nq , write x , mnone = ( nq , ( x  ∷ LT ) , (  tnone ∷ [] ) )
+... | nq , wnone , left    = ( nq , ( tnone  ∷ LH  ∷ LT ) , []  )
+... | nq , wnone , right   = ( nq ,  LT , ( LH  ∷ tnone  ∷ [] ) )
+... | nq , wnone , mnone   = ( nq , ( LH  ∷ LT ) , (  tnone ∷ [] )  )
+move {Q} {Σ} {tnone} {tδ} q [] ( RH ∷ RT ) with  tδ q tnone
+... | nq , write x , left  = ( nq , ( RH ∷ x  ∷ [] ) , RT )
+... | nq , write x , right = ( nq , [] , ( x  ∷ RH  ∷ RT ) )
+... | nq , write x , mnone = ( nq , ( x  ∷ [] ) , (  RH ∷ RT ) )
+... | nq , wnone , left    = ( nq , ( RH  ∷ tnone  ∷ [] ) , RT  )
+... | nq , wnone , right   = ( nq ,  [] , ( tnone  ∷ RH  ∷ RT ) )
+... | nq , wnone , mnone   = ( nq , ( tnone  ∷ [] ) , (  RH ∷ RT )  )
+move {Q} {Σ} {tnone} {tδ} q [] [] with  tδ q tnone
+... | nq , write x , left  = ( nq , ( tnone ∷ x  ∷ [] ) , [] )
+... | nq , write x , right = ( nq , [] , ( x  ∷ tnone  ∷ [] ) )
+... | nq , write x , mnone = ( nq , ( x  ∷ [] ) , (  tnone ∷ [] ) )
+... | nq , wnone , left    = ( nq , ( tnone  ∷ tnone  ∷ [] ) , []  )
+... | nq , wnone , right   = ( nq ,  [] , ( tnone  ∷ tnone  ∷ [] ) )
+... | nq , wnone , mnone   = ( nq , ( tnone  ∷ [] ) , (  tnone ∷ [] )  )
+
+move-loop : (i : ℕ) {Q Σ : Set } → {tend :  Q → Bool}  → { tnone : Σ} → {tδ : Q →  Σ → Q × ( Write  Σ ) ×  Move }
     → (q : Q ) ( L : List  Σ ) ( L : List   Σ ) → ( Q × List  Σ × List  Σ )
-move-loop {Q} {Σ} {tend} {tnone} {tδ}  q L R with tend q
+move-loop zero {Q} {Σ} {tend} {tnone} {tδ}  q L R = ( q , L , R )
+move-loop (suc i) {Q} {Σ} {tend} {tnone} {tδ}  q L R with tend q
 ... | true = ( q , L , R )
-... | flase = move-loop {Q} {Σ} {tend} {tnone} {tδ} ( proj₁ next ) ( proj₁ ( proj₂ next ) )  ( proj₂  ( proj₂ next ) )
+... | flase = move-loop i {Q} {Σ} {tend} {tnone} {tδ} ( proj₁ next ) ( proj₁ ( proj₂ next ) )  ( proj₂  ( proj₂ next ) )
         where
         next = move {Q} {Σ} {tnone} {tδ} q  L  R 
 
-{-# TERMINATING #-}
 move0 : {Q Σ : Set } ( tend : Q → Bool ) (tnone : Σ ) (tδ : Q →  Σ → Q × ( Write  Σ ) ×  Move)
    (q : Q ) ( L : List  Σ ) ( L : List   Σ ) → ( Q × List  Σ × List  Σ )
-move0 tend tnone tδ  q L R with tend q
-... | true = ( q , L , R )
-move0 tend tnone tδ  q L [] | false = move0 tend tnone tδ  q  L  ( tnone  ∷ [] ) 
-move0 tend tnone tδ  q [] R | false = move0 tend tnone tδ  q  ( tnone  ∷ [] )  R 
-move0 tend tnone tδ  q ( LH  ∷ LT ) ( RH ∷ RT ) | false with  tδ q LH  
-... | nq , write x , left  = move0 tend tnone tδ  nq ( RH ∷ x  ∷ LT ) RT 
-... | nq , write x , right = move0 tend tnone tδ  nq LT ( x  ∷ RH  ∷ RT ) 
-... | nq , write x , mnone = move0 tend tnone tδ  nq ( x  ∷ LT ) (  RH ∷ RT ) 
-... | nq , wnone , left    = move0 tend tnone tδ  nq ( RH  ∷ LH  ∷ LT ) RT  
-... | nq , wnone , right   = move0 tend tnone tδ  nq  LT ( LH  ∷ RH  ∷ RT ) 
-... | nq , wnone , mnone   = move0 tend tnone tδ  nq ( LH  ∷ LT ) (  RH ∷ RT )  
+move0 tend tnone tδ  q ( LH  ∷ LT ) ( RH ∷ RT ) with  tδ q LH  
+... | nq , write x , left  = nq , ( RH ∷ x  ∷ LT ) , RT 
+... | nq , write x , right = nq , LT , ( x  ∷ RH  ∷ RT ) 
+... | nq , write x , mnone = nq , ( x  ∷ LT ) , (  RH ∷ RT ) 
+... | nq , wnone , left    = nq , ( RH  ∷ LH  ∷ LT ) , RT  
+... | nq , wnone , right   = nq  , LT , ( LH  ∷ RH  ∷ RT ) 
+... | nq , wnone , mnone   = ( q , ( LH  ∷ LT ) , (  RH ∷ RT )  )
+move0 tend tnone tδ  q ( LH  ∷ LT ) [] with  tδ q LH  
+... | nq , write x , left  = nq , ( tnone ∷ x  ∷ LT ) , [] 
+... | nq , write x , right = nq , LT , ( x  ∷ tnone  ∷ [] ) 
+... | nq , write x , mnone = nq , ( x  ∷ LT ) , (  tnone ∷ [] ) 
+... | nq , wnone , left    = nq , ( tnone  ∷ LH  ∷ LT ) , []  
+... | nq , wnone , right   = nq ,  LT , ( LH  ∷ tnone  ∷ [] ) 
+... | nq , wnone , mnone   = nq , ( LH  ∷ LT ) , (  tnone ∷ [] )  
+move0 tend tnone tδ  q [] ( RH ∷ RT ) with  tδ q tnone  
+... | nq , write x , left  = nq , ( RH ∷ x  ∷ [] ) , RT 
+... | nq , write x , right = nq , [] , ( x  ∷ RH  ∷ RT ) 
+... | nq , write x , mnone = nq , ( x  ∷ [] ) , (  RH ∷ RT ) 
+... | nq , wnone , left    = nq , ( RH  ∷ tnone  ∷ [] ) , RT  
+... | nq , wnone , right   = nq ,  [] , ( tnone  ∷ RH  ∷ RT ) 
+... | nq , wnone , mnone   = nq , ( tnone  ∷ [] ) , (  RH ∷ RT )  
+move0 tend tnone tδ  q [] [] with  tδ q tnone  
+... | nq , write x , left  = nq , ( tnone ∷ x  ∷ [] ) , [] 
+... | nq , write x , right = nq , [] , ( x  ∷ tnone  ∷ [] ) 
+... | nq , write x , mnone = nq , ( x  ∷ [] ) , (  tnone ∷ [] ) 
+... | nq , wnone , left    = nq , ( tnone  ∷ tnone  ∷ [] ) , []  
+... | nq , wnone , right   = nq ,  [] , ( tnone  ∷ tnone  ∷ [] ) 
+... | nq , wnone , mnone   = nq , ( tnone  ∷ [] ) , (  tnone ∷ [] )  
 
 record Turing ( Q : Set ) ( Σ : Set  ) 
        : Set  where
@@ -73,8 +109,14 @@ record Turing ( Q : Set ) ( Σ : Set  )
         tstart : Q
         tend : Q → Bool
         tnone :  Σ
-    taccept : List  Σ → ( Q × List  Σ × List  Σ )
-    taccept L = move0 tend tnone tδ tstart L []
+    taccept : (i : ℕ ) → List  Σ → ( Q × List  Σ × List  Σ )
+    taccept i L = tloop i tstart [] []  where
+        tloop : (i : ℕ)  (q : Q ) ( L : List  Σ ) ( L : List   Σ ) → ( Q × List  Σ × List  Σ )
+        tloop zero q L R = ( q , L , R )
+        tloop (suc i) q L R with tend q
+        ... | true = ( q , L , R )
+        ... | false with move0 tend tnone tδ q L R 
+        ... | nq , L , R = tloop i nq L R
 
 open import automaton
 
@@ -84,20 +126,36 @@ open import automaton
 open import automaton
 open Automaton
 
-{-# TERMINATING #-}
-move1 : {Q Σ : Set } ( tend : Q → Bool ) (tnone : Σ ) (δ : Q →  Σ → Q ) (tδ : Q → Σ →  Write  Σ  ×  Move)
+move1 : {Q Σ : Set } (tnone : Σ ) (δ : Q →  Σ → Q ) (tδ : Q → Σ →  Write  Σ  ×  Move)
    (q : Q ) ( L : List  Σ ) ( R : List   Σ ) →  Q × List  Σ × List  Σ 
-move1 tend tnone δ tδ  q L R with tend q
-... | true = ( q , L , R )
-move1 tend tnone δ tδ  q L [] | false = move1 tend tnone δ tδ  q  L  ( tnone  ∷ [] ) 
-move1 tend tnone δ tδ  q [] R | false = move1 tend tnone δ tδ  q  ( tnone  ∷ [] )  R 
-move1 tend tnone δ tδ  q ( LH  ∷ LT ) ( RH ∷ RT ) | false with tδ (δ q LH) LH
-... |  write x , left  = move1 tend tnone δ tδ  (δ q LH) ( RH ∷ x  ∷ LT ) RT 
-... |  write x , right = move1 tend tnone δ tδ  (δ q LH) LT ( x  ∷ RH  ∷ RT ) 
-... |  write x , mnone = move1 tend tnone δ tδ  (δ q LH) ( x  ∷ LT ) (  RH ∷ RT ) 
-... |  wnone , left    = move1 tend tnone δ tδ  (δ q LH) ( RH  ∷ LH  ∷ LT ) RT  
-... |  wnone , right   = move1 tend tnone δ tδ  (δ q LH)  LT ( LH  ∷ RH  ∷ RT ) 
-... |  wnone , mnone   = move1 tend tnone δ tδ  (δ q LH) ( LH  ∷ LT ) (  RH ∷ RT )  
+move1 tnone δ tδ  q ( LH  ∷ LT ) ( RH ∷ RT ) with tδ (δ q LH) LH
+... |  write x , left  = (δ q LH) , ( RH ∷ x  ∷ LT ) , RT 
+... |  write x , right = (δ q LH) , LT , ( x  ∷ RH  ∷ RT ) 
+... |  write x , mnone = (δ q LH) , ( x  ∷ LT ) , (  RH ∷ RT ) 
+... |  wnone , left    = (δ q LH) , ( RH  ∷ LH  ∷ LT ) , RT  
+... |  wnone , right   = (δ q LH) ,  LT , ( LH  ∷ RH  ∷ RT ) 
+... |  wnone , mnone   = (δ q LH) , ( LH  ∷ LT ) , (  RH ∷ RT )  
+move1 tnone δ tδ  q ( LH  ∷ LT ) [] with tδ (δ q LH) LH
+... |  write x , left  = (δ q LH) , ( tnone ∷ x  ∷ LT ) , [] 
+... |  write x , right = (δ q LH) , LT , ( x  ∷ tnone  ∷ [] ) 
+... |  write x , mnone = (δ q LH) , ( x  ∷ LT ) , (  tnone ∷ [] ) 
+... |  wnone , left    = (δ q LH) , ( tnone  ∷ LH  ∷ LT ) , []  
+... |  wnone , right   = (δ q LH) ,  LT , ( LH  ∷ tnone  ∷ [] ) 
+... |  wnone , mnone   = (δ q LH) , ( LH  ∷ LT ) , (  tnone ∷ [] )  
+move1 tnone δ tδ  q [] ( RH ∷ RT ) with tδ (δ q tnone) tnone
+... |  write x , left  = (δ q tnone) , ( RH ∷ x  ∷ [] ) , RT 
+... |  write x , right = (δ q tnone) , [] , ( x  ∷ RH  ∷ RT ) 
+... |  write x , mnone = (δ q tnone) , ( x  ∷ [] ) , (  RH ∷ RT ) 
+... |  wnone , left    = (δ q tnone) , ( RH  ∷ tnone  ∷ [] ) , RT  
+... |  wnone , right   = (δ q tnone) ,  [] , ( tnone  ∷ RH  ∷ RT ) 
+... |  wnone , mnone   = (δ q tnone) , ( tnone  ∷ [] ) , (  RH ∷ RT )  
+move1 tnone δ tδ  q [] [] with tδ (δ q tnone) tnone
+... |  write x , left  = (δ q tnone) , ( tnone ∷ x  ∷ [] ) , [] 
+... |  write x , right = (δ q tnone) , [] , ( x  ∷ tnone  ∷ [] ) 
+... |  write x , mnone = (δ q tnone) , ( x  ∷ [] ) , (  tnone ∷ [] ) 
+... |  wnone , left    = (δ q tnone) , ( tnone  ∷ tnone  ∷ [] ) , []  
+... |  wnone , right   = (δ q tnone) ,  [] , ( tnone  ∷ tnone  ∷ [] ) 
+... |  wnone , mnone   = (δ q tnone) , ( tnone  ∷ [] ) , (  tnone ∷ [] )  
 
 record TM ( Q : Set ) ( Σ : Set  ) 
        : Set  where
@@ -105,8 +163,14 @@ record TM ( Q : Set ) ( Σ : Set  )
         automaton : Automaton  Q Σ
         tδ : Q → Σ → Write  Σ  ×  Move 
         tnone :  Σ
-    taccept : Q → List  Σ → ( Q × List  Σ × List  Σ )
-    taccept q L = move1 (aend automaton) tnone (δ automaton) tδ q L []
+    taccept : (i : ℕ) → Q → List  Σ → ( Q × List  Σ × List  Σ )
+    taccept i q L = tloop i q L []  where
+        tloop : (i : ℕ) → (q : Q ) ( L : List  Σ ) ( R : List   Σ ) →  Q × List  Σ × List  Σ 
+        tloop i q L R with aend automaton q
+        ... | true = ( q , L , R )
+        tloop zero q L R  | false = ( q , L , R )
+        tloop (suc i) q L R  | false with move1 tnone (δ automaton) tδ q L R
+        ... | q' , L' , R' = tloop i q' L' R'
 
 data CopyStates : Set where
    s1 : CopyStates
@@ -153,7 +217,7 @@ copyTM = record {
       tend _ = false
 
 test1 : CopyStates × ( List  ℕ ) × ( List  ℕ )
-test1 = Turing.taccept copyMachine  ( 1  ∷ 1  ∷ 0  ∷ 0  ∷  0 ∷ []  )
+test1 = Turing.taccept copyMachine  10 ( 1  ∷ 1  ∷ 0  ∷ 0  ∷  0 ∷ []  )
 
 test2 : ℕ  → CopyStates × ( List  ℕ ) × ( List  ℕ )
 test2 n  = loop n (Turing.tstart copyMachine) ( 1  ∷ 1  ∷ 0  ∷ 0  ∷  0 ∷ []  ) []

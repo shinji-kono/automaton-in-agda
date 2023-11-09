@@ -1,4 +1,4 @@
-{-# OPTIONS --allow-unsolved-metas #-}
+{-# OPTIONS --cubical-compatible --safe #-}
 module finiteSet  where
 
 open import Data.Nat hiding ( _≟_ )
@@ -12,7 +12,7 @@ open import logic
 open import nat
 open import Data.Nat.Properties hiding ( _≟_ )
 
-open import Relation.Binary.HeterogeneousEquality as HE using (_≅_ ) 
+-- open import Relation.Binary.HeterogeneousEquality as HE using (_≅_ ) 
 
 record FiniteSet ( Q : Set ) : Set  where
      field

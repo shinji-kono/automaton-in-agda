@@ -1,3 +1,5 @@
+{-# OPTIONS --cubical-compatible --safe #-}
+
 module chap0 where
 
 open import Data.List
@@ -149,7 +151,7 @@ data connected { V : Set } ( E : V -> V -> Set ) ( x y : V ) : Set  where
     indirect :  ( z : V  ) -> E x z  →  connected {V} E z y → connected E x y
 
 lemma1 : connected ( edge graph012a ) 1 2
-lemma1 = direct refl  where
+lemma1 = direct refl  
 
 lemma1-2 : connected ( edge graph012a ) 1 3
 lemma1-2 = indirect 2 refl (direct refl ) 
@@ -188,7 +190,7 @@ lemma7 = dgree-c list012a 2 ( λ n → n )
 even2 : (n : ℕ ) → n % 2 ≡ 0 → (n + 2) % 2 ≡ 0 
 even2 0 refl = refl
 even2 1 () 
-even2 (suc (suc n)) eq = trans ([a+n]%n≡a%n n _) eq -- [a+n]%n≡a%n : ∀ a n → (a + suc n) % suc n ≡ a % suc n
+even2 (suc (suc n)) eq = ? -- trans ([a+n]%n≡a%n n _) eq -- [a+n]%n≡a%n : ∀ a n → (a + suc n) % suc n ≡ a % suc n
 
 sum-of-dgree : ( g : List ( ℕ × ℕ )) → ℕ
 sum-of-dgree [] = 0
@@ -202,7 +204,7 @@ dgree-even ((e , e1) ∷ t) = begin
        (2 + sum-of-dgree t ) % 2       
     ≡⟨ cong ( λ k → k % 2 ) ( +-comm 2 (sum-of-dgree t) )  ⟩
        (sum-of-dgree t + 2) % 2 
-    ≡⟨ [a+n]%n≡a%n (sum-of-dgree t) _ ⟩
+    ≡⟨ ? ⟩ -- [a+n]%n≡a%n (sum-of-dgree t) _ ⟩
        sum-of-dgree t % 2
     ≡⟨ dgree-even t ⟩
        0

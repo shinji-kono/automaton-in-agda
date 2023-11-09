@@ -1,4 +1,10 @@
-module regular-concat where
+{-# OPTIONS --cubical-compatible --safe #-}
+
+open import finiteSet
+open import logic
+-- open import finiteFunc  -- we can prove fin→ , but it is unsafe 
+
+module regular-concat (fin→ : {A : Set} → FiniteSet A → FiniteSet (A → Bool )) where
 
 open import Level renaming ( suc to Suc ; zero to Zero )
 open import Data.List 
@@ -10,18 +16,17 @@ open import Data.Product
 -- open import Data.Maybe
 open import  Relation.Nullary
 open import  Relation.Binary.PropositionalEquality hiding ( [_] )
-open import logic
 open import nat
 open import automaton
 open import regular-language 
 
 open import nfa
 open import sbconst2
-open import finiteSet
 open import finiteSetUtil
 
 open Automaton
 open FiniteSet
+open Split
 
 open RegularLanguage
 
@@ -56,92 +61,9 @@ M-Concat {Σ} A B = record {
        finf : FiniteSet (states A ∨ states B → Bool ) 
        finf = fin→ fin 
        
--- closed-in-concat' :  {Σ : Set} → (A B : RegularLanguage Σ ) → ( x : List Σ ) → isRegular (Concat (contain A) (contain B)) x ( M-Concat A B )
--- closed-in-concat' {Σ} A B x = ≡-Bool-func closed-in-concat→ closed-in-concat← where
---     closed-in-concat→ : Concat (contain A) (contain B) x ≡ true → contain (M-Concat A B) x ≡ true
---     closed-in-concat→ = {!!}
---     closed-in-concat← : contain (M-Concat A B) x ≡ true → Concat (contain A) (contain B) x ≡ true
---     closed-in-concat← = {!!}
-
-record Split {Σ : Set} (A : List Σ → Bool ) ( B : List Σ → Bool ) (x :  List Σ ) : Set where
-    field
-        sp0 : List Σ
-        sp1 : List Σ
-        sp-concat : sp0 ++ sp1 ≡ x
-        prop0 : A sp0 ≡ true
-        prop1 : B sp1 ≡ true
-
-open Split
-
-list-empty++ : {Σ : Set} → (x y : List Σ) → x ++ y ≡ [] → (x ≡ [] ) ∧ (y ≡ [] )
-list-empty++ [] [] refl = record { proj1 = refl ; proj2 = refl }
-list-empty++ [] (x ∷ y) ()
-list-empty++ (x ∷ x₁) y ()
-
 open _∧_
 
 open import Relation.Binary.PropositionalEquality hiding ( [_] )
-
-c-split-lemma : {Σ : Set} → (A B : List Σ → Bool ) → (h : Σ) → ( t : List Σ ) → split A B (h ∷ t ) ≡ true
-   → ( ¬ (A [] ≡ true )) ∨ ( ¬ (B ( h ∷ t ) ≡ true) )
-   → split (λ t1 → A (h ∷ t1)) B t ≡ true
-c-split-lemma {Σ} A B h t eq p = sym ( begin
-      true
-  ≡⟨  sym eq  ⟩
-      split A B (h ∷ t ) 
-  ≡⟨⟩
-      A [] /\ B (h ∷ t) \/ split (λ t1 → A (h ∷ t1)) B t
-  ≡⟨  cong ( λ k → k \/ split (λ t1 → A (h ∷ t1)) B t ) (lemma-p p ) ⟩
-      false \/ split (λ t1 → A (h ∷ t1)) B t
-  ≡⟨ bool-or-1 refl ⟩
-      split (λ t1 → A (h ∷ t1)) B t
-  ∎ ) where
-     open ≡-Reasoning 
-     lemma-p : ( ¬ (A [] ≡ true )) ∨ ( ¬ (B ( h ∷ t ) ≡ true) ) → A [] /\ B (h ∷ t) ≡ false
-     lemma-p (case1 ¬A ) = bool-and-1 ( ¬-bool-t ¬A )
-     lemma-p (case2 ¬B ) = bool-and-2 ( ¬-bool-t ¬B )
-
-split→AB :  {Σ : Set} → (A B : List Σ → Bool ) → ( x : List Σ ) → split A B x ≡ true → Split A B x
-split→AB {Σ} A B [] eq with bool-≡-? (A []) true | bool-≡-? (B []) true 
-split→AB {Σ} A B [] eq | yes eqa | yes eqb = 
-    record { sp0 = [] ; sp1 = [] ; sp-concat = refl ; prop0 = eqa ; prop1 = eqb }
-split→AB {Σ} A B [] eq | yes p | no ¬p = ⊥-elim (lemma-∧-1 eq (¬-bool-t ¬p ))
-split→AB {Σ} A B [] eq | no ¬p | t = ⊥-elim (lemma-∧-0 eq (¬-bool-t ¬p ))
-split→AB {Σ} A B (h ∷ t ) eq with bool-≡-? (A []) true | bool-≡-? (B (h ∷ t )) true
-... | yes px | yes py = record { sp0 = [] ; sp1 = h ∷ t ; sp-concat = refl ; prop0 = px ; prop1 = py }
-... | no px | _ with split→AB (λ t1 → A ( h ∷ t1 )) B t (c-split-lemma A B h t eq (case1 px) )
-... | S = record { sp0 = h ∷ sp0 S  ; sp1 = sp1 S ; sp-concat = cong ( λ k → h ∷ k) (sp-concat S) ; prop0 = prop0 S ; prop1 = prop1 S }
-split→AB {Σ} A B (h ∷ t ) eq  | _ | no px with split→AB (λ t1 → A ( h ∷ t1 )) B t (c-split-lemma A B h t eq (case2 px) )
-... | S = record { sp0 = h ∷ sp0 S  ; sp1 = sp1 S ; sp-concat = cong ( λ k → h ∷ k) (sp-concat S) ; prop0 = prop0 S ; prop1 = prop1 S }
-
-AB→split :  {Σ : Set} → (A B : List Σ → Bool ) → ( x y : List Σ ) → A x ≡ true → B y ≡ true → split A B (x ++ y ) ≡ true
-AB→split {Σ} A B [] [] eqa eqb = begin
-       split A B [] 
-     ≡⟨⟩
-       A [] /\ B []
-     ≡⟨ cong₂ (λ j k → j /\ k ) eqa eqb ⟩
-      true
-     ∎  where open ≡-Reasoning
-AB→split {Σ} A B [] (h ∷ y ) eqa eqb = begin
-      split A B (h ∷ y )
-     ≡⟨⟩
-      A [] /\ B (h ∷ y) \/ split (λ t1 → A (h ∷ t1)) B y
-     ≡⟨ cong₂ (λ j k → j /\ k \/ split (λ t1 → A (h ∷ t1)) B y ) eqa eqb ⟩
-      true /\ true \/ split (λ t1 → A (h ∷ t1)) B y
-     ≡⟨⟩
-      true \/ split (λ t1 → A (h ∷ t1)) B y
-     ≡⟨⟩
-      true
-     ∎  where open ≡-Reasoning
-AB→split {Σ} A B (h ∷ t) y eqa eqb = begin
-       split A B ((h ∷ t) ++ y)  
-     ≡⟨⟩
-       A [] /\ B (h ∷ t ++ y) \/ split (λ t1 → A (h ∷ t1)) B (t ++ y)
-     ≡⟨ cong ( λ k →  A [] /\ B (h ∷ t ++ y) \/ k ) (AB→split {Σ} (λ t1 → A (h ∷ t1)) B t y eqa eqb ) ⟩
-       A [] /\ B (h ∷ t ++ y) \/ true
-     ≡⟨ bool-or-3 ⟩
-      true
-     ∎  where open ≡-Reasoning
 
 open NAutomaton
 open import Data.List.Properties
@@ -204,28 +126,38 @@ closed-in-concat {Σ} A B x = ≡-Bool-func closed-in-concat→ closed-in-concat
           → (qa : states A )  → (  (q : states A ∨ states B) → nq q ≡ true → ab-case q qa x )
           → split (accept (automaton A) qa ) (contain B) x ≡ true
     contain-A [] nq fn qa cond with found← finab fn  -- at this stage, A and B must be satisfied with [] (ab-case cond forces it)
-    ... | S with found-q S | inspect found-q S | cond (found-q S) (bool-∧→tt-0 (found-p S))
-    ... | case1 qa' | record { eq = refl } | refl = bool-∧→tt-1 (found-p S)
-    ... | case2 qb | record { eq = refl } | ab = ⊥-elim ( ab (bool-∧→tt-1 (found-p S)))
+    ... | S with found-q S in eq | cond (found-q S) (bool-∧→tt-0 (found-p S))
+    ... | case1 qa' | refl = lemma11 where
+       lemma12 : found-q S ≡ case1 qa →  aend (automaton A) qa /\ aend (automaton B) (astart B) ≡ Concat-NFA.nend A B (found-q S)
+       lemma12 refl = refl
+       lemma11 : aend (automaton A) qa /\ aend (automaton B) (astart B) ≡ true
+       lemma11 = trans (lemma12 eq) ( bool-∧→tt-1 (found-p S) )
+    ... | case2 qb  |  ab  = ⊥-elim ( ab (lemma11 eq) ) where 
+       lemma11 : found-q S ≡ case2 qb → aend (automaton B) qb ≡ true
+       lemma11 refl = bool-∧→tt-1 (found-p S)
     contain-A (h ∷ t) nq fn qa cond with bool-≡-? ((aend (automaton A) qa) /\  accept (automaton B) (δ (automaton B) (astart B) h) t ) true
     ... | yes eq = bool-or-41 eq  -- found A ++ B all end
     ... | no ne = bool-or-31 (contain-A t (Nmoves NFA (CNFA-exist A B) nq h) fn (δ (automaton A) qa h) lemma11 ) where -- B failed continue with ab-base condtion
        --- prove ab-case condition (we haven't checked but case2 b may happen)
        lemma11 :  (q : states A ∨ states B) → exists finab (λ qn → nq qn /\ Nδ NFA qn h q) ≡ true → ab-case q (δ (automaton A) qa h) t
        lemma11 (case1 qa')  ex with found← finab ex 
-       ... | S with found-q S | inspect found-q S | cond (found-q S) (bool-∧→tt-0 (found-p S)) 
-       ... | case1 qa | record { eq = refl } | refl = sym ( equal→refl (afin A)  ( bool-∧→tt-1 (found-p S) ))  -- continued A case
-       ... | case2 qb | record { eq = refl } | nb with  bool-∧→tt-1 (found-p S) -- δnfa (case2 q) i (case1 q₁) is false
-       ... | ()   
+       ... | S with found-q S in eq | cond (found-q S) (bool-∧→tt-0 (found-p S)) 
+       ... | case1 qa2 | refl = sym ( equal→refl (afin A) (lemma12 eq) ) where -- continued A case
+           lemma12 : found-q S ≡ case1 qa2 → equal? (afin A) (δ (automaton A) qa2 h) qa' ≡ true  
+           lemma12 refl = bool-∧→tt-1 (found-p S) 
+       ... | case2 qb | nb = ⊥-elim (¬-bool refl ((lemma12 eq)) )  where --  δnfa (case2 q) i (case1 q₁) is false
+           lemma12 :  found-q S ≡ case2 qb → false ≡ true 
+           lemma12 refl = bool-∧→tt-1 (found-p S) 
        lemma11 (case2 qb)  ex with found← finab ex 
-       ... | S with found-q S | inspect found-q S | cond (found-q S) (bool-∧→tt-0 (found-p S)) 
-       lemma11 (case2 qb)  ex | S | case2 qb' | record { eq = refl } | nb = contra-position lemma13 nb where -- continued B case should fail
-           lemma13 :  accept (automaton B) qb t ≡ true → accept (automaton B) qb' (h ∷ t) ≡ true
-           lemma13 fb = subst (λ k → accept (automaton B) k t ≡ true ) (sym (equal→refl (afin B) (bool-∧→tt-1 (found-p S)))) fb  
-       lemma11 (case2 qb)  ex | S | case1 qa | record { eq = refl } | refl with bool-∧→tt-1 (found-p S)
-       ... | eee = contra-position lemma12 ne where -- starting B case should fail
-           lemma12 : accept (automaton B) qb t ≡ true → aend (automaton A) qa /\ accept (automaton B) (δ (automaton B) (astart B) h) t ≡ true
-           lemma12 fb = bool-and-tt (bool-∧→tt-0 eee) (subst ( λ k → accept (automaton B) k t ≡ true ) (equal→refl (afin B) (bool-∧→tt-1 eee) ) fb )
+       ... | S with found-q S in eq | cond (found-q S) (bool-∧→tt-0 (found-p S)) 
+       lemma11 (case2 qb)  ex | S | case2 qb' | nb = contra-position (lemma13 eq) nb where -- continued B case should fail
+           lemma13 :  found-q S ≡ case2 qb' → accept (automaton B) qb t ≡ true → accept (automaton B) qb' (h ∷ t) ≡ true
+           lemma13 refl fb = subst (λ k → accept (automaton B) k t ≡ true ) (sym (equal→refl (afin B) (bool-∧→tt-1 (found-p S)))) fb  
+       lemma11 (case2 qb)  ex | S | case1 qa | refl with bool-∧→tt-1 (found-p S)
+       ... | eee = contra-position (lemma12 eq) ne where -- starting B case should fail
+           lemma12 : found-q S ≡ case1 qa  →  
+                accept (automaton B) qb t ≡ true → aend (automaton A) qa /\ accept (automaton B) (δ (automaton B) (astart B) h) t ≡ true
+           lemma12 refl fb = bool-and-tt (bool-∧→tt-0 eee) (subst ( λ k → accept (automaton B) k t ≡ true ) (equal→refl (afin B) (bool-∧→tt-1 eee) ) fb )
 
     lemma10 : Naccept NFA (CNFA-exist A B) (equal? finab (case1 (astart A))) x  ≡ true → split (contain A) (contain B) x ≡ true
     lemma10 CC = contain-A x (Concat-NFA-start A B ) CC (astart A) lemma15 where 

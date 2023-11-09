@@ -1,4 +1,6 @@
-{-# OPTIONS --allow-unsolved-metas #-}
+{-# OPTIONS --cubical-compatible --safe #-}
+
+-- {-# OPTIONS --allow-unsolved-metas #-}
 module gcd where
 
 open import Data.Nat 
@@ -16,7 +18,7 @@ open Factor
 gcd1 : ( i i0 j j0 : ℕ ) → ℕ
 gcd1 zero i0 zero j0 with <-cmp i0 j0
 ... | tri< a ¬b ¬c = i0
-... | tri≈ ¬a refl ¬c = i0
+... | tri≈ ¬a b ¬c = i0
 ... | tri> ¬a ¬b c = j0
 gcd1 zero i0 (suc zero) j0 = 1
 gcd1 zero zero (suc (suc j)) j0 = j0
@@ -46,7 +48,7 @@ gcd22 (suc i) i0 (suc o) o0 = refl
 gcdmm : (n m : ℕ) → gcd1 n m n m ≡ m
 gcdmm zero m with <-cmp m m
 ... | tri< a ¬b ¬c = refl
-... | tri≈ ¬a refl ¬c = refl
+... | tri≈ ¬a b ¬c = refl
 ... | tri> ¬a ¬b c = refl
 gcdmm (suc n) m  = subst (λ k → k ≡ m) (sym (gcd22 n m n m )) (gcdmm n m )
 
@@ -56,7 +58,7 @@ gcdsym2 i j with <-cmp i j | <-cmp j i
 ... | tri< a ¬b ¬c | tri≈ ¬a b ¬c₁ = ⊥-elim (nat-≡< (sym b) a) 
 ... | tri< a ¬b ¬c | tri> ¬a ¬b₁ c = refl
 ... | tri≈ ¬a b ¬c | tri< a ¬b ¬c₁ = ⊥-elim (nat-≡< (sym b) a) 
-... | tri≈ ¬a refl ¬c | tri≈ ¬a₁ refl ¬c₁ = refl
+... | tri≈ ¬a b ¬c | tri≈ ¬a₁ b₁ ¬c₁ = b
 ... | tri≈ ¬a b ¬c | tri> ¬a₁ ¬b c = ⊥-elim (nat-≡< b c) 
 ... | tri> ¬a ¬b c | tri< a ¬b₁ ¬c = refl
 ... | tri> ¬a ¬b c | tri≈ ¬a₁ b ¬c = ⊥-elim (nat-≡< b c) 
@@ -317,7 +319,7 @@ gcd-dividable i j  = f-induction {_} {_} {ℕ ∧ ℕ}
         ... | tri< a ¬b ¬c | tri≈ ¬a b ¬c₁ = ⊥-elim (¬b (sym b))
         ... | tri< a ¬b ¬c | tri> ¬a ¬b₁ c = refl
         ... | tri≈ ¬a refl ¬c | tri< a ¬b ¬c₁ = ⊥-elim (¬b refl)
-        ... | tri≈ ¬a refl ¬c | tri≈ ¬a₁ refl ¬c₁ = refl
+        ... | tri≈ ¬a b ¬c | tri≈ ¬a₁ b₁ ¬c₁ = refl
         ... | tri≈ ¬a refl ¬c | tri> ¬a₁ ¬b c = ⊥-elim (¬b refl)
         ... | tri> ¬a ¬b c | tri< a ¬b₁ ¬c = refl
         ... | tri> ¬a ¬b c | tri≈ ¬a₁ b ¬c = ⊥-elim (¬b (sym b))
@@ -694,7 +696,11 @@ gcdmul+1 (suc m) n = begin
       1 ∎ where open ≡-Reasoning
 
 m*n=m→n : {m n : ℕ } → 0 < m → m * n ≡ m * 1 → n ≡ 1
-m*n=m→n {suc m} {n} (s≤s lt) eq = *-cancelˡ-≡ m eq 
+m*n=m→n {suc m} {n} (s≤s lt) eq = begin 
+    n ≡⟨ *-cancelˡ-≡ n 1 (suc m) ( begin
+       suc m * n ≡⟨ eq ⟩
+       suc m * 1  ∎ ) ⟩
+    1   ∎ where open ≡-Reasoning
 
 gcd-is-gratest :  { i j  k : ℕ } → i > 0 → j > 0 → k > 1 → Dividable k i → Dividable k j → k ≤ gcd i j 
 gcd-is-gratest {i} {j} {k} i>0 j>0 k>1 ki kj = div→k≤m k>1 (gcd>0 i j i>0 j>0 ) gcd001 where
@@ -712,16 +718,16 @@ gcd-div-1 {suc i} {suc j} i>0 j>0 = cop where
    jd  : Dividable d (suc j)
    jd  = proj2 (gcd-dividable (suc i) (suc j))
    cop : gcd (Dividable.factor id) (Dividable.factor jd) ≡ 1
-   cop with (gcd (Dividable.factor id) (Dividable.factor jd)) | inspect (gcd (Dividable.factor id)) (Dividable.factor jd)
-   ... | zero | record { eq  = eq1 } = ⊥-elim ( nat-≡< (sym eq1) (gcd>0 (Dividable.factor id) (Dividable.factor jd)
+   cop with (gcd (Dividable.factor id) (Dividable.factor jd)) in eq
+   ... | zero = ⊥-elim ( nat-≡< (sym eq) (gcd>0 (Dividable.factor id) (Dividable.factor jd)
        (0<factor d>0 (s≤s z≤n) id) (0<factor d>0 (s≤s z≤n) jd) ))
-   ... | suc zero | record { eq  = eq1 } = refl
-   ... | suc (suc t) | record { eq  = eq1 } = ⊥-elim ( nat-≤> (gcd-is-gratest {suc i} {(suc j)} (s≤s z≤n) (s≤s z≤n) co1 d1id d1jd ) gcd<d1 ) where
+   ... | suc zero = refl
+   ... | suc (suc t) = ⊥-elim ( nat-≤> (gcd-is-gratest {suc i} {(suc j)} (s≤s z≤n) (s≤s z≤n) co1 d1id d1jd ) gcd<d1 ) where
         -- gcd-is-gratest :  { i j  k : ℕ } → i > 0 → j > 0 → k > 1 → Dividable k i → Dividable k j → k ≤ gcd i j
         d1 : ℕ
         d1 = gcd (Dividable.factor id) (Dividable.factor jd)
         d1>1 : gcd (Dividable.factor id) (Dividable.factor jd) > 1
-        d1>1 = subst (λ k → 1 < k ) (sym eq1) (s≤s (s≤s z≤n))
+        d1>1 = subst (λ k → 1 < k ) (sym eq) (s≤s (s≤s z≤n))
         mul1 :  {x : ℕ} → 1 * x ≡ x
         mul1 {zero} = refl
         mul1 {suc x} = begin

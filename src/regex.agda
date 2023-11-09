@@ -1,4 +1,6 @@
-{-# OPTIONS --allow-unsolved-metas #-}
+{-# OPTIONS --cubical-compatible --safe #-}
+
+-- {-# OPTIONS --allow-unsolved-metas #-}
 module regex where
 
 open import Level renaming ( suc to succ ; zero to Zero )

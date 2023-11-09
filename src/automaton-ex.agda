@@ -1,4 +1,5 @@
-{-# OPTIONS --allow-unsolved-metas #-}
+{-# OPTIONS --cubical-compatible --safe #-}
+
 module automaton-ex where
 
 open import Data.Nat
@@ -102,6 +103,24 @@ count-chars (h ∷ t) x with ieq h x
 test11 : count-chars (  i1  ∷ i1  ∷ i0  ∷ []  ) i0 ≡ 1
 test11 = refl
 
+_≥b_ : ( x y : ℕ) → Bool
+x ≥b y with <-cmp x y
+... | tri< a ¬b ¬c = false
+... | tri≈ ¬a b ¬c = true
+... | tri> ¬a ¬b c = true
+
+_>b_ : ( x y : ℕ) → Bool
+x >b y with <-cmp x y
+... | tri< a ¬b ¬c = false
+... | tri≈ ¬a b ¬c = false
+... | tri> ¬a ¬b c = true
+
+_≤b_ : ( x y : ℕ) → Bool
+x ≤b y  = y ≥b x
+
+_<b_ : ( x y : ℕ) → Bool
+x <b y  = y >b x
+
 ex1_4a : (x : List In2) → Bool
 ex1_4a x =  ( count-chars x i0 ≥b 3 ) /\ ( count-chars x i1 ≥b 2 )
 
@@ -138,5 +157,5 @@ am14a-tr' :  am14s  → In2 → am14s
 am14a-tr' a00 i0 = a10
 am14a-tr' _ _ = a10
 
-am14a'  :  Automaton  am14s  In2
-am14a'  =  record {  δ = am14a-tr' ; aend = λ x → {!!} }
+-- am14a'  :  Automaton  am14s  In2
+-- am14a'  =  record {  δ = am14a-tr' ; aend = λ x → {!!} }
