@@ -16,6 +16,9 @@ open import Relation.Binary.PropositionalEquality
 
 open import logic
 
+--
+--     (R → Bool) <-> S 
+--
 record FBijection {n m : Level} (R : Set n) (S : Set m) : Set (n Level.⊔ m)  where
    field
        ffun←  :  S → R → Bool
@@ -26,6 +29,17 @@ record FBijection {n m : Level} (R : Set n) (S : Set m) : Set (n Level.⊔ m)  w
 
 open FBijection 
 
+--  S <-> S → Bool 
+-- 
+--  S   0 1 2 3 .... 
+--  0   t f t f .... 
+--  1   t f t f .... 
+--  2   t f t f .... 
+--  3   t t t t .....
+--  ..
+-- counter exmpple
+--      f t f f ...
+
 fdiag : {S : Set }  (b : FBijection  S S) → S → Bool
 fdiag b n = not (ffun← b n n)
 
@@ -35,6 +49,8 @@ fdiag b n = not (ffun← b n n)
 --     is pointwise equal to fdiag b , which means not (ffun← b (ffun→ b (fdiag b) ) x ≡ (fdiag b) x )
 --     but is also means not (fdiag b) x ≡ (fdiag b) x , contradiction
 
+--   ¬  (S → Bool) <-> S 
+--
 fdiagonal : { S : Set } → ¬ FBijection  S S
 fdiagonal {S} b =  ¬t=f _ (trans ff4 (sym (ff3 _) ) ) where
     ff1 : S

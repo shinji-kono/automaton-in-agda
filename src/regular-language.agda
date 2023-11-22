@@ -42,7 +42,7 @@ Concat {Σ} A B = split A B
 --
 repeat : {Σ : Set} → (x : List Σ → Bool) → (y : List Σ ) → Bool 
 repeat2 : {Σ : Set} → (x : List Σ → Bool) → (pre y : List Σ ) → Bool
-repeat2 x pre [] = false
+repeat2 x pre [] = true
 repeat2 x pre (h ∷ y) = 
    (x (pre ++ (h ∷ [])) /\ repeat x y )
    \/ repeat2 x (pre ++ (h ∷ [])) y 
@@ -143,8 +143,11 @@ record Split {Σ : Set} (A : List Σ → Bool ) ( B : List Σ → Bool ) (x :  L
 
 open Split
 
+AB→split1 :  {Σ : Set} → (A B : List Σ → Bool ) → ( x y : List Σ ) → {z : List Σ} → A x ≡ true → B y ≡ true →  z ≡ x ++ y → Split A B z
+AB→split1 {Σ} A B x y {z} ax by z=xy = record { sp0 = x ; sp1 = y ; sp-concat = sym z=xy ; prop0 = ax ; prop1 = by }
+
 list-empty++ : {Σ : Set} → (x y : List Σ) → x ++ y ≡ [] → (x ≡ [] ) ∧ (y ≡ [] )
-list-empty++ [] [] refl = record { proj1 = refl ; proj2 = refl }
+list-empty++ [] [] _ = record { proj1 = refl ; proj2 = refl }
 list-empty++ [] (x ∷ y) ()
 list-empty++ (x ∷ x₁) y ()
 
@@ -186,30 +189,59 @@ split→AB {Σ} A B (h ∷ t ) eq  | _ | no px with split→AB (λ t1 → A ( h 
 
 AB→split :  {Σ : Set} → (A B : List Σ → Bool ) → ( x y : List Σ ) → A x ≡ true → B y ≡ true → split A B (x ++ y ) ≡ true
 AB→split {Σ} A B [] [] eqa eqb = begin
-       split A B [] 
-     ≡⟨⟩
-       A [] /\ B []
-     ≡⟨ cong₂ (λ j k → j /\ k ) eqa eqb ⟩
+       split A B [] ≡⟨⟩
+       A [] /\ B [] ≡⟨ cong₂ (λ j k → j /\ k ) eqa eqb ⟩
       true
      ∎  where open ≡-Reasoning
 AB→split {Σ} A B [] (h ∷ y ) eqa eqb = begin
-      split A B (h ∷ y )
-     ≡⟨⟩
-      A [] /\ B (h ∷ y) \/ split (λ t1 → A (h ∷ t1)) B y
-     ≡⟨ cong₂ (λ j k → j /\ k \/ split (λ t1 → A (h ∷ t1)) B y ) eqa eqb ⟩
-      true /\ true \/ split (λ t1 → A (h ∷ t1)) B y
-     ≡⟨⟩
-      true \/ split (λ t1 → A (h ∷ t1)) B y
-     ≡⟨⟩
-      true
-     ∎  where open ≡-Reasoning
+      split A B (h ∷ y ) ≡⟨⟩
+      A [] /\ B (h ∷ y) \/ split (λ t1 → A (h ∷ t1)) B y ≡⟨ cong₂ (λ j k → j /\ k \/ split (λ t1 → A (h ∷ t1)) B y ) eqa eqb ⟩
+      true /\ true \/ split (λ t1 → A (h ∷ t1)) B y ≡⟨⟩
+      true \/ split (λ t1 → A (h ∷ t1)) B y ≡⟨⟩
+      true ∎  where open ≡-Reasoning
 AB→split {Σ} A B (h ∷ t) y eqa eqb = begin
-       split A B ((h ∷ t) ++ y)  
-     ≡⟨⟩
+       split A B ((h ∷ t) ++ y)  ≡⟨⟩
        A [] /\ B (h ∷ t ++ y) \/ split (λ t1 → A (h ∷ t1)) B (t ++ y)
      ≡⟨ cong ( λ k →  A [] /\ B (h ∷ t ++ y) \/ k ) (AB→split {Σ} (λ t1 → A (h ∷ t1)) B t y eqa eqb ) ⟩
-       A [] /\ B (h ∷ t ++ y) \/ true
-     ≡⟨ bool-or-3 ⟩
-      true
-     ∎  where open ≡-Reasoning
+       A [] /\ B (h ∷ t ++ y) \/ true ≡⟨ bool-or-3 ⟩
+      true ∎  where open ≡-Reasoning
+
+
+split→AB1 :  {Σ : Set} → (A B : List Σ → Bool ) → ( x : List Σ ) → Split A B x →  split A B x ≡ true 
+split→AB1 {Σ} A B x S = subst (λ k → split A B k ≡ true ) (sp-concat S) ( AB→split A B _ _ (prop0 S) (prop1 S)  )
+  
+
+-- low of exclude middle of Split A B x
+lemma-concat : {Σ : Set} → ( A B : language {Σ} ) → (x : List Σ) → Split A B x ∨ ( ¬ Split A B x )
+lemma-concat {Σ} A B x with split A B x in eq
+... | true = case1 (split→AB A B x eq )
+... | false = case2 (λ p →  ¬-bool eq (split→AB1 A B x p )) 
+
+-- Concat : {Σ : Set} → ( A B : language {Σ} ) → language {Σ}
+-- Concat {Σ} A B = split A B
+
+Concat' : {Σ : Set} → ( A B : language {Σ} ) → (x : List Σ) → Set
+Concat' {Σ} A B = λ x → Split A B x
+
+record StarProp {Σ : Set} (A : List Σ → Bool ) (x :  List Σ ) : Set where
+    field
+        spn : List ( List Σ )
+        spn-concat : foldr (λ k → k ++_ ) [] spn ≡ x
+        propn : foldr (λ k → λ j → A k /\ j ) true spn ≡ true
+
+open StarProp
+
+Star→StarProp : {Σ : Set} → ( A : language {Σ} ) → (x : List Σ) → Star A x ≡ true → StarProp A x
+Star→StarProp = ?
+
+StarProp→Star : {Σ : Set} → ( A : language {Σ} ) → (x : List Σ) → StarProp A x → Star A x ≡ true
+StarProp→Star {Σ} A x sp = subst (λ k →  Star A k ≡ true ) (spsx (spn sp) refl) ( sps1 (spn sp) refl ) where
+     spsx : (y : List ( List Σ ) ) → spn sp ≡ y → foldr (λ k → k ++_ ) [] y ≡ x
+     spsx y refl = spn-concat sp 
+     sps1 : (y : List ( List Σ ) ) → spn sp ≡ y → Star A (foldr (λ k → k ++_ ) [] y) ≡ true
+     sps1 = ?
+
+
+lemma-starprop : {Σ : Set} → ( A : language {Σ} ) → (x : List Σ) → StarProp A x ∨ ( ¬ StarProp A x )
+lemma-starprop = ?
 

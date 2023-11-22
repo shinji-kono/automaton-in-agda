@@ -45,7 +45,7 @@ example136-1 = Naccept nfa136 exists136 start136( a0  ∷ b0  ∷ a0 ∷ a0 ∷ 
 
 t146-1 = Ntrace nfa136 states136 exists136  start136( a0  ∷ b0  ∷ a0 ∷ a0 ∷ [] )
 
-test111 = ?
+-- test111 = ?
 
 example136-0 = Naccept nfa136 exists136 start136( a0 ∷ [] )
 
@@ -83,29 +83,78 @@ data  Q2   : Set  where
    a0 : Q2
    a1 : Q2
    ae : Q2
+   af : Q2
    b0 : Q2
    b1 : Q2
    be : Q2
+   bf : Q2
 
 -- a.*f
-
-aδ : Q2 → Σ2 → Q2 → Bool
-aδ a0 ca a1 = true
-aδ a0 _ _ = false
-aδ a1 cf ae = true
-aδ a1 _ a1 = true
-aδ _ _ _ = false
 
 a-end : Q2 → Bool
 a-end ae = true
 a-end _ = false
+
+aδ : Q2 → Σ2 → Q2 
+aδ a0 ca = a1 
+aδ a0 cb = af
+aδ a0 cc = af
+aδ a0 cf = af
+aδ a1 cf = ae 
+aδ a1 _ = a1 
+aδ ae cf = ae 
+aδ ae _ = a1 
+aδ _ _ = af 
+fa-a : Automaton Q2 Σ2
+fa-a = record { δ = aδ ; aend = a-end }
+
+test111 : Bool
+test111 = accept fa-a a0 ( ca ∷ cf ∷ ca ∷ [] )
+
+-- b.*f
+
+b-end : Q2 → Bool
+b-end be = true
+b-end _ = false
+
+bδ : Q2 → Σ2 → Q2 
+bδ ae cb = b1 
+bδ ae _ = bf 
+bδ b1 cf = be 
+bδ b1 _ = b1 
+bδ be cf = be 
+bδ be _ = b1 
+bδ _ _ = bf 
+fa-b : Automaton Q2 Σ2
+fa-b = record { δ = bδ ; aend = b-end }
+
+test115 : Bool
+test115 = accept fa-b b0 ( cb ∷ cf ∷ cf ∷ [] )
+
+open import regular-language
+
+-- (a.*f)(b.*f)    -- a.*(fb).*f
+test116 = split (accept fa-a a0) (accept fa-b b0) ( ca ∷ cf ∷ cb ∷ cf ∷ cf ∷ [] )
+--                                                  a0   ae   b0   b1   be 
+test117 = split (accept fa-a a0) (accept fa-b b0) ( ca ∷ cf ∷ ca ∷ cb ∷ ca ∷ cf ∷ cf ∷ [] )
+--                                                  a0   ae   a0   b0   b1   be
+--                                                  a0   ae   ae   b0   b1   be
+
+naδ : Q2 → Σ2 → Q2 → Bool
+naδ a0 ca a1 = true
+naδ a0 _ _ = false
+naδ a1 cf ae = true
+naδ a1 _ a1 = true
+naδ ae cf ae = true
+naδ ae _ a1 = true
+naδ _ _ _ = false
 
 a-start : Q2 → Bool
 a-start a0 = true
 a-start _ = false
 
 nfa-a : NAutomaton Q2 Σ2
-nfa-a = record { Nδ = aδ ; Nend = a-end }
+nfa-a = record { Nδ = naδ ; Nend = a-end }
 
 nfa-a-exists : (Q2 → Bool) → Bool
 nfa-a-exists p = p a0 \/ p a1 \/ p ae
@@ -113,35 +162,33 @@ nfa-a-exists p = p a0 \/ p a1 \/ p ae
 test-a1 : Bool
 test-a1 = Naccept nfa-a nfa-a-exists a-start ( ca ∷ cf ∷ ca ∷ [] )
 
-test-a2 = map reverse ( NtraceDepth nfa-a a-start (a0 ∷ a1 ∷ ae  ∷ [])  ( ca ∷ cf ∷ cf ∷ [] ) )
+-- test-a2 = map reverse ( NtraceDepth nfa-a a-start (a0 ∷ a1 ∷ ae  ∷ [])  ( ca ∷ cf ∷ cf ∷ [] ) )
 
 -- b.*f
 
-bδ : Q2 → Σ2 → Q2 → Bool
-bδ ae cb b1 = true
-bδ ae _ _ = false
-bδ b1 cf be = true
-bδ b1 _ b1 = true
-bδ _ _ _ = false
-
-b-end : Q2 → Bool
-b-end be = true
-b-end _ = false
+nbδ : Q2 → Σ2 → Q2 → Bool
+nbδ ae cb b1 = true
+nbδ ae _ _ = false
+nbδ b1 cf be = true
+nbδ b1 _ b1 = true
+nbδ be cf be = true
+nbδ be _ b1 = true
+nbδ _ _ _ = false
 
 b-start : Q2 → Bool
 b-start ae = true
 b-start _ = false
 
 nfa-b : NAutomaton Q2 Σ2
-nfa-b = record { Nδ = bδ ; Nend = b-end }
+nfa-b = record { Nδ = nbδ ; Nend = b-end }
 
 nfa-b-exists : (Q2 → Bool) → Bool
-nfa-b-exists p = p b0 \/ p b1 \/ p ae
+nfa-b-exists p = p b0 \/ p b1 \/ p be
 
 -- (a.*f)(b.*f)
 
 abδ : Q2 → Σ2 → Q2 → Bool
-abδ x i y = aδ x i y \/ bδ x i y
+abδ x i y = naδ x i y \/ nbδ x i y
 
 nfa-ab : NAutomaton Q2 Σ2
 nfa-ab = record { Nδ = abδ ; Nend = b-end }
@@ -149,13 +196,25 @@ nfa-ab = record { Nδ = abδ ; Nend = b-end }
 nfa-ab-exists : (Q2 → Bool) → Bool
 nfa-ab-exists p = nfa-a-exists p \/ nfa-b-exists p
 
+test-ab1-data : List Σ2
+test-ab1-data = ( ca ∷ cf ∷ ca ∷ cb ∷ cf ∷ [] )
+
 test-ab1 : Bool
-test-ab1 = Naccept nfa-a nfa-a-exists a-start ( ca ∷ cf ∷ ca ∷ cb ∷ cf ∷ [] )
+test-ab1 = Naccept nfa-ab nfa-ab-exists a-start test-ab1-data  -- should be false
+
+test-ab2-data : List Σ2
+test-ab2-data = ( ca ∷ cf ∷ ca ∷ cf ∷ cb ∷ cb ∷ cf ∷ [] )
 
 test-ab2 : Bool
-test-ab2 = Naccept nfa-a nfa-a-exists a-start ( ca ∷ cf ∷ ca ∷ cb ∷ cb ∷ [] )
+test-ab2 = Naccept nfa-ab nfa-ab-exists a-start test-ab2-data   -- should be true
 
-test-ab3 = map reverse ( NtraceDepth nfa-ab a-start (a0 ∷ a1 ∷ ae  ∷ b0 ∷ b1 ∷ be  ∷ [])  ( ca ∷ cf ∷ ca ∷ cb ∷ cf ∷ [] ))
+q2-list : List Q2
+q2-list = a0 ∷ a1 ∷ ae ∷ af ∷ b0 ∷ b1 ∷ be ∷ bf ∷ []
+
+test-tr : List (List Q2)
+test-tr = Ntrace nfa-ab q2-list nfa-ab-exists a-start ( ca ∷ cf ∷ cf ∷ cb ∷ cb ∷ cf ∷ [] )
+
+-- test-ab3 = map reverse ( NtraceDepth nfa-ab a-start (a0 ∷ a1 ∷ ae  ∷ b0 ∷ b1 ∷ be  ∷ [])  ( ca ∷ cf ∷ ca ∷ cb ∷ cf ∷ [] ))
 
 test112 : Automaton (Q2 → Bool) Σ2
 test112 = subset-construction nfa-ab-exists nfa-ab
@@ -164,4 +223,38 @@ test114 = Automaton.δ (subset-construction nfa-ab-exists nfa-ab)
 
 test113 : Bool
 test113 = accept test112 a-start ( ca ∷ cf ∷ ca ∷ cb ∷ cb ∷ [] )
+
+-- 
+open import regex
+open import Relation.Nullary using (¬_; Dec; yes; no)
+
+Σ2-cmp : (x y : Σ2 ) → Dec (x ≡ y)
+Σ2-cmp ca ca = yes refl
+Σ2-cmp ca cb = no (λ ())
+Σ2-cmp ca cc = no (λ ())    
+Σ2-cmp ca cf = no (λ ())    
+Σ2-cmp cb ca =  no (λ ())
+Σ2-cmp cb cb = yes refl
+Σ2-cmp cb cc =  no (λ ())
+Σ2-cmp cb cf =  no (λ ())
+Σ2-cmp cc ca =  no (λ ())
+Σ2-cmp cc cb =  no (λ ())
+Σ2-cmp cc cc = yes refl
+Σ2-cmp cc cf =  no (λ ())
+Σ2-cmp cf ca =  no (λ ())
+Σ2-cmp cf cb =  no (λ ())
+Σ2-cmp cf cc =  no (λ ())
+Σ2-cmp cf cf = yes refl
+
+Σ2-any :  Regex Σ2
+Σ2-any = < ca > || < cb > || < cc > || < cf >
+
+test-ab1-regex : regex-language ( (< ca > & (Σ2-any *) & < cf > ) & (< cb > & (Σ2-any *) & < cf > )  )  Σ2-cmp test-ab1-data ≡ false
+test-ab1-regex = refl
+
+test-ab2-regex : regex-language ( (< ca > & (Σ2-any *) & < cf > ) & (< cb > & (Σ2-any *) & < cf > )  )  Σ2-cmp test-ab2-data ≡ true
+test-ab2-regex = refl
+
+
+
 

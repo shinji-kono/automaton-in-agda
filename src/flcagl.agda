@@ -8,6 +8,11 @@
 --          bb : (y : aaa) → aaa
 --          cc : (y : aaa) → aaa
 --
+--     Lang : {Σ : Set } → List Σ → Bool
+--     Lang [] = ?
+--     Lang (h ∷ t)  = ?
+--     
+--
 --   (x : aaa) → bb → cc → aend
 --     induction : ( P : aaa → Set ) → (x : aaa) → P x
 --     induction P aend = ?
@@ -64,6 +69,8 @@ module Lang where
 
         open List 
 
+        -- Lnag ≅ Bool × (Σ → Lang)
+        --
         record  Lang (i : Size)  : Set  where
            coinductive
            field
@@ -118,9 +125,11 @@ module Lang where
 
         _+_ : ∀{i}  (k l : Lang i) → Lang i
         ν (k + l) = ν k ∧ ν l
-        δ (k + l) x with ν k
-        ... | false = δ k x  + l 
-        ... | true  = (δ k x  + l )  ∪ δ l x 
+        δ (k + l) x with ν k | ν l
+        ... | false | true = δ k x  + l 
+        ... | false | false = δ k x  + l 
+        ... | true  | true = (δ k x  + l )  ∪ δ l x 
+        ... | true  | false = (δ k x  + l )  ∪ δ l x 
 
         language : { Σ : Set } → Set
         language {Σ}  = List ∞ Σ → Bool
@@ -130,12 +139,12 @@ module Lang where
         split x y (h  ∷ t) = (x [] ∧ y (h  ∷ t)) ∨
           split (λ t1 → x (  h ∷ t1 ))  (λ t2 → y t2 ) t
 
-        LtoSplit : (x y : Lang ∞ ) → (z : List ∞ A) → ((x + y ) ∋ z) ≡ true →   split (λ w → x ∋ w) (λ w → y ∋ w) z ≡ true
+        LtoSplit : (x y : Lang ∞ ) → (z : List ∞ A) → ((x  + y ) ∋ z) ≡ true →   split (λ w → x ∋ w) (λ w → y ∋ w) z ≡ true
         LtoSplit x y [] xy with ν x | ν y
         ... | true | true = refl
         LtoSplit x y (h ∷ z) xy = ?
 
-        SplitoL : (x y : Lang ∞ ) → (z : List ∞ A) → ((x + y ) ∋ z) ≡ false →   split (λ w → x ∋ w) (λ w → y ∋ w) z ≡ false
+        SplitoL : (x y : Lang ∞ ) → (z : List ∞ A) → ((x  + y ) ∋ z) ≡ false →   split (λ w → x ∋ w) (λ w → y ∋ w) z ≡ false
         SplitoL x y [] xy with ν x | ν y 
         ... | false | false = refl
         ... | false | true = ?
@@ -217,8 +226,7 @@ module Lang where
         ≅δ (union-cong p q) a = union-cong (≅δ p a) (≅δ q a)
 
         withExample : (P : Bool → Set) (p : P true) (q : P false) →
-           {A : Set} (g : A → Bool) (x : A) → P (g x)
-        withExample P p q g x with g x
+           {A : Set} (g : A → Bool) (x : A) → P (g x) withExample P p q g x with g x
         ... | true = p
         ... | false = q
 
