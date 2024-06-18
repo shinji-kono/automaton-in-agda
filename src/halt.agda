@@ -25,7 +25,7 @@ record FBijection {n m : Level} (R : Set n) (S : Set m) : Set (n Level.⊔ m)  w
        ffun→  :  (R → Bool) → S
        ffiso← : (f : R → Bool ) → (x : R)  → ffun← ( ffun→ f ) x ≡ f x 
 
-       -- ffun← ( ffun→ f )  ≡ f , if we have functional extensionality  but it is unsafe
+--       ffiso→ : (x : S)  → ffun→  ( ffun←  x ) ≡ x -- , if we have functional extensionality  but it is unsafe
 
 open FBijection 
 
@@ -86,6 +86,9 @@ record Halt : Set where
 
 open Halt
 
+--
+--   List boot <-> ( List Bool → Bool )
+--
 TNLF : (halt : Halt ) → (utm : UTM) → FBijection (List Bool) (List Bool)
 TNLF halt utm = record {
        ffun←  = λ tm x → Halt.halt halt (UTM.utm utm) (tm ++ x)

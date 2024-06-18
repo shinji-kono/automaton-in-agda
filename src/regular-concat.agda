@@ -82,6 +82,7 @@ closed-in-concat {Σ} A B x = ≡-Bool-func closed-in-concat→ closed-in-concat
        exists finab (λ qn → nq qn /\ Nδ NFA qn h (abmove q h)) ≡ true
     nmove (case1 q) nq nqt h = found finab (case1 q) ( bool-and-tt nqt (lemma-nmove-ab (case1 q)  h) )  
     nmove (case2 q) nq nqt h = found finab (case2 q) ( bool-and-tt nqt (lemma-nmove-ab (case2 q) h) ) 
+
     acceptB : (z : List Σ) → (q : states B) → (nq : states A ∨ states B → Bool ) → (nq (case2 q) ≡ true) → ( accept (automaton B) q z ≡ true ) 
         → Naccept NFA (CNFA-exist A B) nq z  ≡ true
     acceptB [] q nq nqt fb = lemma8 where

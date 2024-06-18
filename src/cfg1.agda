@@ -60,6 +60,10 @@ split x y (h  ∷ t) = (x [] /\ y (h  ∷ t)) \/
   split (λ t1 → x (  h ∷ t1 ))  (λ t2 → y t2 ) t
 
 
+--
+-- we can rewrite cfg-language without Termination check violation
+--
+
 cfg-language0 :  {Symbol  : Set} → CFGGrammer Symbol   → Body Symbol  →  List Symbol → Bool
 
 {-# TERMINATING #-}

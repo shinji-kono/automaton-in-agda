@@ -40,3 +40,12 @@ record FiniteSet ( Q : Set ) : Set  where
      equal? q0 q1 with F←Q q0 ≟ F←Q q1
      ... | yes p = true
      ... | no ¬p = false
+
+record FiniteSetF ( Q : Set ) : Set  where
+     field
+        finite : ℕ
+        Q←F : Fin finite → Q → Bool
+        F←Q : (Q → Bool) → Fin finite
+        finiso→ : (f : Q → Bool ) → (q : Q) → Q←F ( F←Q f ) q ≡ f q
+        finiso← : (f : Fin finite ) → F←Q ( Q←F f )  ≡ f 
+

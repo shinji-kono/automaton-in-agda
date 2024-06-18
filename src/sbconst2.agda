@@ -20,7 +20,8 @@ open Bool
 --- ( Q → Σ → Q → Bool )              transition of NFA
 --- (Q → Bool) → Σ → (Q → Bool)       generate transition of Automaton  
 
-δconv : { Q : Set } { Σ : Set  } → ( ( Q → Bool ) → Bool ) →  ( Q → Σ → Q → Bool ) → (Q → Bool) → Σ → (Q → Bool)
+δconv : { Q : Set } { Σ : Set  } → (exists :( Q → Bool ) → Bool ) →  (nδ : Q → Σ → Q → Bool ) 
+    → (Q → Bool) → Σ → (Q → Bool)
 δconv {Q} { Σ} exists nδ f i q =  exists ( λ r → f r /\ nδ r i q )
 
 subset-construction : { Q : Set } { Σ : Set  } → 

@@ -1,3 +1,4 @@
+{-# OPTIONS --cubical-compatible --safe #-}
 module omega-automaton where
 
 open import Level renaming ( suc to succ ; zero to Zero )
@@ -19,14 +20,14 @@ open Automaton
 ω-run Ω x s (suc n) = δ Ω (ω-run Ω x s n) ( s n )
 
 --
--- accept as Buchi automaton
+-- accept as Muller automaton
 --
-record Buchi { Q  Σ : Set } (Ω : Automaton Q Σ ) ( S : ℕ → Σ ) : Set where
+record Muller { Q  Σ : Set } (Ω : Automaton Q Σ ) ( S : ℕ → Σ ) : Set where
     field
         from : ℕ
         stay : (x : Q) → (n : ℕ ) → n > from → aend Ω ( ω-run Ω x S n ) ≡ true
 
-open Buchi
+open Muller
 
 --  after sometimes, always p
 --
@@ -37,14 +38,14 @@ open Buchi
 --                       p
 
 --
--- accept as Muller automaton
+-- accept as Buchi automaton
 --
-record Muller { Q  Σ : Set } (Ω : Automaton Q Σ ) ( S : ℕ → Σ ) : Set where
+record Buchi { Q  Σ : Set } (Ω : Automaton Q Σ ) ( S : ℕ → Σ ) : Set where
     field
         next     : (n : ℕ ) → ℕ 
         infinite : (x : Q) → (n : ℕ ) →  aend Ω ( ω-run Ω x  S (n + (suc (next n)))) ≡ true 
 
-open  Muller 
+open  Buchi 
 --  always sometimes p
 --
 --                       not p 
@@ -55,12 +56,6 @@ open  Muller
 
 open import nat
 open import Data.Nat.Properties
-
--- LEMB : { Q  Σ : Set } (Ω : Automaton Q Σ ) ( S : ℕ → Σ ) → Q → Buchi Ω S ∨ (¬ ( Buchi Ω S ))
--- LEMB Ω S Q = {!!}  -- S need not to be constructive, so we have no constructive LEM
-
--- LEMM : { Q  Σ : Set } (Ω : Automaton Q Σ ) ( S : ℕ → Σ ) → Q → Muller Ω S ∨ (¬ ( Muller Ω S ))
--- LEMM = {!!}
 
 ω-run-eq : { Q  Σ : Set } → (Ω Ω' : Automaton Q Σ ) → (q : Q) →  ( S : ℕ → Σ )  → (x : ℕ)
     → δ Ω ≡ δ Ω'
@@ -77,7 +72,7 @@ open import Data.Nat.Properties
 --
 
 
-B→M : { Q  Σ : Set } (Ω : Automaton Q Σ ) ( S : ℕ → Σ ) → Q → Buchi Ω S → ¬ ( Muller record { δ = δ Ω ; aend = λ q → not (aend Ω q)} S )
+B→M : { Q  Σ : Set } (Ω : Automaton Q Σ ) ( S : ℕ → Σ ) → Q → Muller Ω S → ¬ ( Buchi record { δ = δ Ω ; aend = λ q → not (aend Ω q)} S )
 B→M {Q} {Σ} Ω S q b m = ¬-bool bm04 bm02 where
    q1 : Q
    q1 = ω-run Ω q S (from b + suc (next m (from b)))
@@ -99,7 +94,7 @@ B→M {Q} {Σ} Ω S q b m = ¬-bool bm04 bm02 where
 -- [] <> p → ¬ <> [] ¬ p
 --
 
-M→B : { Q  Σ : Set } (Ω : Automaton Q Σ ) ( S : ℕ → Σ ) → Q → Muller Ω S → ¬ ( Buchi record { δ = δ Ω ; aend = λ q → not (aend Ω q)} S )
+M→B : { Q  Σ : Set } (Ω : Automaton Q Σ ) ( S : ℕ → Σ ) → Q → Buchi Ω S → ¬ ( Muller record { δ = δ Ω ; aend = λ q → not (aend Ω q)} S )
 M→B {Q} {Σ} Ω S q m b = ¬-bool bm04 bm02 where
    q1 : Q
    q1 = ω-run Ω q S (from b + suc (next m (from b)))
@@ -117,6 +112,23 @@ M→B {Q} {Σ} Ω S q m b = ¬-bool bm04 bm02 where
      not (aend Ω' (ω-run Ω' q S (from b + (suc (next m (from b)))))) ≡⟨ cong (λ k → not k ) bm03 ⟩
      false ∎  where open ≡-Reasoning
 
+open import finiteSet
+
+--    q₀ → q₁ → ... q 
+--    q₀ → q₁ → q₅ .... q₅  ... q 
+
+open FiniteSet
+
+descendSubset : { Q : Set } → (fin : FiniteSet Q) → ( I : Q → Bool) → ( P : Q → Bool ) 
+    → exists fin (λ q → I q /\ P q) ≡ true → Q → Bool
+descendSubset = ?
+
+is-Muller-valid : { Q  Σ : Set } (Ω : Automaton Q Σ ) → FiniteSet Q → Q → Dec ((S : ℕ → Σ) →  Muller Ω S) 
+is-Muller-valid = ?
+
+-- descendSubset monotonically descend
+-- derivation tree of Q will be constructed
+-- check contruction of Muller Ω S
 
 
 data  States3   : Set  where
@@ -127,6 +139,7 @@ transition3 : States3  → Bool  → States3
 transition3 ts* true  = ts*
 transition3 ts* false  = ts
 transition3 ts true  = ts*
+
 transition3 ts false  = ts
 
 mark1 :  States3  → Bool
@@ -149,21 +162,21 @@ flip-seq :  ℕ → Bool
 flip-seq zero = false
 flip-seq (suc n) = not ( flip-seq n )
 
--- flip-seq is acceepted by Muller automaton ωa1 
+-- flip-seq is acceepted by Buchi automaton ωa1 
 
-lemma1 : Buchi ωa1 true-seq 
-lemma1 = record {
-        from = zero
-      ; stay = {!!}
-   } where
-      lem1 : ( n :  ℕ ) → n > zero → aend ωa1 (ω-run ωa1 {!!} true-seq n ) ≡ true
-      lem1 zero ()
-      lem1 (suc n) (s≤s z≤n) with ω-run ωa1 {!!} true-seq n
-      lem1 (suc n) (s≤s z≤n) | ts* = {!!}
-      lem1 (suc n) (s≤s z≤n) | ts = {!!}
+-- lemma1 : Muller ωa1 true-seq 
+-- lemma1 = record {
+--         from = zero
+--       ; stay = {!!}
+--    } where
+--       lem1 : ( n :  ℕ ) → n > zero → aend ωa1 (ω-run ωa1 {!!} true-seq n ) ≡ true
+--       lem1 zero ()
+--       lem1 (suc n) (s≤s z≤n) with ω-run ωa1 {!!} true-seq n
+--       lem1 (suc n) (s≤s z≤n) | ts* = {!!}
+--       lem1 (suc n) (s≤s z≤n) | ts = {!!}
 
-lemma0 : Muller ωa1 flip-seq 
-lemma0 = {!!}
+-- lemma0 : Buchi ωa1 flip-seq 
+-- lemma0 = {!!}
 
 ωa2 : Automaton States3 Bool
 ωa2 = record {
@@ -183,30 +196,30 @@ flip-dec1 n = let open ≡-Reasoning in
           ( not ( flip-seq n ) )
        ∎
 
-flip-dec2 : (n : ℕ ) → ? -- not flip-seq (suc n)  ≡  flip-seq n 
-flip-dec2 n = {!!}
+-- flip-dec2 : (n : ℕ ) → ? -- not flip-seq (suc n)  ≡  flip-seq n 
+-- flip-dec2 n = {!!}
 
 
-record flipProperty : Set where
-    field
-       flipP : (n : ℕ) →  ω-run ωa2 {!!} {!!} ≡ ω-run ωa2 {!!} {!!}
+-- record flipProperty : Set where
+--     field
+--        flipP : (n : ℕ) →  ω-run ωa2 {!!} {!!} ≡ ω-run ωa2 {!!} {!!}
 
-lemma2 : Muller ωa2 flip-seq 
-lemma2 = record {
-          next = next1
-       ;  infinite = {!!}
-   }  where
-     next1 : ℕ → ℕ
-     next1 = {!!}
-     infinite' : (n m : ℕ) → n ≥″ m → aend ωa2 {!!} ≡ true → aend ωa2 {!!} ≡ true
-     infinite' = {!!}
-     infinite2 : (n : ℕ) → aend ωa2 {!!} ≡ true
-     infinite2 = {!!}
-
-lemma3 : Buchi ωa1 false-seq  →  ⊥
-lemma3 = {!!}
-
-lemma4 : Muller ωa1 flip-seq  →  ⊥
-lemma4 = {!!}
-
-
+-- lemma2 : Buchi ωa2 flip-seq 
+-- lemma2 = record {
+--           next = next1
+--        ;  infinite = {!!}
+--    }  where
+--      next1 : ℕ → ℕ
+--      next1 = {!!}
+--      infinite' : (n m : ℕ) → n ≥″ m → aend ωa2 {!!} ≡ true → aend ωa2 {!!} ≡ true
+--      infinite' = {!!}
+--      infinite2 : (n : ℕ) → aend ωa2 {!!} ≡ true
+--      infinite2 = {!!}
+-- 
+-- lemma3 : Muller ωa1 false-seq  →  ⊥
+-- lemma3 = {!!}
+-- 
+-- lemma4 : Buchi ωa1 flip-seq  →  ⊥
+-- lemma4 = {!!}
+-- 
+-- 

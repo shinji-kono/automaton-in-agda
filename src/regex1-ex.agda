@@ -35,19 +35,23 @@ r5 =    ( any * ) & ( < a > & < b > & < c > || < b > & < c > & < d > )
 
 open import nfa
 
-tt1 : {Σ : Set} → ( P Q :  List In → Bool ) → split P Q ( a ∷ b ∷ c ∷ [] ) ≡ ?
-tt1 P Q = ?
+tt1 : {Σ : Set} → ( P Q :  List In → Bool ) → split P Q ( a ∷ b ∷ c ∷ [] ) ≡ 
+   P [] /\ Q (a ∷ b ∷ c ∷ []) \/
+   P (a ∷ []) /\ Q (b ∷ c ∷ []) \/
+   P (a ∷ b ∷ []) /\ Q (c ∷ []) \/ P (a ∷ b ∷ c ∷ []) /\ Q []
+tt1 P Q = refl
 
+test-AB→repeat3 : {Σ : Set} → {A : List In → Bool} → repeat A  [] ( a ∷ [] )  ≡  A (a ∷ [] )
+test-AB→repeat3 {_} {A} = refl
 
-test-AB→repeat1 : {Σ : Set} → {A : List In → Bool} → repeat A  ( a ∷ b ∷ c ∷ [] ) ≡  
-    A (a ∷ []) /\ (
-           (A (b ∷ [])     /\ (A (c ∷ []) /\ true \/ false) )
-        \/ (A (b ∷ c ∷ []) /\ true \/ false))
-    \/ A (a ∷ b ∷ []) /\ (A (c ∷ []) /\ true \/ false) 
-    \/ A (a ∷ b ∷ c ∷ []) /\ true \/ false
+test-AB→repeat2 : {Σ : Set} → {A : List In → Bool} → repeat A  [] ( a ∷ b ∷ [] )  ≡  A (a ∷ []) /\ A (b ∷ []) \/ A (a ∷ b ∷ [])
+test-AB→repeat2 {_} {A} = refl
+
+test-AB→repeat1 : {Σ : Set} → {A : List In → Bool} → repeat A  [] ( a ∷ b ∷ c ∷ [] )  ≡  
+    A (a ∷ []) /\ ((A (b ∷ []) /\ A (c ∷ [])) \/ A (b ∷ c ∷ []))    
+    \/ A (a ∷ b ∷ []) /\ A (c ∷ [])    -- ok
+    \/ A (a ∷ b ∷ c ∷ [])  -- ok
 test-AB→repeat1 {_} {A}  = refl
-
-
 
 cmpi : (x y : In ) → Dec (x ≡ y)
 cmpi a a = yes refl
@@ -67,7 +71,7 @@ cmpi d a = no (λ ())
 cmpi d b = no (λ ()) 
 cmpi d c = no (λ ()) 
 
-test-regex : regex-language r1' cmpi ( a ∷ [] ) ≡ false
+test-regex : regex-language r1' cmpi ( a ∷ b ∷ c ∷ [] ) ≡ true
 test-regex = refl
 
 -- test-regex2 : regex-language r2 cmpi ( b ∷ c ∷ a ∷ b ∷ [] ) ≡ false

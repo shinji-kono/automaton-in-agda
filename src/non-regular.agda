@@ -40,6 +40,9 @@ input-addi1 (suc i) = i1 ∷ input-addi1 i
 inputnn0 : ( n :  ℕ )  →  List  In2
 inputnn0 n = input-addi0 n (input-addi1 n)
 
+--
+--  using count of i0 and i1 makes the proof easier
+--
 inputnn1-i1 : (i : ℕ) → List In2 → Bool
 inputnn1-i1 zero [] = true
 inputnn1-i1 (suc _) [] = false

@@ -66,7 +66,8 @@ derive-step : (r : Regex   Σ) (d0 : Derivative r) → (s : Σ) → regex-states
 derive-step r d0 s = derive (is-derived d0) s refl
 
 regex→automaton : (r : Regex   Σ) → Automaton (Derivative r) Σ
-regex→automaton r = record { δ = λ d s → record { state = derivative (state d) s ; is-derived = derive (is-derived d) s refl } 
+regex→automaton r = record { δ = λ d s → 
+        record { state = derivative (state d) s ; is-derived = derive (is-derived d) s refl } 
    ; aend = λ d → empty? (state d) }  
 
 regex-match : (r : Regex   Σ) →  (List Σ) → Bool
@@ -182,6 +183,21 @@ record ISB (r : Regex Σ) : Set where
     field
         s : Regex Σ
         is-sub : SB r s
+
+SubtermS : (x : Regex Σ ) → Set
+SubtermS x =  (y : Regex Σ) → SB x y → Bool
+
+nderivative :  (x : Regex  Σ) → SubtermS x → Σ → SubtermS x
+nderivative = ?
+
+open import nfa
+
+regex→nautomaton : (r : Regex   Σ) → NAutomaton ? Σ
+regex→nautomaton r = record { δ = λ d s → record { state = derivative (state d) s ; is-derived = derive (is-derived d) s refl } 
+   ; aend = λ d → empty? (state d) }  
+
+regex-nmatch : (r : Regex   Σ) →  (List Σ) → Bool
+regex-nmatch ex is = ? -- accept ( regex→nautomaton ex ) record { state =  ex ; is-derived = unit refl } is 
 
 open import bijection using ( InjectiveF ; Is )  
 
@@ -396,4 +412,23 @@ derive=ISB < x₁ > (x ∷ x₂ ∷ x₃) = ?
 
 
 
+---
+--     empty?  ((< a > * || < b > * ) & < c > )  = falsee
+--
+--     derive  ((< a > * || < b > * ) & < c > ) a   = < a > * & < c >
+--     derive  ((< a > * || < b > * ) & < c > ) b   = < b > * & < c >
+--     derive  ((< a > * || < b > * ) & < c > ) c   = ε
+--     derive  ((< a > * || < b > * ) & < c > ) d   = φ
+--     
+--     empty?  ((< a > * ) & < c > )  = falsee
+--     derive  (< a > * & < c > ) a = < a > * & < c >
+--     derive  (< a > * & < c > ) b = φ
+--     derive  (< a > * & < c > ) c = ε
+--     derive  (< a > * & < c > ) d = φ
+--
+--     empty?  ((< b > * ) & < c > )  = falsee
+--     derive  (< b > * & < c > ) a = φ
+--     derive  (< b > * & < c > ) b = < b > * & < c >
+--     derive  (< b > * & < c > ) c = ε
+--     derive  (< b > * & < c > ) d = φ
 

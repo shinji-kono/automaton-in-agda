@@ -41,25 +41,6 @@ existsS1 qs = qs sr \/ qs ss \/ qs st
 
 -- given list of all states, extract list of q which qs q is true
 
-to-list : {Q : Set} → List Q → ( Q → Bool ) → List Q
-to-list {Q} x exists = to-list1 x [] where
-   to-list1 : List Q → List Q → List Q 
-   to-list1 [] x = x
-   to-list1  (q ∷ qs) x with exists q
-   ... | true  = to-list1 qs (q ∷ x )
-   ... | false = to-list1 qs x
-
-Nmoves : { Q : Set } { Σ : Set  }
-    → NAutomaton Q  Σ
-    → (exists : ( Q → Bool ) → Bool)
-    →  ( Qs : Q → Bool )  → (s : Σ ) → ( Q → Bool )
-Nmoves {Q} { Σ} M exists  Qs  s  = λ q → exists ( λ qn → (Qs qn /\ ( Nδ M qn s q )  ))
-
---
---  Q is finiteSet
---  so we have 
---     exists : ( P : Q → Bool ) → Bool
---  which checks if there is a q in Q such that P q is true
 
 Naccept : { Q : Set } { Σ : Set  } 
     → NAutomaton Q  Σ
@@ -85,6 +66,25 @@ Naccept M exists sb (i ∷ t ) = Naccept M exists (λ q →  exists ( λ qn → 
 --     ... | true  = ndepth qs sb (i ∷ is) t (ndepth1 q i all is t t1 )
 --     ... | false = ndepth qs sb (i ∷ is) t t1
 
+to-list : {Q : Set} → List Q → ( Q → Bool ) → List Q
+to-list {Q} x exists = to-list1 x [] where
+   to-list1 : List Q → List Q → List Q 
+   to-list1 [] x = x
+   to-list1  (q ∷ qs) x with exists q
+   ... | true  = to-list1 qs (q ∷ x )
+   ... | false = to-list1 qs x
+
+Nmoves : { Q : Set } { Σ : Set  }
+    → NAutomaton Q  Σ
+    → (exists : ( Q → Bool ) → Bool)
+    →  ( Qs : Q → Bool )  → (s : Σ ) → ( Q → Bool )
+Nmoves {Q} { Σ} M exists  Qs  s  = λ q → exists ( λ qn → (Qs qn /\ ( Nδ M qn s q )  ))
+
+--
+--  Q is finiteSet
+--  so we have 
+--     exists : ( P : Q → Bool ) → Bool
+--  which checks if there is a q in Q such that P q is true
 -- trace in state set
 --
 Ntrace : { Q : Set } { Σ : Set  } 
@@ -179,7 +179,7 @@ test0 = existsS1 fin0
 test1 : Bool
 test1 = existsS1 fin1
 
-test2 = Nmoves am2 existsS1 start1 
+-- test2 = Nmoves am2 existsS1 start1 
 
 open import automaton 
 

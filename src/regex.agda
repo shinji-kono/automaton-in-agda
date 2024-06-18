@@ -14,13 +14,17 @@ open import Relation.Nullary using (¬_; Dec; yes; no)
 open import logic
 open import regular-language
 
+--  (abc|d.*)
+--  any = < a > || < b > || < c > || < d >
+--  ( < a > & < b > & < c > ) || ( <d > & ( any * ) )
+
 data Regex ( Σ : Set) : Set  where
   ε     : Regex Σ                -- empty
-  φ     : Regex  Σ               -- fail
-  _*    : Regex  Σ  → Regex  Σ 
-  _&_   : Regex  Σ  → Regex  Σ → Regex Σ
-  _||_  : Regex  Σ  → Regex  Σ → Regex Σ
-  <_>   : Σ → Regex  Σ
+  φ     : Regex Σ               -- fail
+  _*    : Regex Σ → Regex Σ 
+  _&_   : Regex Σ → Regex Σ → Regex Σ
+  _||_  : Regex Σ → Regex Σ → Regex Σ
+  <_>   : Σ → Regex Σ
 
 infixr 40 _&_ _||_
 
@@ -30,9 +34,9 @@ regex-language : {Σ : Set} → Regex Σ → ((x y : Σ ) → Dec (x ≡ y))  �
 regex-language φ cmp _ = false
 regex-language ε cmp [] = true
 regex-language ε cmp (_ ∷ _) = false
-regex-language (x *) cmp = repeat ( regex-language x cmp  )
-regex-language (x & y) cmp  = split ( λ z → regex-language x  cmp z ) (λ z →  regex-language y  cmp z )
-regex-language (x || y) cmp  = λ s → ( regex-language x  cmp s )  \/  ( regex-language y  cmp s)
+regex-language (x *) cmp = repeat ( regex-language x cmp  ) [] 
+regex-language (x & y) cmp  = split ( λ z → regex-language x  cmp z ) (regex-language y  cmp  ) 
+regex-language (x || y) cmp = λ s → ( regex-language x  cmp s )  \/  ( regex-language y  cmp s)
 regex-language < h > cmp  [] = false
 regex-language < h > cmp  (h1  ∷ [] ) with cmp h h1
 ... | yes _ = true

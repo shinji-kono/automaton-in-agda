@@ -8,7 +8,7 @@
 --          bb : (y : aaa) → aaa
 --          cc : (y : aaa) → aaa
 --
---     Lang : {Σ : Set } → List Σ → Bool
+--     Lang : {Σ : Set } → Colist Σ → Bool
 --     Lang [] = ?
 --     Lang (h ∷ t)  = ?
 --     
@@ -46,28 +46,29 @@ open import Data.Bool hiding ( _≟_ )
 open import Level renaming ( zero to Zero ; suc to succ )
 open import Size 
 open import Data.Empty
+open import Data.List hiding (map ; foldr ; any)
 
-module List where
+module Colist where
 
-        data List (i : Size) (A : Set) : Set where
-          [] : List i A
-          _∷_ : {j : Size< i} (x : A) (xs : List j A) → List i A
+        data Colist (i : Size) (A : Set) : Set where
+          [] : Colist i A
+          _∷_ : {j : Size< i} (x : A) (xs : Colist j A) → Colist i A
 
 
-        map : ∀{i A B} → (A → B) → List i A → List i B
+        map : ∀{i A B} → (A → B) → Colist i A → Colist i B
         map f [] = []
         map f ( x ∷ xs)= f x ∷ map f xs
 
-        foldr : ∀{i} {A B : Set} → (A → B → B) → B → List i A → B
+        foldr : ∀{i} {A B : Set} → (A → B → B) → B → Colist i A → B
         foldr c n [] = n
         foldr c n (x ∷ xs) = c x (foldr c n xs)
 
-        any : ∀{i A} → (A → Bool) → List i A → Bool
+        any : ∀{i A} → (A → Bool) → Colist i A → Bool
         any p xs = foldr _∨_ false (map p xs)
 
 module Lang where
 
-        open List 
+        open Colist 
 
         -- Lnag ≅ Bool × (Σ → Lang)
         --
@@ -79,15 +80,19 @@ module Lang where
 
         open Lang
 
-        _∋_ : ∀{i} → Lang i → List i A → Bool
+        _∋_ : ∀{i} → Lang i → Colist i A → Bool
         l ∋ [] = ν l
         l ∋ ( a ∷ as ) = δ l a ∋ as
 
-        trie : ∀{i}  (f : List i A → Bool) → Lang i
+        trie : ∀{i}  (f : Colist i A → Bool) → Lang i
         ν (trie f) = f []
         δ (trie f) a = trie (λ as → f (a ∷ as))
 
-        -- trie' : ∀{i}  (f : List i A → Bool) → Lang i
+        -- _∋'_ : ∀{i} → Lang i → List A → Bool
+        -- l ∋' [] = ν l
+        -- l ∋' ( a ∷ as ) = δ l a ∋' as
+
+        -- trie' : ∀{i}  (f : Colist i A → Bool) → Lang i
         -- trie' {i} f = record { 
         --     ν = f []
         --   ; δ = λ {j} a → lem {j} a   -- we cannot write in this way
@@ -124,31 +129,41 @@ module Lang where
         δ (k · l) x = let k′l =  δ k x  · l in if ν k then k′l ∪ δ l x else k′l
 
         _+_ : ∀{i}  (k l : Lang i) → Lang i
-        ν (k + l) = ν k ∧ ν l
-        δ (k + l) x with ν k | ν l
-        ... | false | true = δ k x  + l 
-        ... | false | false = δ k x  + l 
-        ... | true  | true = (δ k x  + l )  ∪ δ l x 
-        ... | true  | false = (δ k x  + l )  ∪ δ l x 
+        ν (k + l) = ν l
+        δ (k + l) x with ν k 
+        ... | false = δ k x  + l 
+        ... | true  = (δ k x  + l )  ∪ δ l x 
 
         language : { Σ : Set } → Set
-        language {Σ}  = List ∞ Σ → Bool
+        language {Σ}  = Colist ∞ Σ → Bool
 
         split : {Σ : Set} → {i : Size } → (x y : language {Σ} ) → language {Σ}
-        split x y  [] = x [] ∨  y []
+        split x y  [] = x [] ∧  y []
         split x y (h  ∷ t) = (x [] ∧ y (h  ∷ t)) ∨
           split (λ t1 → x (  h ∷ t1 ))  (λ t2 → y t2 ) t
 
-        LtoSplit : (x y : Lang ∞ ) → (z : List ∞ A) → ((x  + y ) ∋ z) ≡ true →   split (λ w → x ∋ w) (λ w → y ∋ w) z ≡ true
-        LtoSplit x y [] xy with ν x | ν y
-        ... | true | true = refl
+        data In2 : Set where
+          i0 : In2
+          i1 : In2
+
+        test-AB→split : {Σ : Set} → {A B : Colist ∞ In2 → Bool} → split A B ( i0 ∷ i1 ∷ i0 ∷ [] ) ≡ (
+           ( A [] ∧ B ( i0 ∷ i1 ∷ i0 ∷ [] ) ) ∨
+           ( A ( i0 ∷ [] ) ∧ B ( i1 ∷ i0 ∷ [] ) ) ∨
+           ( A ( i0 ∷ i1 ∷ [] ) ∧ B ( i0 ∷ [] ) ) ∨
+           ( A ( i0 ∷ i1 ∷ i0 ∷ [] ) ∧ B  []  )
+            )
+        test-AB→split {_} {A} {B} = ?
+
+        LtoSplit : (x y : Lang ∞ ) → (z : Colist ∞ A) → ((x  ·  y ) ∋ z) ≡ true →   split (λ w → x ∋ w) (λ w → y ∋ w) z ≡ true
+        LtoSplit x y [] xy with ν x 
+        ... | true = xy
         LtoSplit x y (h ∷ z) xy = ?
 
-        SplitoL : (x y : Lang ∞ ) → (z : List ∞ A) → ((x  + y ) ∋ z) ≡ false →   split (λ w → x ∋ w) (λ w → y ∋ w) z ≡ false
+        SplitoL : (x y : Lang ∞ ) → (z : Colist ∞ A) → ((x  ·  y ) ∋ z) ≡ false →   split (λ w → x ∋ w) (λ w → y ∋ w) z ≡ false
         SplitoL x y [] xy with ν x | ν y 
         ... | false | false = refl
-        ... | false | true = ?
-        ... | true | false = ?
+        ... | false | true = refl
+        ... | true | false = refl
         SplitoL x y (h ∷ z) xy = ?
 
 
@@ -225,10 +240,10 @@ module Lang where
         ≅ν (union-cong p q) = cong₂ _∨_ (≅ν p) (≅ν q)
         ≅δ (union-cong p q) a = union-cong (≅δ p a) (≅δ q a)
 
-        withExample : (P : Bool → Set) (p : P true) (q : P false) →
-           {A : Set} (g : A → Bool) (x : A) → P (g x) withExample P p q g x with g x
-        ... | true = p
-        ... | false = q
+        -- withExample : (P : Bool → Set) (p : P true) (q : P false) →
+        --    {A : Set} (g : A → Bool) (x : A) → P (g x) withExample P p q g x with g x
+        -- ... | true = p
+        -- ... | false = q
 
         rewriteExample : {A : Set} {P : A → Set} {x : A} (p : P x)
             {g : A → A} (e : g x ≡ x) → P (g x)
@@ -406,15 +421,15 @@ module Lang where
                 ∎ where open EqR (Bis _)
 
 
-open List
+open Colist
 
 record DA (S : Set) : Set where
     field ν : (s : S) → Bool
           δ : (s : S)(a : A) → S
-    νs : ∀{i} (ss : List.List i S) → Bool
-    νs ss = List.any ν ss
-    δs : ∀{i} (ss : List.List i S) (a : A) → List.List i S
-    δs ss a = List.map (λ s → δ s a) ss
+    νs : ∀{i} (ss : Colist.Colist i S) → Bool
+    νs ss = Colist.any ν ss
+    δs : ∀{i} (ss : Colist.Colist i S) (a : A) → Colist.Colist i S
+    δs ss a = Colist.map (λ s → δ s a) ss
 
 open Lang 
 
@@ -459,7 +474,7 @@ _⊕_ : ∀{S1 S2} (da1 : DA S1) (da2 : DA S2) → DA (S1 × S2)
 ν (da1 ⊕ da2) (s1 , s2) = ν da1 s1 ∨ ν da2 s2
 δ (da1 ⊕ da2) (s1 , s2) a = δ da1 s1 a , δ da2 s2 a
 
-powA : ∀{S} (da : DA S) → DA (List ∞ S)
+powA : ∀{S} (da : DA S) → DA (Colist ∞ S)
 ν (powA da) ss = νs da ss
 δ (powA da) ss a = δs da ss a
 
@@ -469,12 +484,12 @@ powA-nil : ∀{i S} (da : DA S) → lang (powA da) [] ≅⟨ i ⟩≅ ∅
 ≅ν (powA-nil da) = refl
 ≅δ (powA-nil da) a = powA-nil da
 
-powA-cons : ∀{i S} (da : DA S) {s : S} {ss : List ∞ S} →
+powA-cons : ∀{i S} (da : DA S) {s : S} {ss : Colist ∞ S} →
         lang (powA da) (s ∷ ss) ≅⟨ i ⟩≅ lang da s ∪ lang (powA da) ss
 ≅ν (powA-cons da) = refl
 ≅δ (powA-cons da) a = powA-cons da
 
-composeA : ∀{S1 S2} (da1 : DA S1)(s2 : S2)(da2 : DA S2) → DA (S1 × List ∞ S2)
+composeA : ∀{S1 S2} (da1 : DA S1)(s2 : S2)(da2 : DA S2) → DA (S1 × Colist ∞ S2)
 ν (composeA da1 s2 da2) (s1 , ss2) = (ν da1 s1 ∧ ν da2 s2) ∨ νs da2 ss2
 δ (composeA da1 s2 da2) (s1 , ss2) a =
         δ da1 s1 a , δs da2 (if ν da1 s1 then s2 ∷ ss2 else ss2) a
@@ -482,7 +497,7 @@ composeA : ∀{S1 S2} (da1 : DA S1)(s2 : S2)(da2 : DA S2) → DA (S1 × List ∞
 -- import Relation.Binary.EqReasoning as EqR
 import Relation.Binary.Reasoning.Setoid as EqR
 
-composeA-gen : ∀{i S1 S2} (da1 : DA S1) (da2 : DA S2) → ∀(s1 : S1)(s2 : S2)(ss : List ∞ S2) →
+composeA-gen : ∀{i S1 S2} (da1 : DA S1) (da2 : DA S2) → ∀(s1 : S1)(s2 : S2)(ss : Colist ∞ S2) →
         lang (composeA da1 s2 da2) (s1 , ss) ≅⟨ i ⟩≅ lang da1 s1 · lang da2 s2 ∪ lang (powA da2) ss
 ≅ν (composeA-gen da1 da2 s1 s2 ss) = refl
 ≅δ (composeA-gen da1 da2 s1 s2 ss) a with ν da1 s1
@@ -513,14 +528,14 @@ acceptingInitial : ∀{S} (s0 : S) (da : DA S) → DA (Maybe S)
 
 
 
-finalToInitial : ∀{S} (da : DA (Maybe S)) → DA (List ∞ (Maybe S))
+finalToInitial : ∀{S} (da : DA (Maybe S)) → DA (Colist ∞ (Maybe S))
 ν (finalToInitial da) ss = νs da ss
 δ (finalToInitial da) ss a =
         let ss′ = δs da ss a
         in if νs da ss then δ da nothing a ∷ ss′ else ss′
 
 
-starA : ∀{S}(s0 : S)(da : DA S) → DA (List ∞(Maybe S))
+starA : ∀{S}(s0 : S)(da : DA S) → DA (Colist ∞(Maybe S))
 starA s0 da = finalToInitial (acceptingInitial s0 da)
 
 
@@ -529,11 +544,21 @@ postulate
    lang (acceptingInitial s0 da) (just s) ≅⟨ i ⟩≅ lang da s
  acceptingInitial-nothing : ∀{i S} (s0 : S) (da : DA S) →
         lang (acceptingInitial s0 da) nothing ≅⟨ i ⟩≅ ε ∪ lang da s0
- starA-lemma : ∀{i S}(da : DA S)(s0 : S)(ss : List ∞ (Maybe S))→
+ starA-lemma : ∀{i S}(da : DA S)(s0 : S)(ss : Colist ∞ (Maybe S))→
         lang (starA s0 da) ss ≅⟨ i ⟩≅ 
                 lang (powA (acceptingInitial s0 da)) ss · (lang da s0) *
  starA-correct : ∀{i S} (da : DA S) (s0 : S) →
    lang (starA s0 da) (nothing ∷ []) ≅⟨ i ⟩≅ (lang da s0) *
+
+record Automaton ( Q : Set ) ( Σ : Set  )
+       : Set  where
+    field
+        δ : Q → Σ → Q
+        aend : Q → Bool
+
+accept : ∀{i} {S} (da : Automaton S A) (s : S) → Lang i
+Lang.ν (accept da s) = Automaton.aend da s
+Lang.δ (accept da s) a = accept da (Automaton.δ da s a)
 
 record NAutomaton ( Q : Set ) ( Σ : Set  )
            : Set  where
