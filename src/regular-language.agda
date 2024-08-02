@@ -172,15 +172,15 @@ c-split-lemma {Σ} A B h t eq p = sym ( begin
 
 split→AB :  {Σ : Set} → (A B : List Σ → Bool ) → ( x : List Σ ) → split A B x ≡ true → Split A B x
 split→AB {Σ} A B [] eq with bool-≡-? (A []) true | bool-≡-? (B []) true
-split→AB {Σ} A B [] eq | yes eqa | yes eqb =
+split→AB {Σ} A B [] eq | yes0 eqa | yes0 eqb =
     record { sp0 = [] ; sp1 = [] ; sp-concat = refl ; prop0 = eqa ; prop1 = eqb }
-split→AB {Σ} A B [] eq | yes p | no ¬p = ⊥-elim (lemma-∧-1 eq (¬-bool-t ¬p ))
-split→AB {Σ} A B [] eq | no ¬p | t = ⊥-elim (lemma-∧-0 eq (¬-bool-t ¬p ))
+split→AB {Σ} A B [] eq | yes0 p | no0 ¬p = ⊥-elim (lemma-∧-1 eq (¬-bool-t ¬p ))
+split→AB {Σ} A B [] eq | no0 ¬p | t = ⊥-elim (lemma-∧-0 eq (¬-bool-t ¬p ))
 split→AB {Σ} A B (h ∷ t ) eq with bool-≡-? (A []) true | bool-≡-? (B (h ∷ t )) true
-... | yes px | yes py = record { sp0 = [] ; sp1 = h ∷ t ; sp-concat = refl ; prop0 = px ; prop1 = py }
-... | no px | _ with split→AB (λ t1 → A ( h ∷ t1 )) B t (c-split-lemma A B h t eq (case1 px) )
+... | yes0 px | yes0 py = record { sp0 = [] ; sp1 = h ∷ t ; sp-concat = refl ; prop0 = px ; prop1 = py }
+... | no0 px | _ with split→AB (λ t1 → A ( h ∷ t1 )) B t (c-split-lemma A B h t eq (case1 px) )
 ... | S = record { sp0 = h ∷ sp0 S  ; sp1 = sp1 S ; sp-concat = cong ( λ k → h ∷ k) (sp-concat S) ; prop0 = prop0 S ; prop1 = prop1 S }
-split→AB {Σ} A B (h ∷ t ) eq  | _ | no px with split→AB (λ t1 → A ( h ∷ t1 )) B t (c-split-lemma A B h t eq (case2 px) )
+split→AB {Σ} A B (h ∷ t ) eq  | _ | no0 px with split→AB (λ t1 → A ( h ∷ t1 )) B t (c-split-lemma A B h t eq (case2 px) )
 ... | S = record { sp0 = h ∷ sp0 S  ; sp1 = sp1 S ; sp-concat = cong ( λ k → h ∷ k) (sp-concat S) ; prop0 = prop0 S ; prop1 = prop1 S }
 
 AB→split :  {Σ : Set} → (A B : List Σ → Bool ) → ( x y : List Σ ) → A x ≡ true → B y ≡ true → split A B (x ++ y ) ≡ true

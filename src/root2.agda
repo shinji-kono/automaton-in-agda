@@ -42,10 +42,12 @@ open _∧_
 open import prime
 
 divdable^2 : ( n k : ℕ ) → 1 < k → 1 < n → Prime k → Dividable k ( n * n ) → Dividable k n
+divdable^2 zero (suc k) 1<k 1<n pk dn2 = ?
+divdable^2 (suc k) zero 1<k 1<n pk dn2 = ?
 divdable^2 zero zero () 1<n pk dn2
 divdable^2 (suc n) (suc k) 1<k 1<n pk dn2 with decD {suc k} {suc n} 1<k
-... | yes y = y
-... | no non with gcd-euclid (suc k) (suc n) (suc n) 1<k (<-trans a<sa 1<n) (<-trans a<sa 1<n) (Prime.isPrime pk) dn2 
+... | yes0 y = y
+... | no0 non with gcd-euclid (suc k) (suc n) (suc n) 1<k (<-trans a<sa 1<n) (<-trans a<sa 1<n) (Prime.isPrime pk) dn2 
 ... | case1 dn = dn
 ... | case2 dm = dm
 
@@ -106,7 +108,7 @@ root-prime-irrational n m (suc p0) n>1 pn m>1 pnm = rot13 ( gcd-div1 n m (suc p0
 
 mkRational : ( i j : ℕ ) → 0 < j → Rational
 mkRational zero j 0<j = record { i = 0 ; j = 1 ; coprime = refl  ; 0<j = s≤s z≤n } 
-mkRational (suc i) (suc j) (s≤s 0<j) = record { i = Dividable.factor id ; j = Dividable.factor jd ; coprime = cop ; 0<j = 0<fj } where
+mkRational (suc i) (suc j) 0<j = record { i = Dividable.factor id ; j = Dividable.factor jd ; coprime = cop ; 0<j = 0<fj } where
    d : ℕ
    d = gcd (suc i) (suc j)
    d>0 : gcd (suc i) (suc j) > 0
@@ -146,16 +148,21 @@ r3 p p>0 r rr = r4 where
     d2 = Dividable.factor (proj2 (GCD.gcd-dividable i j)) 
     ri=id :  ( i j : ℕ) → (0<i : 0 < i ) → (0<j : 0 < j)  
         →  Rational.i (mkRational i j 0<j) ≡ Dividable.factor (proj1 (GCD.gcd-dividable i j))
-    ri=id (suc i₁) (suc j₁) 0<i (s≤s 0<j₁) = refl
+    ri=id = ?
+--   ri=id (suc i₁) 0 0<i 0<j₁ = ?
+--   ri=id (suc i₁) (suc j₁) 0<i 0<j₁ = ?
     ri=jd :  ( i j : ℕ) → (0<i : 0 < i ) → (0<j : 0 < j)  
-        →  Rational.j (mkRational i j 0<j) ≡ Dividable.factor (proj2 (GCD.gcd-dividable i j))
-    ri=jd (suc i₁) (suc j₁) 0<i (s≤s 0<j₁) = refl
+       →  Rational.j (mkRational i j 0<j) ≡ Dividable.factor (proj2 (GCD.gcd-dividable i j))
+    ri=jd = ?
+--   ri=jd (suc i₁) (suc j₁) 0<i 0<j₁ = ?
     r0=id :  ( i j : ℕ) → (0=i : 0 ≡ i ) → (0<j : 0 < j)  
-        →  Rational.i (mkRational i j 0<j) ≡ 0
-    r0=id  0 j refl 0<j = refl
+       →  Rational.i (mkRational i j 0<j) ≡ 0
+    r0=id = ?
+--   r0=id  0 j eq 0<j = ?
     r0=jd :  ( i j : ℕ) → (0=i : 0 ≡ i ) → (0<j : 0 < j)  
-        →  Rational.j (mkRational i j 0<j) ≡ 1
-    r0=jd  0 j refl 0<j = refl
+       →  Rational.j (mkRational i j 0<j) ≡ 1
+    r0=jd = ?
+--   r0=jd  0 j eq 0<j = ?
     d : ℕ
     d = gcd i j
     r7 : i > 0 → d > 0
@@ -171,6 +178,7 @@ r3 p p>0 r rr = r4 where
       d1 ∎ where open ≡-Reasoning
     r4 : p * Rational.j r * Rational.j r ≡ Rational.i r * Rational.i r
     r4 with <-cmp (Rational.i r * Rational.i r) 0
+    ... | tri< a b¬ ¬c = ?
     ... | tri≈ ¬a b ¬c = ⊥-elim (nat-≡< (begin
         0 ≡⟨ sym (r0=id i j (sym b) 0<j ) ⟩
         Rational.i (mkRational (Rational.i r * Rational.i r) (Rational.j r * Rational.j r) _ ) ≡⟨ sym rr ⟩
@@ -202,19 +210,20 @@ r3 p p>0 r rr = r4 where
 --    s≤s : {i j : ℕ} → i ≤ j → (suc i) ≤ (suc j)
 
 *<-2 : {x y z : ℕ} → z > 0  → x < y → z * x < z * y   
-*<-2 {zero} {suc y} {suc z} (s≤s z>0) x<y = begin
-   suc (z * zero) ≡⟨ cong suc (*-comm z _) ⟩ 
-   suc (zero * z) ≡⟨ refl ⟩ 
-   suc zero ≤⟨ s≤s z≤n ⟩ 
-   suc (y + z * suc y) ∎ where open ≤-Reasoning
-*<-2 {x} {y} {suc zero} (s≤s z>0) x<y = begin
-   suc (x + zero) ≡⟨ cong suc (+-comm x _) ⟩
-   suc x  ≤⟨ x<y ⟩
-   y  ≡⟨ +-comm zero _ ⟩
-   y + zero  ∎ where open ≤-Reasoning
-*<-2 {x} {y} {suc (suc z)} (s≤s z>0) x<y = begin
-   suc (x + (x + z * x))  <⟨ +-mono-≤-< x<y (*<-2 {x} {y} {suc z} (s≤s z≤n) x<y) ⟩
-   y + (y + z * y)  ∎ where open ≤-Reasoning
+*<-2 = ?
+--   *<-2 {zero} {suc y} {suc z} (s≤s z>0) x<y = begin
+--      suc (z * zero) ≡⟨ cong suc (*-comm z _) ⟩ 
+--      suc (zero * z) ≡⟨ refl ⟩ 
+--      suc zero ≤⟨ s≤s z≤n ⟩ 
+--      suc (y + z * suc y) ∎ where open ≤-Reasoning
+--   *<-2 {x} {y} {suc zero} (s≤s z>0) x<y = begin
+--      suc (x + zero) ≡⟨ cong suc (+-comm x _) ⟩
+--      suc x  ≤⟨ x<y ⟩
+--      y  ≡⟨ +-comm zero _ ⟩
+--      y + zero  ∎ where open ≤-Reasoning
+--   *<-2 {x} {y} {suc (suc z)} (s≤s z>0) x<y = begin
+--      suc (x + (x + z * x))  <⟨ +-mono-≤-< x<y (*<-2 {x} {y} {suc z} (s≤s z≤n) x<y) ⟩
+--      y + (y + z * y)  ∎ where open ≤-Reasoning
 
 r15 : {p : ℕ} → p > 1 → p < p * p
 r15 {p} p>1 = subst (λ k → k < p * p ) m*1=m (*<-2 (<-trans a<sa p>1) p>1 )
@@ -231,6 +240,7 @@ root-prime-irrational1 p pr r div  with <-cmp (Rational.j r) 1
      r00 = r3 p (<-trans a<sa (Prime.p>1 pr )) r div
      r06 : i ≡ 0
      r06 with <-cmp i 0
+     ... | tri< a ¬b c¬ = ?
      ... | tri≈ ¬a b ¬c = b
      ... | tri> ¬a ¬b c = ⊥-elim ( nat-≤> c a )
      r05 : p * j * j ≡ 0 
@@ -291,6 +301,7 @@ root-prime-irrational1 p pr r div | tri≈ ¬a b ¬c = ⊥-elim (nat-≡< r04 (r
      ... | tri< a ¬b ¬c = ⊥-elim ( nat-≡< (sym r11) p>0 ) where
           r10 : i ≡ 0
           r10 with <-cmp i 0
+          ... | tri< a b¬ ¬c = ?
           ... | tri≈ ¬a b ¬c = b
           ... | tri> ¬a ¬b c = ⊥-elim (nat-≤> c a )
           r11 : p ≡ 0

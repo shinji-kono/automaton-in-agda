@@ -104,10 +104,10 @@ TNLF halt utm = record {
      tenc h y = encode utm (record { tm = λ x → h1 h x }) ++ y
      h-nothing : (h : List Bool → Bool) → (y : List Bool) → h y ≡ false → h1 h y ≡ nothing
      h-nothing h y eq with h y
-     h-nothing h y refl | false = refl
+     h-nothing h y eq | false = refl
      h-just : (h : List Bool → Bool) → (y : List Bool) → h y ≡ true → h1 h y ≡ just true
      h-just h y eq with h y
-     h-just h y refl | true = refl
+     h-just h y eq | true = refl
      TN1 :  (h : List Bool → Bool) → (y : List Bool ) → Halt.halt halt (UTM.utm utm) (tenc h y) ≡ h y
      TN1 h y with h y in eq1
      ... | true  = begin

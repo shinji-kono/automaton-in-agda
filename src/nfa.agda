@@ -97,17 +97,18 @@ Ntrace M all-states exists sb (i ∷ t ) =
     to-list all-states (λ q →  sb q ) ∷
     Ntrace M all-states exists (λ q →  exists ( λ qn → (sb qn /\ ( Nδ M qn i q )  ))) t
 
-data-fin-00 : ( Fin 3 ) → Bool 
-data-fin-00 zero = true
-data-fin-00 (suc zero) = true
-data-fin-00 (suc (suc zero)) = true
-data-fin-00 (suc (suc (suc ()))) 
-
-data-fin-01 :  (x : ℕ ) → x < 3 → Bool 
-data-fin-01 zero lt = true
-data-fin-01 (suc zero) lt = true
-data-fin-01 (suc (suc zero)) lt = true
-data-fin-01 (suc (suc (suc x))) (s≤s (s≤s (s≤s ())))
+--  data-fin-00 : ( Fin 3 ) → Bool 
+--  data-fin-00 = ?
+--  data-fin-00 zero = true
+--  data-fin-00 (suc zero) = true
+--  data-fin-00 (suc (suc zero)) = true
+--  data-fin-00 (suc (suc (suc x))) = ?
+--
+--  data-fin-01 :  (x : ℕ ) → x < 3 → Bool 
+--  data-fin-01 zero lt = true
+--  data-fin-01 (suc zero) lt = true
+--  data-fin-01 (suc (suc zero)) lt = true
+--  data-fin-01 (suc (suc (suc x))) = ? -- (s≤s (s≤s (s≤s ())))
 
 transition3 : States1  → In2  → States1 → Bool
 transition3 sr i0 sr = true
@@ -194,25 +195,25 @@ texample4-1 = trace am2def start1 ( i0  ∷ i1  ∷ i1  ∷ i0 ∷ [] )
 
 -- a list of Q contains (q : Q)
 
-eqState1? : (x y : States1)  →  Dec ( x ≡ y )
-eqState1? sr sr = yes refl
-eqState1? ss ss = yes refl
-eqState1? st st = yes refl
-eqState1? sr ss = no (λ ())
-eqState1? sr st = no (λ ())
-eqState1? ss sr = no (λ ())
-eqState1? ss st = no (λ ())
-eqState1? st sr = no (λ ())
-eqState1? st ss = no (λ ())
+eqState1? : (x y : States1)  →  Dec0 ( x ≡ y )
+eqState1? sr sr = yes0 refl
+eqState1? ss ss = yes0 refl
+eqState1? st st = yes0 refl
+eqState1? sr ss = no0 (λ ())
+eqState1? sr st = no0 (λ ())
+eqState1? ss sr = no0 (λ ())
+eqState1? ss st = no0 (λ ())
+eqState1? st sr = no0 (λ ())
+eqState1? st ss = no0 (λ ())
 
 
-list-contains  : {Q : Set} → ( (x y : Q ) → Dec ( x ≡ y ) ) → (qs : List Q) → (q : Q ) → Bool
+list-contains  : {Q : Set} → ( (x y : Q ) → Dec0 ( x ≡ y ) ) → (qs : List Q) → (q : Q ) → Bool
 list-contains {Q} eq? [] q = false
 list-contains {Q} eq? (x ∷ qs) q with eq? x q
-... | yes _  = true
-... | no _  = list-contains eq? qs q
+... | yes0 _  = true
+... | no0 _  = list-contains eq? qs q
 
-containsP : {Q : Set} → ( eq? : (x y : Q ) →  Dec ( x ≡ y ))  → (qs : List Q) → (q : Q ) → Set 
+containsP : {Q : Set} → ( eq? : (x y : Q ) →  Dec0 ( x ≡ y ))  → (qs : List Q) → (q : Q ) → Set 
 containsP eq? qs q = list-contains eq? qs q ≡ true
 
 contains-all : (q : States1 ) → containsP eqState1? LStates1 q 

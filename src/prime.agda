@@ -11,6 +11,7 @@ open import Relation.Binary.PropositionalEquality
 open import Relation.Binary.Definitions
 
 open import gcd
+open import logic
 open import nat
 
 record Prime (i : ℕ ) : Set where
@@ -25,17 +26,17 @@ record NonPrime ( n : ℕ ) : Set where
       prime : Prime factor
       dividable : Dividable factor n
 
-PrimeP : ( n : ℕ ) → Dec ( Prime n )
-PrimeP 0 = no (λ p → ⊥-elim ( nat-<> (Prime.p>1 p) (s≤s z≤n))) 
-PrimeP 1 = no (λ p → ⊥-elim ( nat-≤> (Prime.p>1 p) (s≤s (≤-refl))))
+PrimeP : ( n : ℕ ) → Dec0 ( Prime n )
+PrimeP 0 = no0 (λ p → ⊥-elim ( nat-<> (Prime.p>1 p) (s≤s z≤n))) 
+PrimeP 1 = no0 (λ p → ⊥-elim ( nat-≤> (Prime.p>1 p) (s≤s (≤-refl))))
 PrimeP (suc (suc n)) = isPrime1 (suc (suc n)) (suc n) (s≤s (s≤s z≤n)) a<sa (λ i m<i i<n → isp0 (suc n) i (<to≤ m<i) i<n ) where  
    isp0 : (n : ℕ) (i : ℕ) ( n<i : n ≤ i) ( i<n : i < suc n ) →  gcd (suc n) i ≡ 1
    isp0  n i n<i i<n with <-cmp i n
    ... | tri< a ¬b ¬c = ⊥-elim ( nat-≤> n<i a) 
    ... | tri≈ ¬a refl ¬c = gcd203 i
    ... | tri> ¬a ¬b c = ⊥-elim ( nat-≤> c i<n )
-   isPrime1 : ( n m : ℕ ) → n > 1 → m < n → ( (i : ℕ) → m < i → i < n  →  gcd n i ≡ 1 )  → Dec ( Prime n )
-   isPrime1 n zero n>1 m<n lt = yes record { isPrime = λ j j<i 0<j → lt j 0<j j<i ; p>1 = n>1 } 
+   isPrime1 : ( n m : ℕ ) → n > 1 → m < n → ( (i : ℕ) → m < i → i < n  →  gcd n i ≡ 1 )  → Dec0 ( Prime n )
+   isPrime1 n zero n>1 m<n lt = yes0 record { isPrime = λ j j<i 0<j → lt j 0<j j<i ; p>1 = n>1 } 
    isPrime1 n (suc m) n>1 m<n lt with <-cmp (gcd n (suc m)) 1
    ... | tri< a ¬b ¬c = ⊥-elim ( nat-≤> ( gcd>0 n (suc m) (<-trans (s≤s z≤n) n>1) (s≤s z≤n)) a )
    ... | tri≈ ¬a b ¬c = isPrime1 n m n>1 (<-trans a<sa m<n) isp1 where
@@ -45,7 +46,7 @@ PrimeP (suc (suc n)) = isPrime1 (suc (suc n)) (suc n) (s≤s (s≤s z≤n)) a<sa
         ... | tri< a ¬b ¬c = lt i a i<n
         ... | tri≈ ¬a m=i  ¬c = subst (λ k → gcd n k ≡ 1) m=i b -- gcd n (suc m) ≡ 1 →  gcd n i ≡ 1
         ... | tri> ¬a ¬b c = ⊥-elim ( nat-≤> m<i c) -- suc i ≤ suc m →  i < m
-   ... | tri> ¬a ¬b c = no ( λ p → nat-≡< (sym (Prime.isPrime p (suc m) m<n (s≤s z≤n) )) c )
+   ... | tri> ¬a ¬b c = no0 ( λ p → nat-≡< (sym (Prime.isPrime p (suc m) m<n (s≤s z≤n) )) c )
 
 open import logic
 open _∧_
@@ -73,8 +74,8 @@ nonPrime {n} 1<n np = np1 n n np 1<n (findFactor n ≤-refl (λ j n≤j j<n → 
          ... | tri≈ ¬a refl ¬c = ⊥-elim ( nat-<> a (subst (λ k → 1 < k) (sym (gcd20 n)) 1<n ))
     ... | tri≈ ¬a b ¬c = np1 n m np 1<n (findFactor n (≤-trans refl-≤s m≤n) (mg1 n m mg b ) )
     ... | tri> ¬a ¬b c with PrimeP ( gcd n m )
-    ... | yes y = record { factor = gcd n m ; prime = y ;  dividable = proj1 (gcd-dividable n m ) }
-    ... | no ngcd = np2 where
+    ... | yes0 y = record { factor = gcd n m ; prime = y ;  dividable = proj1 (gcd-dividable n m ) }
+    ... | no0 ngcd = np2 where
          skip-case : NonPrime (gcd n m) → NonPrime n
          skip-case  cc = record { factor = NonPrime.factor cc ; prime = NonPrime.prime cc ; dividable =
                           record { factor = (Dividable.factor (proj1 (gcd-dividable n m))) * (Dividable.factor (NonPrime.dividable cc))
@@ -132,7 +133,8 @@ m<factorial (suc m) = begin
      factorial (suc m)  ∎  where open ≤-Reasoning
 -- *-monoˡ-≤ (suc m) {!!}
 fact< : (m n : ℕ) → 0 < n → n < suc (suc m) → Dividable n ( factorial (suc m) )
-fact< zero 1 0<n (s≤s (s≤s z≤n)) = record { factor = 1 ; is-factor = refl }
+fact< zero 1 0<n lt = record { factor = 1 ; is-factor = refl }
+fact< zero (suc (suc n)) 0<n lt = ⊥-elim ( nat-≤> (s≤s (s≤s z≤n)) lt )
 fact< (suc m) (suc zero) 0<n n<m = record { factor = factorial (suc (suc m)) ; is-factor = begin
      factorial (suc (suc m)) * 1 + 0  ≡⟨ +-comm _ 0 ⟩
      factorial (suc (suc m)) * 1   ≡⟨ m*1=m  ⟩
@@ -171,8 +173,12 @@ f>m {m} = begin
 prime-is-infinite : (max-prime : ℕ ) → ¬ ( (j : ℕ) → max-prime < j → ¬ Prime j ) 
 prime-is-infinite zero pmax = pmax 3 (s≤s z≤n) record { isPrime = λ n lt 0<j → pif3 n lt 0<j  ; p>1 = s≤s (s≤s z≤n) } where
   pif3 : (n : ℕ) →  n < 3 →  0 < n → gcd 3 n ≡ 1
-  pif3 .1 (s≤s (s≤s z≤n)) _ = refl
-  pif3 .2 (s≤s (s≤s (s≤s z≤n))) _ = refl
+  pif3 0 _ ()
+  pif3 1 _ _ = refl
+  pif3 2 _ _ = refl
+  pif3 (suc (suc (suc n))) lt _ = ⊥-elim ( nat-≤> (s≤s (s≤s (s≤s z≤n))) lt )
+  -- pif3 .1 (s≤s (s≤s z≤n)) _ = refl
+  -- pif3 .2 (s≤s (s≤s (s≤s z≤n))) _ = refl
 prime-is-infinite (suc m) pmax = newPrime where 
   prime<max : (n : ℕ ) → Prime n → n < suc (suc m)
   prime<max n p with <-cmp n (suc m) 
@@ -184,8 +190,8 @@ prime-is-infinite (suc m) pmax = newPrime where
   -- div+1 : { i k : ℕ } → k > 1 →  Dividable k i →  ¬ Dividable k (suc i)
   newPrime : ⊥
   newPrime with PrimeP ( suc (factorial (suc m)) )
-  ... | yes p = pmax _ f>m p   -- yes, we found a prime not in list
-  ... | no np = div+1 (Prime.p>1 (NonPrime.prime p1)) (fact (NonPrime.factor p1) (NonPrime.prime p1) ) (NonPrime.dividable p1) where
+  ... | yes0 p = pmax _ f>m p   -- yes, we found a prime not in list
+  ... | no0 np = div+1 (Prime.p>1 (NonPrime.prime p1)) (fact (NonPrime.factor p1) (NonPrime.prime p1) ) (NonPrime.dividable p1) where
       -- n!+1 cannot be dividable, because n! is dividable
       -- the factor need not be a prime, but anyway we prove that there is a prime factor in NonPrime
       p1 : NonPrime  ( suc (factorial (suc m)) )

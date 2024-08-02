@@ -1,6 +1,5 @@
 {-# OPTIONS --cubical-compatible --safe #-}
 
--- {-# OPTIONS --allow-unsolved-metas #-}
 module gcd where
 
 open import Data.Nat 
@@ -260,10 +259,12 @@ GCD-sym : {i i0 j j0 : ℕ} → GCD i i0 j j0 → GCD j j0 i i0
 GCD-sym g = record { i<i0 = GCD.j<j0 g ; j<j0 = GCD.i<i0 g ; div-i = GCD.div-j g ; div-j = GCD.div-i g }
 
 pred-≤ : {i i0 : ℕ } → suc i ≤ suc i0 → i ≤ suc i0
-pred-≤ {i} {i0} (s≤s lt) = ≤-trans lt refl-≤s
+pred-≤ {i} {i0} lt = ≤-trans (sx≤y→x≤y lt) refl-≤
 
 gcd-next : {i i0 j j0 : ℕ} → GCD (suc i) i0 (suc j) j0 → GCD i i0 j j0
-gcd-next {i} {0} {j} {0} ()
+gcd-next {i} {0} {j} {0} g = ⊥-elim ( nat-≤> z≤n (GCD.i<i0 g) )
+gcd-next {i} {suc i0} {j} {0} g = ⊥-elim ( nat-≤> z≤n (GCD.j<j0 g) )
+gcd-next {i} {0} {j} {suc j0} g = ⊥-elim ( nat-≤> z≤n (GCD.i<i0 g) )
 gcd-next {i} {suc i0} {j} {suc j0} g = record { i<i0 = pred-≤ (GCD.i<i0 g) ; j<j0 = pred-≤ (GCD.j<j0 g)
   ; div-i = proj1 (di-next {i} {suc i0} {j} {suc j0} ⟪ GCD.div-i g , GCD.div-j g ⟫ )
   ; div-j = proj2 (di-next {i} {suc i0} {j} {suc j0} ⟪ GCD.div-i g , GCD.div-j g ⟫ ) }
@@ -442,6 +443,7 @@ gcd-dividable i j  = f-induction {_} {_} {ℕ ∧ ℕ}
 
 f-div>0 :  { k i  : ℕ } → (d : Dividable k i ) → 0 < i → 0 < Dividable.factor d 
 f-div>0 {k} {i} d 0<i with <-cmp 0 (Dividable.factor d)
+... | tri> ¬a ¬b ()
 ... | tri< a ¬b ¬c = a
 ... | tri≈ ¬a b ¬c = ⊥-elim ( nat-≡< (begin
       0 * k + 0  ≡⟨ cong (λ g → g * k + 0) b  ⟩
@@ -449,8 +451,10 @@ f-div>0 {k} {i} d 0<i with <-cmp 0 (Dividable.factor d)
       i  ∎ ) 0<i ) where open ≡-Reasoning
 
 gcd-≤i : ( i j  : ℕ ) → 0 < i → i ≤ j → gcd i j ≤ i
-gcd-≤i zero _ () z≤n 
-gcd-≤i (suc i) (suc j) _ (s≤s i<j) = begin
+gcd-≤i zero zero () i<j
+gcd-≤i zero (suc i) () i<j
+gcd-≤i (suc i) zero 0<i ()
+gcd-≤i (suc i) (suc j) _ i<j = begin
       gcd (suc i) (suc j)   ≡⟨ sym m*1=m ⟩
       gcd (suc i) (suc j) * 1  ≤⟨ *-monoʳ-≤ (gcd (suc i) (suc j)) (f-div>0 d (s≤s z≤n)) ⟩
       gcd (suc i) (suc j) * f  ≡⟨ +-comm 0 _ ⟩
@@ -604,9 +608,10 @@ gcd-euclid1 (suc (suc i)) i0 (suc j) j0  di =
      gcd-euclid1 (suc i) i0 j j0 (gcd-next di)
 
 ge12 : (p x : ℕ) → 0 < x → 1 < p → ((i : ℕ ) → i < p → 0 < i   → gcd p i ≡ 1)  →  ( gcd p x ≡ 1 ) ∨ ( Dividable p x )
-ge12 p x 0<x 1<p prime with decD {p} {x} 1<p 
-... | yes y = case2 y
-... | no nx with <-cmp (gcd p x ) 1
+ge12 p x 0<x 1<p prime with factor< {p} {x} 1<p 
+... | fc with Factor<.remain fc in eq
+... | zero = case2 record { factor = Factor<.factor fc ; is-factor = trans (cong (λ k → Factor<.factor fc * p + k) (sym eq))  (Factor<.is-factor fc)   }
+... | suc nx with <-cmp (gcd p x ) 1
 ... | tri< a ¬b ¬c = ⊥-elim ( nat-≤> a (s≤s (gcd>0 p x (<-trans a<sa 1<p)  0<x) ) )
 ... | tri≈ ¬a b ¬c = case1 b
 ... | tri> ¬a ¬b c = ⊥-elim ( nat-≡< (sym (prime (gcd p x) ge13 (<to≤ c) )) ge18 ) where
@@ -614,7 +619,7 @@ ge12 p x 0<x 1<p prime with decD {p} {x} 1<p
         ge13 :  gcd p x < p -- gcd p x ≡ p → ¬ nx
         ge13 with <-cmp (gcd p x ) p
         ... | tri< a ¬b ¬c = a
-        ... | tri≈ ¬a b ¬c = ⊥-elim ( nx (subst (λ k → Dividable k x) b (proj2 (gcd-dividable p x ))))
+        ... | tri≈ ¬a b ¬c = ⊥-elim ( F<to¬D fc 1<p eq (subst (λ k → Dividable k x) b (proj2 (gcd-dividable p x ))))
         ... | tri> ¬a ¬b c = ⊥-elim ( nat-≤> (gcd-≤ (<-trans a<sa 1<p) 0<x) c )
         ge19 : Dividable (gcd p x) p
         ge19 = proj1 (gcd-dividable p x )
@@ -622,14 +627,15 @@ ge12 p x 0<x 1<p prime with decD {p} {x} 1<p
         ge18 = subst (λ k → 1 < k ) (sym (div→gcd {p} {gcd p x} c ge19 )) c
 
 gcd-euclid : ( p a b : ℕ )  → 1 < p  → 0 < a → 0 < b → ((i : ℕ ) → i < p → 0 < i   → gcd p i ≡ 1)  →  Dividable p (a * b)  → Dividable p a ∨ Dividable p b
-gcd-euclid p a b 1<p 0<a 0<b prime div-ab with decD {p} {a} 1<p
-... | yes y = case1 y
-... | no np = case2 ge16  where
+gcd-euclid p a b 1<p 0<a 0<b prime div-ab with factor< {p} {a} 1<p
+... | fc with Factor<.remain fc  in eq
+... | zero = case1 record { factor = Factor<.factor fc ; is-factor = trans (cong (λ k → Factor<.factor fc * p + k) (sym eq))  (Factor<.is-factor fc)   }
+... | suc np = case2 ge16  where
     f = Dividable.factor div-ab
     ge10 : gcd p a ≡ 1
     ge10 with ge12 p a 0<a 1<p prime
     ... | case1 x = x
-    ... | case2 x = ⊥-elim ( np x )
+    ... | case2 x = ⊥-elim ( F<to¬D fc 1<p eq x )
     ge11 : Euclid p a (gcd p a)
     ge11 = gcd-euclid1 p p a a GCDi
     ea = Euclid.eqa ge11
@@ -696,7 +702,7 @@ gcdmul+1 (suc m) n = begin
       1 ∎ where open ≡-Reasoning
 
 m*n=m→n : {m n : ℕ } → 0 < m → m * n ≡ m * 1 → n ≡ 1
-m*n=m→n {suc m} {n} (s≤s lt) eq = begin 
+m*n=m→n {suc m} {n} lt eq = begin 
     n ≡⟨ *-cancelˡ-≡ n 1 (suc m) ( begin
        suc m * n ≡⟨ eq ⟩
        suc m * 1  ∎ ) ⟩
@@ -708,6 +714,8 @@ gcd-is-gratest {i} {j} {k} i>0 j>0 k>1 ki kj = div→k≤m k>1 (gcd>0 i j i>0 j>
     gcd001 = gcd-div _ _ _ k>1 ki kj
 
 gcd-div-1 : {i j : ℕ } → i > 0 → j > 0  → gcd (Dividable.factor (proj1 (gcd-dividable i j))) (Dividable.factor (proj2 (gcd-dividable i j))) ≡ 1
+gcd-div-1 {suc i} {zero} i>0 ()
+gcd-div-1 {zero} {suc j} () j>0
 gcd-div-1 {suc i} {suc j} i>0 j>0 = cop where
    d : ℕ
    d = gcd (suc i) (suc j)
@@ -762,18 +770,22 @@ gcd-div-1 {suc i} {suc j} i>0 j>0 = cop where
               (gcdf2 * d1 + 0  ) * d + 0 ≡⟨ cong (λ k1 → k1 * d + 0 ) ( Dividable.is-factor (proj2 gcdd1) ) ⟩
               Dividable.factor jd * d + 0 ≡⟨ Dividable.is-factor jd ⟩
               (suc j) ∎ }  where open ≡-Reasoning
+
         mul2 : {g d1 : ℕ } → g > 0 → d1 > 1 → g < g * d1
-        mul2 {suc g} {suc zero} g>0 (s≤s ())
+        mul2 {zero} {d1} () 1<d1
+        mul2 {suc g} {zero} 0<g ()
+        mul2 {suc g} {suc zero} 0<g 1<d1 = ⊥-elim ( nat-≤> ≤-refl 1<d1 )
         mul2 {suc g} {suc (suc d2)} g>0 d1>1 = begin
-              suc (suc g) ≡⟨ cong suc (+-comm 0 _ ) ⟩
-              suc (suc g + 0) ≤⟨ s≤s (≤-plus-0  z≤n) ⟩
-              suc (suc g + (g + d2 * suc g)) ≡⟨ cong suc (sym (+-assoc  1 g _) ) ⟩
-              suc ((1 + g) + (g + d2 * suc g)) ≡⟨  cong (λ k → suc (k + (g + d2 * suc g) )) (+-comm 1 g) ⟩
-              suc ((g + 1) + (g + d2 * suc g)) ≡⟨ cong suc (+-assoc g 1 _ )  ⟩
-              suc (g + (1 + (g + d2 * suc g))) ≡⟨⟩
-              suc (g + suc (g + d2 * suc g)) ≡⟨⟩
-              suc (suc d2) * suc g  ≡⟨ *-comm (suc (suc d2)) _ ⟩
-              suc g * suc (suc d2) ∎   where open ≤-Reasoning
+             suc (suc g) ≡⟨ cong suc (+-comm 0 _ ) ⟩
+             suc (suc g + 0) ≤⟨ s≤s (≤-plus-0  z≤n) ⟩
+             suc (suc g + (g + d2 * suc g)) ≡⟨ cong suc (sym (+-assoc  1 g _) ) ⟩
+             suc ((1 + g) + (g + d2 * suc g)) ≡⟨  cong (λ k → suc (k + (g + d2 * suc g) )) (+-comm 1 g) ⟩
+             suc ((g + 1) + (g + d2 * suc g)) ≡⟨ cong suc (+-assoc g 1 _ )  ⟩
+             suc (g + (1 + (g + d2 * suc g))) ≡⟨⟩
+             suc (g + suc (g + d2 * suc g)) ≡⟨⟩
+             suc (suc d2) * suc g  ≡⟨ *-comm (suc (suc d2)) _ ⟩
+             suc g * suc (suc d2) ∎   where open ≤-Reasoning
+
         gcd<d1 : gcd (suc i) (suc j) < gcd (suc i ) (suc j) * d1
         gcd<d1 = mul2 (gcd>0 (suc i) (suc j) (s≤s z≤n) (s≤s z≤n) ) d1>1
 

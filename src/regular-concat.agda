@@ -2,9 +2,8 @@
 
 open import finiteSet
 open import logic
--- open import finiteFunc  -- we can prove fin→ , but it is unsafe 
 
-module regular-concat (fin→ : {A : Set} → FiniteSet A → FiniteSet (A → Bool )) where
+module regular-concat where
 
 open import Level renaming ( suc to Suc ; zero to Zero )
 open import Data.List 
@@ -53,13 +52,13 @@ M-Concat : {Σ : Set} → (A B : RegularLanguage Σ ) → RegularLanguage Σ
 M-Concat {Σ} A B = record {
        states = states A ∨ states B → Bool
      ; astart = Concat-NFA-start A B
-     ; afin = finf
+     ; afin = ?
      ; automaton = subset-construction (CNFA-exist A B) (Concat-NFA A B) 
    } where
        fin : FiniteSet (states A ∨ states B ) 
        fin = fin-∨ (afin A) (afin B)
-       finf : FiniteSet (states A ∨ states B → Bool ) 
-       finf = fin→ fin 
+       -- finf : FiniteSetF (states A ∨ states B) ?
+       -- finf = ? -- fin→ fin 
        
 open _∧_
 
@@ -137,8 +136,8 @@ closed-in-concat {Σ} A B x = ≡-Bool-func closed-in-concat→ closed-in-concat
        lemma11 : found-q S ≡ case2 qb → aend (automaton B) qb ≡ true
        lemma11 refl = bool-∧→tt-1 (found-p S)
     contain-A (h ∷ t) nq fn qa cond with bool-≡-? ((aend (automaton A) qa) /\  accept (automaton B) (δ (automaton B) (astart B) h) t ) true
-    ... | yes eq = bool-or-41 eq  -- found A ++ B all end
-    ... | no ne = bool-or-31 (contain-A t (Nmoves NFA (CNFA-exist A B) nq h) fn (δ (automaton A) qa h) lemma11 ) where -- B failed continue with ab-base condtion
+    ... | yes0 eq = bool-or-41 eq  -- found A ++ B all end
+    ... | no0 ne = bool-or-31 (contain-A t (Nmoves NFA (CNFA-exist A B) nq h) fn (δ (automaton A) qa h) lemma11 ) where -- B failed continue with ab-base condtion
        --- prove ab-case condition (we haven't checked but case2 b may happen)
        lemma11 :  (q : states A ∨ states B) → exists finab (λ qn → nq qn /\ Nδ NFA qn h q) ≡ true → ab-case q (δ (automaton A) qa h) t
        lemma11 (case1 qa')  ex with found← finab ex 

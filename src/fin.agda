@@ -3,12 +3,16 @@
 module fin where
 
 open import Data.Fin hiding (_<_ ; _≤_ ; _>_ ; _+_ )
-open import Data.Fin.Properties hiding (≤-trans ;  <-trans ;  ≤-refl  ) renaming ( <-cmp to <-fcmp )
+open import Data.Fin.Properties as FP hiding (≤-trans ;  <-trans ;  ≤-refl  ) renaming ( <-cmp to <-fcmp )
 open import Data.Nat
 open import Data.Nat.Properties
 open import logic
 open import nat
 open import Relation.Binary.PropositionalEquality
+open import  Relation.Binary.Definitions
+open import Data.Nat.Properties as NatP  hiding ( _≟_ )
+open import Data.Empty
+open import Relation.Nullary
 
 
 -- toℕ<n
@@ -18,20 +22,19 @@ fin<n {suc n} (suc f) = s≤s (fin<n {n} f)
 
 -- toℕ≤n
 fin≤n : {n : ℕ} (f : Fin (suc n)) → toℕ f ≤ n
-fin≤n {_} zero = z≤n
-fin≤n {suc n} (suc f) = s≤s (fin≤n {n} f)
+fin≤n {n} f = px≤py (fin<n f)
 
 pred<n : {n : ℕ} {f : Fin (suc n)} → n > 0  → Data.Nat.pred (toℕ f) < n
-pred<n {suc n} {zero} (s≤s z≤n) = s≤s z≤n
-pred<n {suc n} {suc f} (s≤s z≤n) = fin<n _
+pred<n {n} {f} 0<n with toℕ f in eq
+... | 0 = 0<n
+... | suc m = ≤-trans (refl-≤≡ (sym eq)) (fin≤n f )
 
 fin<asa : {n : ℕ} → toℕ (fromℕ< {n} a<sa) ≡ n
 fin<asa = toℕ-fromℕ< nat.a<sa
 
 -- fromℕ<-toℕ
-toℕ→from : {n : ℕ} {x : Fin (suc n)} → toℕ x ≡ n → fromℕ n ≡ x
-toℕ→from {0} {zero} refl = refl
-toℕ→from {suc n} {suc x} eq = cong (λ k → suc k ) ( toℕ→from {n} {x} (cong (λ k → Data.Nat.pred k ) eq ))
+-- toℕ→from : {n : ℕ} {x : Fin (suc n)} → toℕ x ≡ n → fromℕ n ≡ x
+-- toℕ→from {n} {x} eq = ?
 
 -- 0≤fmax : {n : ℕ } → (# 0) Data.Fin.≤ fromℕ< {n} a<sa
 -- 0≤fmax {n} = ?
@@ -40,83 +43,65 @@ toℕ→from {suc n} {suc x} eq = cong (λ k → suc k ) ( toℕ→from {n} {x} 
 -- 0<fmax {n} = subst (λ k → 0 < k ) (sym (toℕ-fromℕ< {suc n} {suc (suc n)} a<sa)) (s≤s z≤n)
 
 -- toℕ-injective
-i=j : {n : ℕ} (i j : Fin n) → toℕ i ≡ toℕ j → i ≡ j
-i=j {suc n} zero zero refl = refl
-i=j {suc n} (suc i) (suc j) eq = cong ( λ k → suc k ) ( i=j i j (cong ( λ k → Data.Nat.pred k ) eq) )
+-- i=j : {n : ℕ} (i j : Fin n) → toℕ i ≡ toℕ j → i ≡ j
+-- i=j {n} i j i=j = toℕ-injective i=j
 
 fin1≡0 : (f : Fin 1) → # 0 ≡ f
-fin1≡0 zero = refl
+fin1≡0 f with ≤-∨ (fin<n f)
+... | case1 eq = toℕ-injective (sym (cong Data.Nat.pred eq))
+... | case2 lt = ⊥-elim (nat-≤> lt (s≤s (s≤s z≤n)))
 
 -- raise 1
 fin+1 :  { n : ℕ } → Fin n → Fin (suc n)
 fin+1  zero = zero 
 fin+1  (suc x) = suc (fin+1 x)
 
-open import Data.Nat.Properties as NatP  hiding ( _≟_ )
 
 fin+1≤ : { i n : ℕ } → (a : i < n)  → fin+1 (fromℕ< a) ≡ fromℕ< (<-trans a a<sa)
-fin+1≤ {0} {suc i} (s≤s z≤n) = refl
-fin+1≤ {suc n} {suc (suc i)} (s≤s (s≤s a)) = cong (λ k → suc k ) ( fin+1≤ {n} {suc i} (s≤s a) )
+fin+1≤ {zero} {suc n} a = refl
+fin+1≤ {suc i} {suc n} a = cong suc (fin+1≤ {i} {n} (sx<py→x<y a)) 
 
 fin+1-toℕ : { n : ℕ } → { x : Fin n} → toℕ (fin+1 x) ≡ toℕ x
-fin+1-toℕ {suc n} {zero} = refl
-fin+1-toℕ {suc n} {suc x} = cong (λ k → suc k ) (fin+1-toℕ {n} {x})
+fin+1-toℕ {.(suc _)} {zero} = refl
+fin+1-toℕ {suc n} {suc x} = cong suc ( fin+1-toℕ {n} {x} )
 
-open import Relation.Nullary 
-open import Data.Empty
+fin-1 :  { n : ℕ } → (x : Fin (suc n)) → 0 < toℕ x   → Fin n
+fin-1 {0} x 0<x = ⊥-elim (nat-≤> 0<x (fin<n x) )
+fin-1 {suc n} x 0<x = fromℕ< lem where
+    lem : Data.Nat.pred (toℕ x) < suc  n
+    lem = sx<py→x<y (subst (λ k → k < suc (suc n)) (sym (sucprd 0<x)) (fin<n x))
 
-fin-1 :  { n : ℕ } → (x : Fin (suc n)) → ¬ (x ≡ zero )  → Fin n
-fin-1 zero ne = ⊥-elim (ne refl )
-fin-1 {n} (suc x) ne = x 
+-- we cannot use with toℕ x in eq here
+-- because it is not allowed in fin-1-xsℕ
 
-fin-1-sx : { n : ℕ } → (x : Fin n) →  fin-1 (suc x) (λ ()) ≡ x 
-fin-1-sx zero = refl
-fin-1-sx (suc x) = refl
-
-fin-1-xs : { n : ℕ } → (x : Fin (suc n)) → (ne : ¬ (x ≡ zero ))  → suc (fin-1 x ne ) ≡ x
-fin-1-xs zero ne = ⊥-elim ( ne refl )
-fin-1-xs (suc x) ne = refl
-
--- suc-injective
--- suc-eq : {n : ℕ } {x y : Fin n} → Fin.suc x ≡ Fin.suc y  → x ≡ y
--- suc-eq {n} {x} {y} eq = subst₂ (λ j k → j ≡ k ) {!!} {!!} (cong (λ k → Data.Fin.pred k ) eq )
-
--- this is refl
-lemma3 : {a b : ℕ } → (lt : a < b ) → fromℕ< (s≤s lt) ≡ suc (fromℕ< lt)
-lemma3 (s≤s lt) = refl
+-- fromℕ<-cong 
+lemma10 : {n i j  : ℕ } → ( i ≡ j ) → (i<n : i < n ) → (j<n : j < n )  → fromℕ< i<n ≡ fromℕ< j<n
+lemma10 {n} {i} {j} eq i<n j<n = fromℕ<-cong _ _ eq i<n j<n
 
 -- fromℕ<-toℕ 
-lemma12 : {n m : ℕ } → (n<m : n < m ) → (f : Fin m )  → toℕ f ≡ n → f ≡ fromℕ< n<m 
-lemma12 {zero} {suc m} (s≤s z≤n) zero refl = refl
-lemma12 {suc n} {suc m} (s≤s n<m) (suc f) refl =  cong suc ( lemma12 {n} {m} n<m f refl  ) 
+toℕ→fromℕ< : {n m : ℕ } → (n<m : n < m ) → (f : Fin m )  → toℕ f ≡ n → f ≡ fromℕ< n<m 
+toℕ→fromℕ< {n} {m} n<m f eq = toℕ-injective (trans eq (sym (toℕ-fromℕ< n<m ))) 
 
--- this requires K
---
--- open import Relation.Binary.HeterogeneousEquality as HE using (_≅_ ) 
+lemma12 = toℕ→fromℕ<
 
--- <-irrelevant
--- <-nat=irr : {i j n : ℕ } → ( i ≡ j ) → {i<n : i < n } → {j<n : j < n } → i<n ≅ j<n  
--- <-nat=irr {zero} {zero} {suc n} refl {s≤s z≤n} {s≤s z≤n} = HE.refl
--- <-nat=irr {suc i} {suc i} {suc n} refl {s≤s i<n} {s≤s j<n} = HE.cong (λ k → s≤s k ) ( <-nat=irr {i} {i} {n} refl  )
+-- this is refl
+fromℕ<=suc : {a b : ℕ } → (lt : a < b ) → fromℕ< (s≤s lt) ≡ suc (fromℕ< lt)
+fromℕ<=suc {a} {b} lt = refl
 
--- lemma8 : {i j n : ℕ } → ( i ≡ j ) → {i<n : i < n } → {j<n : j < n } → i<n ≅ j<n  
--- lemma8 {zero} {zero} {suc n} refl {s≤s z≤n} {s≤s z≤n} = HE.refl
--- lemma8 {suc i} {suc i} {suc n} refl {s≤s i<n} {s≤s j<n} = HE.cong (λ k → s≤s k ) ( lemma8 {i} {i} {n} refl  )
+fin-1-xs : { n : ℕ } → (x : Fin (suc n)) → (0<x : 0 < toℕ x )  → suc (fin-1 x 0<x  ) ≡   x
+fin-1-xs {zero} x 0<x = ⊥-elim (nat-≤> 0<x (fin<n x)  )
+fin-1-xs {suc n} x 0<x  = begin
+    suc (fin-1 x 0<x)  ≡⟨ fromℕ<-cong _ _ (sucprd 0<x) (subst (λ k → k < suc (suc n)) (sym (sucprd 0<x)) (fin<n x)) (fin<n x) ⟩
+    fromℕ< (fin<n x) ≡⟨ sym (toℕ→fromℕ< (fin<n x) x refl) ⟩
+    x ∎ where open ≡-Reasoning
 
-lemma10 : {n i j  : ℕ } → ( i ≡ j ) → {i<n : i < n } → {j<n : j < n }  → fromℕ< i<n ≡ fromℕ< j<n
-lemma10 {.(suc _)} {zero} {zero} refl {s≤s z≤n} {s≤s z≤n} = refl
-lemma10 {suc n} {suc i} {suc i} refl {s≤s i<n} {s≤s j<n} = cong suc (lemma10 {n} {i} {i} refl {i<n} {j<n})
+fin-1-sx : { n : ℕ } → (x : Fin n) → fin-1 (suc x) (s≤s z≤n)  ≡   x
+fin-1-sx {zero} ()
+fin-1-sx {suc n} x = sym (toℕ→fromℕ< (fin<n x) x refl )
 
 fpred-comm : {n : ℕ } → (x : Fin n) → toℕ (Data.Fin.pred x) ≡ toℕ x ∸ 1
-fpred-comm {suc n} zero = refl
-fpred-comm {suc n} (suc x) = begin
-       toℕ (Data.Fin.pred (suc x)) ≡⟨ sym ( toℕ-fromℕ< _ ) ⟩
-       toℕ (fromℕ< (fin<n _) ) ≡⟨ cong toℕ (lemma10 (toℕ-inject₁ _ ) ) ⟩
-       toℕ (fromℕ< (<-trans (fin<n _) a<sa) ) ≡⟨  toℕ-fromℕ< _ ⟩
-       toℕ (suc x) ∸ 1 ∎  where open ≡-Reasoning
-
--- lemma31 : {a b c : ℕ } → { a<b : a < b } { b<c : b < c } { a<c : a < c } → NatP.<-trans a<b b<c ≡ a<c
--- lemma31 {a} {b} {c} {a<b} {b<c} {a<c} = HE.≅-to-≡ (lemma8 refl) 
+fpred-comm {.(suc _)} zero = refl
+fpred-comm {.(suc _)} (suc x) = toℕ-inject₁ x 
 
 -- toℕ-fromℕ<
 lemma11 : {n m : ℕ } {x : Fin n } → (n<m : n < m ) → toℕ (fromℕ< (NatP.<-trans (toℕ<n x) n<m)) ≡ toℕ x
@@ -133,11 +118,21 @@ x<y→fin-1-eq {n} {x} {y} lt = sym ( begin
            toℕ x  ∎  ) where open ≡-Reasoning
 
 f<→< : {n : ℕ } → { x y : Fin n} → x Data.Fin.< y  →  toℕ x < toℕ y  
-f<→< {_} {zero} {suc y} (s≤s lt) = s≤s z≤n
-f<→< {_} {suc x} {suc y} (s≤s lt) = s≤s (f<→< {_} {x} {y} lt)
+f<→< x<y = x<y
 
 f≡→≡ : {n : ℕ } → { x y : Fin n} → x ≡ y  →  toℕ x ≡ toℕ y  
 f≡→≡ refl = refl
+
+fin+1eq : {n : ℕ} → (x : Fin n ) → toℕ x < n → Fin (suc n)
+fin+1eq {n} x x<n = fromℕ< (<-trans x<n a<sa)
+
+fin+1eq< : {n : ℕ} → (x : Fin n ) → (x<n : toℕ x < n ) → toℕ (fin+1eq x x<n) < n
+fin+1eq<  {n} x x<n = subst (λ k → k < n ) (sym (toℕ-fromℕ< (<-trans x<n a<sa) )) (fin<n x)
+
+fin+1eq-≡ℕ : {n : ℕ} → (x : Fin n ) → (x<n : toℕ x < n ) → toℕ x ≡ toℕ (fin+1eq x x<n )
+fin+1eq-≡ℕ {n} x x<n = sym ( begin
+           toℕ (fromℕ< (<-trans x<n a<sa) ) ≡⟨ toℕ-fromℕ< _ ⟩
+           toℕ x  ∎  ) where open ≡-Reasoning
 
 open import Data.List
 open import Relation.Binary.Definitions
@@ -199,6 +194,7 @@ fin010 {_} {_} {x} c = begin
 ---
 ---  if List (Fin n) is longer than n, there is at most one duplication
 ---
+
 fin-dup-in-list>n : {n : ℕ } → (qs : List (Fin n))  → (len> : length qs > n ) → FDup-in-list n qs
 fin-dup-in-list>n {zero} [] ()
 fin-dup-in-list>n {zero} (() ∷ qs) lt
@@ -212,6 +208,7 @@ fin-dup-in-list>n {suc n} qs lt = fdup-phase0 where
           f1-phase2 : (qs : List (Fin (suc n)) ) → fin-phase2 i (list-less qs) ≡ true
               → (fin-phase1 (fromℕ< a<sa) qs ≡ false ) ∨ (fin-phase2 (fromℕ< a<sa) qs ≡ false)
               → fin-phase2 (fin+1 i) qs ≡ true
+          f1-phase2 [] () q
           f1-phase2 (x ∷ qs) p (case1 q1) with  <-fcmp (fromℕ< a<sa) x
           ... | tri< a ¬b ¬c = ⊥-elim ( nat-≤> a (subst (λ k → toℕ x < suc k ) (sym fin<asa) (fin≤n _ )))
           f1-phase2 (x ∷ qs) p (case1 q1) | tri≈ ¬a b ¬c with <-fcmp (fin+1 i) x
@@ -248,6 +245,7 @@ fin-dup-in-list>n {suc n} qs lt = fdup-phase0 where
           f1-phase1 : (qs : List (Fin (suc n)) ) → fin-phase1 i (list-less qs) ≡ true
               → (fin-phase1 (fromℕ< a<sa) qs ≡ false ) ∨ (fin-phase2 (fromℕ< a<sa) qs ≡ false)
               → fin-phase1 (fin+1 i) qs ≡ true
+          f1-phase1 [] () q
           f1-phase1 (x ∷ qs) p (case1 q1) with  <-fcmp (fromℕ< a<sa) x
           ... | tri< a ¬b ¬c = ⊥-elim ( nat-≤> a (subst (λ k → toℕ x < suc k ) (sym fin<asa) (fin≤n _ )))
           f1-phase1 (x ∷ qs) p (case1 q1) | tri≈ ¬a b ¬c with <-fcmp (fin+1 i) x
@@ -287,21 +285,24 @@ fin-dup-in-list>n {suc n} qs lt = fdup-phase0 where
            fless : (qs : List (Fin (suc n))) → length qs > suc n  → fin-dup-in-list (fromℕ< a<sa) qs ≡ false → n < length (list-less qs) 
            fless qs lt p = fl-phase1 n qs lt p where
                fl-phase2 : (n1 : ℕ) (qs : List (Fin (suc n))) → length qs > n1  → fin-phase2 (fromℕ< a<sa) qs ≡ false → n1 < length (list-less qs) 
-               fl-phase2 zero (x ∷ qs) (s≤s lt) p with  <-fcmp (fromℕ< a<sa) x
+               fl-phase2 _ [] lt p = ⊥-elim (nat-≤> z≤n lt )
+               fl-phase2 zero (x ∷ qs) lt p with  <-fcmp (fromℕ< a<sa) x
                ... | tri< a ¬b ¬c = ⊥-elim ( nat-≤> a (subst (λ k → toℕ x < suc k ) (sym fin<asa) (fin≤n _ )))
+               ... | tri≈ ¬a b ¬c = ⊥-elim ( ¬-bool p refl )
                ... | tri> ¬a ¬b c =  s≤s z≤n 
-               fl-phase2 (suc n1) (x ∷ qs) (s≤s lt) p with  <-fcmp (fromℕ< a<sa) x
+               fl-phase2 (suc n1) (x ∷ qs) lt p with  <-fcmp (fromℕ< a<sa) x
                ... | tri< a ¬b ¬c = ⊥-elim ( nat-≤> a (subst (λ k → toℕ x < suc k ) (sym fin<asa) (fin≤n _ )))
-               ... | tri> ¬a ¬b c = s≤s ( fl-phase2 n1 qs lt p )
+               ... | tri≈ ¬a b ¬c = ⊥-elim ( ¬-bool p refl )
+               ... | tri> ¬a ¬b c = s≤s ( fl-phase2 n1 qs (sx<py→x<y lt) p )
                fl-phase1 : (n1 : ℕ) (qs : List (Fin (suc n))) → length qs > suc n1  → fin-phase1 (fromℕ< a<sa) qs ≡ false → n1 < length (list-less qs) 
-               fl-phase1 zero (x ∷ qs) (s≤s lt) p  with <-fcmp (fromℕ< a<sa) x
+               fl-phase1 zero (x ∷ qs) lt p  with <-fcmp (fromℕ< a<sa) x
                ... | tri< a ¬b ¬c = ⊥-elim ( nat-≤> a (subst (λ k → toℕ x < suc k ) (sym fin<asa) (fin≤n _ )))
-               ... | tri≈ ¬a b ¬c = fl-phase2 0 qs lt p
+               ... | tri≈ ¬a b ¬c = fl-phase2 0 qs (sx<py→x<y lt) p
                ... | tri> ¬a ¬b c = s≤s z≤n
-               fl-phase1 (suc n1) (x ∷ qs) (s≤s lt) p with <-fcmp (fromℕ< a<sa) x
+               fl-phase1 (suc n1) (x ∷ qs) lt p with <-fcmp (fromℕ< a<sa) x
                ... | tri< a ¬b ¬c = ⊥-elim ( nat-≤> a (subst (λ k → toℕ x < suc k ) (sym fin<asa) (fin≤n _ )))
-               ... | tri≈ ¬a b ¬c = fl-phase2 (suc n1) qs lt p 
-               ... | tri> ¬a ¬b c = s≤s ( fl-phase1 n1 qs lt p )
+               ... | tri≈ ¬a b ¬c = fl-phase2 (suc n1) qs (sx<py→x<y lt) p
+               ... | tri> ¬a ¬b c = s≤s ( fl-phase1 n1 qs (sx<py→x<y lt) p )
            -- if the list without the max element is only one length shorter, we can recurse
            fdup : FDup-in-list n (list-less qs)
            fdup = fin-dup-in-list>n (list-less qs) (fless qs lt eq)

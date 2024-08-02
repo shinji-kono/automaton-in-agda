@@ -30,7 +30,7 @@ infixr 40 _&_ _||_
 
 -- Meaning of regular expression
 
-regex-language : {Σ : Set} → Regex Σ → ((x y : Σ ) → Dec (x ≡ y))  →  List Σ → Bool
+regex-language : {Σ : Set} → Regex Σ → ((x y : Σ ) → Dec0 (x ≡ y))  →  List Σ → Bool
 regex-language φ cmp _ = false
 regex-language ε cmp [] = true
 regex-language ε cmp (_ ∷ _) = false
@@ -39,7 +39,7 @@ regex-language (x & y) cmp  = split ( λ z → regex-language x  cmp z ) (regex-
 regex-language (x || y) cmp = λ s → ( regex-language x  cmp s )  \/  ( regex-language y  cmp s)
 regex-language < h > cmp  [] = false
 regex-language < h > cmp  (h1  ∷ [] ) with cmp h h1
-... | yes _ = true
-... | no _  = false
+... | yes0 _ = true
+... | no0 _  = false
 regex-language < h >  _ (_ ∷ _ ∷ _)  = false
 

@@ -84,11 +84,11 @@ example1-3 = reachable am1 sr st ( i1  ∷ i1  ∷ i1  ∷ [] )
 -- ieq' i0 i1 = no' ( λ () )
 -- ieq' i1 i0 = no' ( λ () )
 
-ieq : (i i' : In2 ) → Dec ( i ≡ i' )
-ieq i0 i0 = yes refl
-ieq i1 i1 = yes refl
-ieq i0 i1 = no ( λ () )
-ieq i1 i0 = no ( λ () )
+ieq : (i i' : In2 ) → Dec0 ( i ≡ i' )
+ieq i0 i0 = yes0 refl
+ieq i1 i1 = yes0 refl
+ieq i0 i1 = no0 ( λ () )
+ieq i1 i0 = no0 ( λ () )
 
 -- p.83 problem 1.4
 --
@@ -97,8 +97,8 @@ ieq i1 i0 = no ( λ () )
 count-chars : List In2 → In2 → ℕ
 count-chars [] _ = 0
 count-chars (h ∷ t) x with ieq h x
-... | yes y = suc ( count-chars t x )
-... | no  n = count-chars t x 
+... | yes0 y = suc ( count-chars t x )
+... | no0  n = count-chars t x 
 
 test11 : count-chars (  i1  ∷ i1  ∷ i0  ∷ []  ) i0 ≡ 1
 test11 = refl

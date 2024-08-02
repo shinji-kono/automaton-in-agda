@@ -13,8 +13,8 @@ open import Data.Unit
 open import  Relation.Binary.Core hiding (_⇔_)
 open import  Relation.Binary.Definitions
 open import Relation.Binary.PropositionalEquality
-open import Function.Inverse hiding (sym)
-open import Function.Bijection renaming (Bijection to Bijection1)
+-- open import Function.Inverse hiding (sym)
+-- open import Function.Bijection renaming (Bijection to Bijection1)
 open import Function.Equality hiding (cong)
 
 open import logic

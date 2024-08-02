@@ -5,7 +5,7 @@ open import Relation.Nullary using (¬_; Dec; yes; no)
 open import Data.List hiding ( [_] )
 open import Data.Empty 
 open import finiteSet
-open import finiteFunc
+-- open import finiteFunc
 open import fin
 
 module derive ( Σ : Set) ( fin : FiniteSet Σ ) ( eq? : (x y : Σ) → Dec (x ≡ y)) where
@@ -329,7 +329,7 @@ sbderive < x > f s record { s = .(< x >) ; is-sub = s<> } with eq? x s
 --    this is not correct because it contains s || s || s || .....
 
 finSBTA : (r : Regex Σ) → FiniteSet (ISB r → Bool)
-finSBTA r = fin→ ( finISB r )
+finSBTA r = ? -- fin→ ( finISB r )
 
 regex→automaton1 : (r : Regex   Σ) → Automaton (ISB r  → Bool) Σ
 regex→automaton1 r = record { δ = sbderive r ; aend = sbempty? r }
