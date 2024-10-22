@@ -373,8 +373,13 @@ fin→iso {A} {B} {F} fa ab = record {
 
 fin→ : {n : ℕ} → FiniteSetF (Fin n) (Fin (exp 2 n))
 fin→ {zero} = record { fin = Fin2Finite  (exp 2 0) ; F←Q = λ _ → # 0 ; Q←F = λ z () ; finiso← = λ f _ →  fin1≡0 f ; finiso→ = λ f () } 
-fin→ {suc n} = fin→iso record { fin = fin-∨ (Fin2Finite e2) (Fin2Finite e2) ; F←Q = F←Q ; Q←F = Q←F ; finiso← = finiso← ; finiso→ = finiso→  } 
-  (subst (λ k → Bijection (Fin e2 ∨ Fin e2) (Fin k)) (cong (λ k → e2 + k) (+-comm 0 _ )) (bi-sym _ _ (∨-bi {e2} {e2}))) where
+fin→ {suc n} = fin→iso record { 
+         fin = fin-∨ (Fin2Finite e2) (Fin2Finite e2) 
+       ; F←Q = F←Q 
+       ; Q←F = Q←F 
+       ; finiso← = finiso← 
+       ; finiso→ = finiso→  } 
+            (subst (λ k → Bijection (Fin e2 ∨ Fin e2) (Fin k)) (cong (λ k → e2 + k) (+-comm 0 _ )) (bi-sym _ _ (∨-bi {e2} {e2}))) where
     e2 : ℕ
     e2 = exp 2 n
     fin : FiniteSetF (Fin n) ( Fin (exp 2 n ))
