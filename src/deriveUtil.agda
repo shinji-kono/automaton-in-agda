@@ -1,4 +1,4 @@
--- {-# OPTIONS --cubical-compatible safe #-}
+-- {-# OPTIONS --cubical-compatible --safe #-}
 
 module deriveUtil where
 
@@ -23,11 +23,11 @@ data alpha2 : Set where
    a : alpha2
    b : alpha2
 
-a-eq? : (x y : alpha2) → Dec (x ≡ y)
-a-eq? a a = yes refl
-a-eq? b b = yes refl
-a-eq? a b = no (λ ())
-a-eq? b a = no (λ ())
+a-eq? : (x y : alpha2) → Dec0 (x ≡ y)
+a-eq? a a = yes0 refl
+a-eq? b b = yes0 refl
+a-eq? a b = no0 (λ ())
+a-eq? b a = no0 (λ ())
 
 open Regex
 
@@ -66,13 +66,14 @@ test13 = accept test11 record { state =  < a > & < b > ; is-derived = unit refl 
 test14 = regex-match ( (  < a > & < b > ) * ) ( a ∷ b ∷ a ∷ a ∷ [] )
 
 test15 = derive-step ( ( < a > & < b > ) * ) record { state = ( < a > & < b > ) *  ; is-derived = unit refl } a
+
 -- test16 = derive-step ? -- test15
 -- test17 : derive-step ? -- test16 ≡ test16
 -- test17 = refl
 
-stest11 = regex→automaton1 ( < a > & < b > )
-stest12 = accept stest11 (toSB ( < a > & < b > )) ( a ∷ b ∷ [] )
-stest13 = accept stest11 (toSB ( < a > & < b > )) ( a ∷ a ∷ [] )
+-- stest11 = regex→automaton1 ( < a > & < b > )
+-- stest12 = accept stest11 (toSB ( < a > & < b > )) ( a ∷ b ∷ [] )
+-- stest13 = accept stest11 (toSB ( < a > & < b > )) ( a ∷ a ∷ [] )
 
 
 

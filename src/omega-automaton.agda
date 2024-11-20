@@ -13,7 +13,7 @@ open import Data.Empty
 open import logic
 open import automaton
 
-open Automaton 
+open Automaton
 
 ω-run : { Q  Σ : Set } → (Ω : Automaton Q Σ ) → Q →  ( ℕ → Σ )  → ( ℕ → Q )
 ω-run Ω x s zero = x
@@ -33,7 +33,7 @@ open Muller
 --
 --                       not p
 --                   ------------>
---        <> [] p *                 <> [] p 
+--        <> [] p *                 <> [] p
 --                   <-----------
 --                       p
 
@@ -42,28 +42,28 @@ open Muller
 --
 record Buchi { Q  Σ : Set } (Ω : Automaton Q Σ ) ( S : ℕ → Σ ) : Set where
     field
-        next     : (n : ℕ ) → ℕ 
-        infinite : (x : Q) → (n : ℕ ) →  aend Ω ( ω-run Ω x  S (n + (suc (next n)))) ≡ true 
+        next     : (n : ℕ ) → ℕ
+        infinite : (x : Q) → (n : ℕ ) →  aend Ω ( ω-run Ω x  S (n + (suc (next n)))) ≡ true
 
-open  Buchi 
+open  Buchi
 --  always sometimes p
 --
---                       not p 
+--                       not p
 --                   ------------>
---        [] <> p *                 [] <> p 
+--        [] <> p *                 [] <> p
 --                   <-----------
 --                       p
 
 open import nat
 open import Data.Nat.Properties
 
-ω-run-eq : { Q  Σ : Set } → (Ω Ω' : Automaton Q Σ ) → (q : Q) →  ( S : ℕ → Σ )  → (x : ℕ)
+ω-cong : { Q  Σ : Set } → (Ω Ω' : Automaton Q Σ ) → (q : Q) →  ( S : ℕ → Σ )  → (x : ℕ)
     → δ Ω ≡ δ Ω'
     → ω-run Ω q S x ≡ ω-run Ω' q S x
-ω-run-eq Ω  Ω' q s zero refl =  refl
-ω-run-eq Ω  Ω' q s (suc n) eq = begin
+ω-cong Ω  Ω' q s zero refl =  refl
+ω-cong Ω  Ω' q s (suc n) eq = begin
      ω-run Ω q s (suc n) ≡⟨⟩
-     δ Ω (ω-run Ω q s n) (s n) ≡⟨ cong₂ (λ j k → j k (s n) ) eq (ω-run-eq Ω  Ω' q s n eq) ⟩
+     δ Ω (ω-run Ω q s n) (s n) ≡⟨ cong₂ (λ j k → j k (s n) ) eq (ω-cong Ω  Ω' q s n eq) ⟩
      δ Ω' (ω-run Ω' q s n) (s n) ≡⟨⟩
      ω-run Ω' q s (suc n) ∎  where open ≡-Reasoning
 
@@ -77,7 +77,7 @@ B→M {Q} {Σ} Ω S q b m = ¬-bool bm04 bm02 where
    q1 : Q
    q1 = ω-run Ω q S (from b + suc (next m (from b)))
    bm02 : aend Ω q1 ≡ true
-   bm02 = stay b q (from b + suc (next m (from b) )) x≤x+sy 
+   bm02 = stay b q (from b + suc (next m (from b) )) x≤x+sy
    Ω' : Automaton  Q Σ
    Ω' = record {  δ = δ Ω ; aend = λ q → not (aend Ω q) }
    bm03 : aend Ω' (ω-run Ω' q S (from b + (suc (next m (from b))))) ≡ true
@@ -85,7 +85,7 @@ B→M {Q} {Σ} Ω S q b m = ¬-bool bm04 bm02 where
    bm04 : aend Ω q1 ≡ false
    bm04 = begin
      aend Ω (ω-run Ω q S (from b + suc (next m (from b)))) ≡⟨ sym not-not-bool ⟩
-     not (not (aend Ω (ω-run Ω q S (from b + suc (next m (from b)))))) ≡⟨ cong (λ k → not (not (aend  Ω k))) (ω-run-eq Ω Ω' q S (from b + suc (next m (from b))) refl) ⟩
+     not (not (aend Ω (ω-run Ω q S (from b + suc (next m (from b)))))) ≡⟨ cong (λ k → not (not (aend  Ω k))) (ω-cong Ω Ω' q S (from b + suc (next m (from b))) refl) ⟩
      not (not (aend Ω (ω-run Ω' q S (from b + suc (next m (from b)))))) ≡⟨⟩
      not (aend Ω' (ω-run Ω' q S (from b + (suc (next m (from b)))))) ≡⟨ cong (λ k → not k ) bm03  ⟩
      false ∎  where open ≡-Reasoning
@@ -103,28 +103,52 @@ M→B {Q} {Σ} Ω S q m b = ¬-bool bm04 bm02 where
    Ω' : Automaton  Q Σ
    Ω' = record {  δ = δ Ω ; aend = λ q → not (aend Ω q) }
    bm03 : aend Ω' (ω-run Ω' q S (from b + (suc (next m (from b))))) ≡ true
-   bm03 = stay b q (from b + suc (next m (from b) )) x≤x+sy 
+   bm03 = stay b q (from b + suc (next m (from b) )) x≤x+sy
    bm04 : aend Ω q1 ≡ false
    bm04 = begin
      aend Ω (ω-run Ω q S (from b + suc (next m (from b)))) ≡⟨ sym not-not-bool ⟩
-     not (not (aend Ω (ω-run Ω q S (from b + suc (next m (from b)))))) ≡⟨ cong (λ k → not (not (aend  Ω k))) (ω-run-eq Ω Ω' q S (from b + suc (next m (from b))) refl) ⟩
+     not (not (aend Ω (ω-run Ω q S (from b + suc (next m (from b)))))) ≡⟨ cong (λ k → not (not (aend  Ω k))) (ω-cong Ω Ω' q S (from b + suc (next m (from b))) refl) ⟩
      not (not (aend Ω (ω-run Ω' q S (from b + suc (next m (from b)))))) ≡⟨⟩
      not (aend Ω' (ω-run Ω' q S (from b + (suc (next m (from b)))))) ≡⟨ cong (λ k → not k ) bm03 ⟩
      false ∎  where open ≡-Reasoning
 
+open import Relation.Binary.Definitions
+
+
+lemma3 : {i j : ℕ} → 0 ≡ i → j < i → ⊥
+lemma3 refl ()
+lemma5 : {i j : ℕ} → i < 1 → j < i → ⊥
+lemma5 {zero}  {j} i<1 j<i = ⊥-elim ( nat-≤> j<i (s≤s z≤n ))
+lemma5 {suc i} {j} i<1 j<i = ⊥-elim ( nat-≤> (s≤s z≤n ) i<1 )
+
+TerminatingLoopS : {l m : Level} {t : Set l} (Context : Set m ) → {Invraiant : Context → Set m } → ( reduce : Context → ℕ)
+   → (r : Context) → (p : Invraiant r)
+   → (loop : (r : Context)  → Invraiant r → (next : (r1 : Context)  → Invraiant r1 → reduce r1 < reduce r  → t ) → t) → t
+TerminatingLoopS {_} {_} {t} Context {Invraiant} reduce r p loop with <-cmp 0 (reduce r)
+... | tri≈ ¬a b ¬c = loop r p (λ r1 p1 lt → ⊥-elim (lemma3 b lt) )
+... | tri< a ¬b ¬c = loop r p (λ r1 p1 lt1 → TerminatingLoop1 (reduce r) r r1 (m≤n⇒m≤1+n lt1) p1 lt1 ) where
+    TerminatingLoop1 : (j : ℕ) → (r r1 : Context) → reduce r1 < suc j  → Invraiant r1 →  reduce r1 < reduce r → t
+    TerminatingLoop1 zero r r1 n≤j p1 lt = loop r1 p1 (λ r2 p1 lt1 → ⊥-elim (lemma5 n≤j lt1))
+    TerminatingLoop1 (suc j) r r1  n≤j p1 lt with <-cmp (reduce r1) (suc j)
+    ... | tri< a ¬b ¬c = TerminatingLoop1 j r r1 a p1 lt
+    ... | tri≈ ¬a b ¬c = loop r1 p1 (λ r2 p2 lt1 → TerminatingLoop1 j r1 r2 (subst (λ k → reduce r2 < k ) b lt1 ) p2 lt1 )
+    ... | tri> ¬a ¬b c =  ⊥-elim ( nat-≤> c n≤j )
+
+
+
 open import finiteSet
 
---    q₀ → q₁ → ... q 
---    q₀ → q₁ → q₅ .... q₅  ... q 
+--    q₀ → q₁ → ... q
+--    q₀ → q₁ → q₅ .... q₅  ... q
 
 open FiniteSet
 
-descendSubset : { Q : Set } → (fin : FiniteSet Q) → ( I : Q → Bool) → ( P : Q → Bool ) 
-    → exists fin (λ q → I q /\ P q) ≡ true → Q → Bool
-descendSubset = ?
+-- descendSubset : { Q : Set } → (fin : FiniteSet Q) → ( I : Q → Bool) → ( P : Q → Bool )
+--     → exists fin (λ q → I q /\ P q) ≡ true → Q → Bool
+-- descendSubset = ?
 
-is-Muller-valid : { Q  Σ : Set } (Ω : Automaton Q Σ ) → FiniteSet Q → Q → Dec ((S : ℕ → Σ) →  Muller Ω S) 
-is-Muller-valid = ?
+-- is-Muller-valid : { Q  Σ : Set } (Ω : Automaton Q Σ ) → FiniteSet Q → Q → Dec ((S : ℕ → Σ) →  Muller Ω S)
+-- is-Muller-valid = ?
 
 -- descendSubset monotonically descend
 -- derivation tree of Q will be constructed
@@ -150,7 +174,7 @@ mark1 ts = false
 ωa1 = record {
         δ = transition3
      ;  aend = mark1
-  }  
+  }
 
 true-seq :  ℕ → Bool
 true-seq _ = true
@@ -162,9 +186,9 @@ flip-seq :  ℕ → Bool
 flip-seq zero = false
 flip-seq (suc n) = not ( flip-seq n )
 
--- flip-seq is acceepted by Buchi automaton ωa1 
+-- flip-seq is acceepted by Buchi automaton ωa1
 
--- lemma1 : Muller ωa1 true-seq 
+-- lemma1 : Muller ωa1 true-seq
 -- lemma1 = record {
 --         from = zero
 --       ; stay = {!!}
@@ -175,18 +199,18 @@ flip-seq (suc n) = not ( flip-seq n )
 --       lem1 (suc n) (s≤s z≤n) | ts* = {!!}
 --       lem1 (suc n) (s≤s z≤n) | ts = {!!}
 
--- lemma0 : Buchi ωa1 flip-seq 
+-- lemma0 : Buchi ωa1 flip-seq
 -- lemma0 = {!!}
 
 ωa2 : Automaton States3 Bool
 ωa2 = record {
         δ = transition3
      ;  aend = λ x → not ( mark1 x )
-  }  
+  }
 
 flip-dec : (n : ℕ ) →  Dec (  flip-seq n   ≡ true )
 flip-dec n with flip-seq n
-flip-dec n | false = no  λ () 
+flip-dec n | false = no  λ ()
 flip-dec n | true = yes refl
 
 flip-dec1 : (n : ℕ ) → flip-seq (suc n)  ≡ ( not ( flip-seq n ) )
@@ -196,7 +220,7 @@ flip-dec1 n = let open ≡-Reasoning in
           ( not ( flip-seq n ) )
        ∎
 
--- flip-dec2 : (n : ℕ ) → ? -- not flip-seq (suc n)  ≡  flip-seq n 
+-- flip-dec2 : (n : ℕ ) → ? -- not flip-seq (suc n)  ≡  flip-seq n
 -- flip-dec2 n = {!!}
 
 
@@ -204,7 +228,7 @@ flip-dec1 n = let open ≡-Reasoning in
 --     field
 --        flipP : (n : ℕ) →  ω-run ωa2 {!!} {!!} ≡ ω-run ωa2 {!!} {!!}
 
--- lemma2 : Buchi ωa2 flip-seq 
+-- lemma2 : Buchi ωa2 flip-seq
 -- lemma2 = record {
 --           next = next1
 --        ;  infinite = {!!}
@@ -215,11 +239,11 @@ flip-dec1 n = let open ≡-Reasoning in
 --      infinite' = {!!}
 --      infinite2 : (n : ℕ) → aend ωa2 {!!} ≡ true
 --      infinite2 = {!!}
--- 
+--
 -- lemma3 : Muller ωa1 false-seq  →  ⊥
 -- lemma3 = {!!}
--- 
+--
 -- lemma4 : Buchi ωa1 flip-seq  →  ⊥
 -- lemma4 = {!!}
--- 
--- 
+--
+--

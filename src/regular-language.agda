@@ -62,7 +62,7 @@ open import automaton-ex
 -- test-AB→star : {Σ : Set} → {A B : List In2 → Bool} → Star1 A ( i1 ∷ i1 ∷ i1 ∷ [] ) ≡ ?
 -- test-AB→star  = ?
 
-test-aaa = Star (accept am1 sr) ( i1 ∷ i1 ∷ i1 ∷ [] ) 
+test-aaa = Star (accept am1 sr) ( i1 ∷ i1 ∷ i1 ∷ [] )
 
 test-AB→split : {Σ : Set} → {A B : List In2 → Bool} → split A B ( i0 ∷ i1 ∷ i0 ∷ [] ) ≡ (
        ( A [] /\ B ( i0 ∷ i1 ∷ i0 ∷ [] ) ) \/
@@ -88,10 +88,10 @@ record RegularLanguage ( Σ : Set ) : Set (Suc Zero) where
    contain : List Σ → Bool
    contain x = accept automaton astart x
 
-open RegularLanguage
 
 isRegular : {Σ : Set} → (A : language {Σ} ) → ( x : List Σ ) → (r : RegularLanguage Σ ) → Set
-isRegular A x r = A x ≡ contain r x
+isRegular A x r = A x ≡ accept (automaton r) (astart r) x
+  where open RegularLanguage
 
 RegularLanguage-is-language : { Σ : Set } → RegularLanguage Σ  → language {Σ}
 RegularLanguage-is-language {Σ} R = RegularLanguage.contain R
@@ -100,10 +100,25 @@ RegularLanguage-is-language' : { Σ : Set } → RegularLanguage Σ  → List Σ 
 RegularLanguage-is-language' {Σ} R x = accept (automaton R) (astart R) x where
    open RegularLanguage
 
+record RegularLanguageF ( Σ : Set ) : Set (Suc Zero) where
+   field
+      states : Set
+      astart : states → Bool
+      afin : FiniteSet states
+      automaton : Automaton (states → Bool) Σ
+   contain : List Σ → Bool
+   contain x = accept automaton astart x
+
+isRegularF : {Σ : Set} → (A : language {Σ} ) → ( x : List Σ ) → (r : RegularLanguageF Σ ) → Set
+isRegularF A x r = A x ≡ contain r x
+  where open RegularLanguageF
+
 --  a language is implemented by an automaton
 
 -- postulate
 --   fin-× : {A B : Set} → { a b : ℕ } → FiniteSet A {a} → FiniteSet B {b} → FiniteSet (A × B) {a * b}
+
+open RegularLanguage
 
 M-Union : {Σ : Set} → (A B : RegularLanguage Σ ) → RegularLanguage Σ
 M-Union {Σ} A B = record {
@@ -111,7 +126,7 @@ M-Union {Σ} A B = record {
      ; astart = ( astart A , astart B )
      ; afin = fin-× (afin A) (afin B)
      ; automaton = record {
-             δ = λ q x → ( δ (automaton A) (proj₁ q) x , δ (automaton B) (proj₂ q) x )
+             δ = λ q x →  ( δ (automaton A) (proj₁ q) x , δ (automaton B) (proj₂ q) x )
            ; aend = λ q → ( aend (automaton A) (proj₁ q) \/ aend (automaton B) (proj₂ q) )
         }
    }
@@ -207,7 +222,7 @@ split→AB1 :  {Σ : Set} → (A B : List Σ → Bool ) → ( x : List Σ ) → 
 split→AB1 {Σ} A B x S = subst (λ k → split A B k ≡ true ) (sp-concat S) ( AB→split A B _ _ (prop0 S) (prop1 S)  )
 
 
--- low of exclude middle of Split A B x
+-- law of exclude middle of Split A B x
 lemma-concat : {Σ : Set} → ( A B : language {Σ} ) → (x : List Σ) → Split A B x ∨ ( ¬ Split A B x )
 lemma-concat {Σ} A B x with split A B x in eq
 ... | true = case1 (split→AB A B x eq )
@@ -234,9 +249,9 @@ open import Data.List.Properties
 --     ss00 :  (pre x : List Σ) → repeat A pre x ≡ true → StarProp A (pre ++ x )
 --     ss00 [] [] eq = record { spn = [] ; spn-concat = refl ; propn = eq }
 --     ss00 (h ∷ t) [] eq = record { spn = (h ∷ t) ∷ []  ; spn-concat = refl ; propn = bool-and-tt eq refl }
---     ss00 pre (h ∷ []) eq = record { spn = (pre ++ (h ∷ [])) ∷ []  ; spn-concat = ++-assoc pre _ _ 
+--     ss00 pre (h ∷ []) eq = record { spn = (pre ++ (h ∷ [])) ∷ []  ; spn-concat = ++-assoc pre _ _
 --        ; propn = bool-and-tt (trans (sym (ss01 pre (h ∷ []) refl )) eq) refl } where
---         ss01 : (pre x : List Σ) → x ≡ h ∷ [] → repeat A pre x ≡ A (pre ++ (h ∷ [])) 
+--         ss01 : (pre x : List Σ) → x ≡ h ∷ [] → repeat A pre x ≡ A (pre ++ (h ∷ []))
 --         ss01 [] (h ∷ []) refl = refl
 --         ss01 (x ∷ pre) (h ∷ []) refl = refl
 --     ss00 pre (h ∷ y@(i ∷ t)) eq = ? where
@@ -248,7 +263,7 @@ open import Data.List.Properties
 --         ... | false = ? where
 --            ss03 : repeat A (pre ++ (h ∷ [])) y ≡ true
 --            ss03 = ?
--- 
+--
 --
 -- StarProp→Star : {Σ : Set} → ( A : language {Σ} ) → (x : List Σ) → StarProp A x → Star A x ≡ true
 -- StarProp→Star {Σ} A x sp = subst (λ k →  Star A k ≡ true ) (spsx (spn sp) refl) ( sps1 (spn sp) refl ) where
@@ -263,3 +278,78 @@ open import Data.List.Properties
 -- lemma-starprop : {Σ : Set} → ( A : language {Σ} ) → (x : List Σ) → StarProp A x ∨ ( ¬ StarProp A x )
 -- lemma-starprop = ?
 --
+
+open FiniteSet
+
+
+RLF→RL : {Σ : Set} → RegularLanguageF Σ → RegularLanguage Σ
+RLF→RL {Σ} lf = record {
+       states = Fin (exp 2 (finite fin))
+     ; astart = FiniteSetF.F←Q finf (λ q → RegularLanguageF.astart lf (FiniteSet.Q←F fin q))
+     ; afin =  record { Q←F = λ x → x ; F←Q = λ x → x ; finiso← = λ _ → refl ; finiso→  = λ _ → refl }
+     ; automaton = record {
+             δ =  delta
+           ; aend = dend
+        }
+   } where
+       fin = RegularLanguageF.afin lf
+       finf : FiniteSetF (Fin (FiniteSet.finite fin)) (Fin (exp 2 (FiniteSet.finite fin)))
+       finf = fin→
+       delta :  Fin (exp 2 (finite fin)) → Σ → Fin (exp 2 (finite fin))
+       delta q i = FiniteSetF.F←Q finf (λ s → (δ (RegularLanguageF.automaton lf) (λ s → FiniteSetF.Q←F finf q (FiniteSet.F←Q fin s)) i (FiniteSet.Q←F fin s)))
+       dend : Fin (exp 2 (finite fin)) → Bool
+       dend q = aend (RegularLanguageF.automaton lf) (λ s → FiniteSetF.Q←F finf q (FiniteSet.F←Q fin s ))
+
+-- LF→RL-accept→  : {Σ : Set} → (lf : RegularLanguageF Σ ) → (x : List Σ) → (q :  RegularLanguageF.states lf → Bool) 
+--        → accept (automaton (RLF→RL lf)) (FiniteSetF.F←Q fin→ (λ s → q (FiniteSet.Q←F (RegularLanguageF.afin lf) s) ) ) x ≡ true
+--            →  accept (RegularLanguageF.automaton lf) q x ≡ true
+-- LF→RL-accept→ {Σ} lf [] q ac  = ?
+-- LF→RL-accept→ {Σ} lf (x ∷ x₁) q ac  = ?
+
+-- How can we remove functional extensionality from the following proof?
+
+RLF→RL-accept : {Σ : Set} → (lf : RegularLanguageF Σ ) → (x : List Σ) → (q :  RegularLanguageF.states lf → Bool) 
+         → ( Extensionality : {a b : Level} {A : Set a} {B : A → Set b} {f g : (x : A) → B x} → (∀ x → f x ≡ g x) → f ≡ g )
+        → accept (automaton (RLF→RL lf)) (FiniteSetF.F←Q fin→ (λ s → q (FiniteSet.Q←F (RegularLanguageF.afin lf) s) ) ) x 
+            ≡ accept (RegularLanguageF.automaton lf) q x
+RLF→RL-accept {Σ} lf [] q ext = begin
+     aend atm (λ s → FiniteSetF.Q←F fin→   (FiniteSetF.F←Q fin→ (λ s₁ → q (Q←F fin s₁))) (FiniteSet.F←Q fin s )) ≡⟨ cong (aend atm) 
+        (ext (λ s → FiniteSetF.finiso→ finf _ (FiniteSet.F←Q fin s )) )  ⟩
+     aend atm (λ z → q (Q←F fin (F←Q fin z))) ≡⟨ cong (aend atm) (ext (λ x → cong q (finiso→ fin _) ))  ⟩
+     aend atm q  ∎
+       where
+          open ≡-Reasoning
+          atm = RegularLanguageF.automaton lf
+          fin = RegularLanguageF.afin lf
+          finf = fin→
+RLF→RL-accept {Σ} lf (x ∷ x₁) q ext = begin
+     accept (automaton (RLF→RL lf)) ( FiniteSetF.F←Q fin→  (λ s → (δ atm (λ s₁ → FiniteSetF.Q←F fin→  (FiniteSetF.F←Q fin→ (λ s₂ → q (Q←F fin s₂))) 
+             (FiniteSet.F←Q fin s₁)) x (FiniteSet.Q←F fin s)))) x₁ ≡⟨ cong (λ k →  accept (automaton (RLF→RL lf)) (FiniteSetF.F←Q fin→ k) x₁ ) 
+                (ext (λ w → cong (λ k → (δ atm k x (FiniteSet.Q←F fin w))) (ext (λ v → (begin 
+                  FiniteSetF.Q←F fin→ (FiniteSetF.F←Q fin→ (λ s₂ → q (Q←F fin s₂))) (F←Q fin v)  ≡⟨ FiniteSetF.finiso→ finf _ (F←Q fin v) ⟩
+                  q (Q←F fin (F←Q fin v))  ≡⟨ cong q ( finiso→ fin v)   ⟩
+                  q v ∎ )) )))  ⟩
+     accept (automaton (RLF→RL lf)) (FiniteSetF.F←Q fin→ (λ s → δ (RegularLanguageF.automaton lf) q x (Q←F (RegularLanguageF.afin lf) s))) x₁ ≡⟨ rec _ ⟩
+     accept atm (δ (RegularLanguageF.automaton lf) q x ) x₁ ≡⟨⟩
+     accept atm q (x ∷ x₁) ∎
+       where
+          open ≡-Reasoning
+          atm = RegularLanguageF.automaton lf
+          fin = RegularLanguageF.afin lf
+          finf = fin→ 
+          delta :  Fin (exp 2 (finite fin)) → Σ → Fin (exp 2 (finite fin))
+          delta q i = FiniteSetF.F←Q fin→  (λ s → (δ (RegularLanguageF.automaton lf) (λ s → FiniteSetF.Q←F fin→  q (FiniteSet.F←Q fin s)) i (FiniteSet.Q←F fin s)))
+          rec : (q : RegularLanguageF.states lf → Bool) → 
+            accept (automaton (RLF→RL lf)) (FiniteSetF.F←Q fin→ (λ s → q (FiniteSet.Q←F (RegularLanguageF.afin lf) s) ) ) x₁ 
+              ≡ accept (RegularLanguageF.automaton lf) q x₁
+          rec q = RLF→RL-accept {Σ} lf x₁ q ext
+
+
+RLF→RL-contain : {Σ : Set} → (lf : RegularLanguageF Σ ) → (x : List Σ)  
+    → ( Extensionality : {a b : Level} {A : Set a} {B : A → Set b} {f g : (x : A) → B x} → (∀ x → f x ≡ g x) → f ≡ g )
+    → contain (RLF→RL lf) x ≡ RegularLanguageF.contain lf x
+RLF→RL-contain {Σ} lf x ext = RLF→RL-accept {Σ} lf x (RegularLanguageF.astart lf) ext
+
+
+
+

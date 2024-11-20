@@ -3,5 +3,6 @@ name:    automaton-in-agda
 depend: standard-library-2.0
 include: src
 flags:
+--    --warning=noUnsupportedIndexedMatch
 
 -- End 

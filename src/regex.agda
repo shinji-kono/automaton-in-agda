@@ -34,9 +34,9 @@ regex-language : {Σ : Set} → Regex Σ → ((x y : Σ ) → Dec0 (x ≡ y))  �
 regex-language φ cmp _ = false
 regex-language ε cmp [] = true
 regex-language ε cmp (_ ∷ _) = false
-regex-language (x *) cmp = repeat ( regex-language x cmp  ) [] 
-regex-language (x & y) cmp  = split ( λ z → regex-language x  cmp z ) (regex-language y  cmp  ) 
-regex-language (x || y) cmp = λ s → ( regex-language x  cmp s )  \/  ( regex-language y  cmp s)
+regex-language (x *) cmp y = repeat ( regex-language x cmp  ) []  y
+regex-language (x & y) cmp w  = split ( λ z → regex-language x  cmp z ) (regex-language y  cmp  )  w
+regex-language (x || y) cmp w = ( regex-language x  cmp w )  \/  ( regex-language y  cmp w)
 regex-language < h > cmp  [] = false
 regex-language < h > cmp  (h1  ∷ [] ) with cmp h h1
 ... | yes0 _ = true

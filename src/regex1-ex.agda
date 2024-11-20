@@ -53,23 +53,23 @@ test-AB→repeat1 : {Σ : Set} → {A : List In → Bool} → repeat A  [] ( a �
     \/ A (a ∷ b ∷ c ∷ [])  -- ok
 test-AB→repeat1 {_} {A}  = refl
 
-cmpi : (x y : In ) → Dec (x ≡ y)
-cmpi a a = yes refl
-cmpi b b =  yes refl
-cmpi c c =  yes refl
-cmpi d d =  yes refl
-cmpi a b =  no (λ ())
-cmpi a c =  no (λ ())
-cmpi a d =  no (λ ())
-cmpi b a = no (λ ())
-cmpi b c = no (λ ()) 
-cmpi b d = no (λ ()) 
-cmpi c a = no (λ ()) 
-cmpi c b = no (λ ()) 
-cmpi c d = no (λ ()) 
-cmpi d a = no (λ ()) 
-cmpi d b = no (λ ()) 
-cmpi d c = no (λ ()) 
+cmpi : (x y : In ) → Dec0 (x ≡ y)
+cmpi a a = yes0 refl
+cmpi b b =  yes0 refl
+cmpi c c =  yes0 refl
+cmpi d d =  yes0 refl
+cmpi a b =  no0 (λ ())
+cmpi a c =  no0 (λ ())
+cmpi a d =  no0 (λ ())
+cmpi b a = no0 (λ ())
+cmpi b c = no0 (λ ()) 
+cmpi b d = no0 (λ ()) 
+cmpi c a = no0 (λ ()) 
+cmpi c b = no0 (λ ()) 
+cmpi c d = no0 (λ ()) 
+cmpi d a = no0 (λ ()) 
+cmpi d b = no0 (λ ()) 
+cmpi d c = no0 (λ ()) 
 
 test-regex : regex-language r1' cmpi ( a ∷ b ∷ c ∷ [] ) ≡ true
 test-regex = refl
@@ -89,13 +89,13 @@ test-regex1 = refl
 --    )
 -- test-AB→split {_} {A} {B} = refl
 
-list-eq : {Σ : Set} → (cmpi : (s t : Σ)  → Dec (s ≡ t ))  → (s t : List Σ ) → Bool
+list-eq : {Σ : Set} → (cmpi : (s t : Σ)  → Dec0 (s ≡ t ))  → (s t : List Σ ) → Bool
 list-eq cmpi [] [] = true
 list-eq cmpi [] (x ∷ t) = false
 list-eq cmpi (x ∷ s) [] = false
 list-eq cmpi (x ∷ s) (y ∷ t) with cmpi x y
-... | yes _ = list-eq cmpi s t
-... | no _ = false
+... | yes0 _ = list-eq cmpi s t
+... | no0 _ = false
 
 -- split-spec-01 :  {s t u : List In } → s ++ t ≡ u → split (list-eq cmpi s) (list-eq cmpi t)  u ≡ true
 -- split-spec-01 = {!!}

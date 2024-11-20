@@ -28,6 +28,10 @@ _⇔_ A B =  ( A → B ) ∧ ( B → A )
 contra-position : {n m : Level } {A : Set n} {B : Set m} → (A → B) → ¬ B → ¬ A
 contra-position {n} {m} {A} {B}  f ¬b a = ¬b ( f a )
 
+rev-contra-position : {n m : Level } {A : Set n} {B : Set m} → (B ∨ (¬ B))  → (¬ B → ¬ A) → (A → B) 
+rev-contra-position {n} {m} {A} {B} (case1 b) P a = b
+rev-contra-position {n} {m} {A} {B} (case2 x) P a = ⊥-elim ( P x a )
+
 double-neg : {n  : Level } {A : Set n} → A → ¬ ¬ A
 double-neg A notnot = notnot A
 

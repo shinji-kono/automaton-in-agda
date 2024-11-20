@@ -48,17 +48,30 @@ Concat-NFA-start A B q = equal? (fin-∨ (afin A) (afin B)) (case1 (astart A)) q
 CNFA-exist : {Σ : Set} → (A B : RegularLanguage Σ ) → (states A ∨ states B → Bool) → Bool
 CNFA-exist A B qs = exists (fin-∨ (afin A) (afin B)) qs 
 
-M-Concat : {Σ : Set} → (A B : RegularLanguage Σ ) → RegularLanguage Σ
+M-Concat : {Σ : Set} → (A B : RegularLanguage Σ ) → RegularLanguageF Σ
 M-Concat {Σ} A B = record {
-       states = states A ∨ states B → Bool
+       states = states A ∨ states B 
      ; astart = Concat-NFA-start A B
-     ; afin = ?
+     ; afin = fin-∨ (afin A) (afin B)
      ; automaton = subset-construction (CNFA-exist A B) (Concat-NFA A B) 
+   } 
+
+M-ConcatF : {Σ : Set} → (A B : RegularLanguage Σ ) → RegularLanguage Σ
+M-ConcatF {Σ} A B = record {
+       states = Fin (exp 2 (finite fin))
+     ; astart = FiniteSetF.F←Q finf (λ s → (Concat-NFA-start A B (FiniteSet.Q←F fin s) ) )
+     ; afin = record { Q←F = λ x → x ; F←Q = λ x → x ; finiso← = λ _ → refl ; finiso→  = λ _ → refl }
+     ; automaton = atm
    } where
        fin : FiniteSet (states A ∨ states B ) 
        fin = fin-∨ (afin A) (afin B)
-       -- finf : FiniteSetF (states A ∨ states B) ?
-       -- finf = ? -- fin→ fin 
+       satm : Automaton (states A ∨ states B → Bool) Σ
+       satm = subset-construction (CNFA-exist A B) (Concat-NFA A B) 
+       finf : FiniteSetF (Fin (FiniteSet.finite fin)) (Fin (exp 2 (FiniteSet.finite fin)))
+       finf = fin→ 
+       atm : Automaton (Fin (exp 2 (finite fin))) Σ
+       atm =  record { δ = λ q i → FiniteSetF.F←Q finf (λ s → (δ satm (λ s → FiniteSetF.Q←F finf q (FiniteSet.F←Q fin s)) i (FiniteSet.Q←F fin s) ) )
+           ; aend = λ q → aend satm (λ s → FiniteSetF.Q←F finf q (FiniteSet.F←Q fin s )) } 
        
 open _∧_
 
@@ -67,7 +80,7 @@ open import Relation.Binary.PropositionalEquality hiding ( [_] )
 open NAutomaton
 open import Data.List.Properties
 
-closed-in-concat :  {Σ : Set} → (A B : RegularLanguage Σ ) → ( x : List Σ ) → isRegular (Concat (contain A) (contain B)) x ( M-Concat A B )
+closed-in-concat :  {Σ : Set} → (A B : RegularLanguage Σ ) → ( x : List Σ ) → isRegularF (Concat (contain A) (contain B)) x ( M-Concat A B )
 closed-in-concat {Σ} A B x = ≡-Bool-func closed-in-concat→ closed-in-concat← where
     finab = (fin-∨ (afin A) (afin B))
     NFA = (Concat-NFA A B)
@@ -105,7 +118,7 @@ closed-in-concat {Σ} A B x = ≡-Bool-func closed-in-concat→ closed-in-concat
     acceptAB S = subst ( λ k → Naccept NFA (CNFA-exist A B) (equal? finab (case1 (astart A))) k  ≡ true  ) ( sp-concat S )
         (acceptA (sp0 S) (sp1 S)  (astart A) (equal? finab (case1 (astart A))) (equal?-refl finab) (prop0 S) (prop1 S) )
 
-    closed-in-concat→ : Concat (contain A) (contain B) x ≡ true → contain (M-Concat A B) x ≡ true
+    closed-in-concat→ : Concat (contain A) (contain B) x ≡ true → RegularLanguageF.contain (M-Concat A B) x ≡ true
     closed-in-concat→ concat with split→AB (contain A) (contain B) x concat
     ... | S = begin
           accept  (subset-construction (CNFA-exist A B) (Concat-NFA A B) ) (Concat-NFA-start A B ) x 
@@ -165,7 +178,7 @@ closed-in-concat {Σ} A B x = ≡-Bool-func closed-in-concat→ closed-in-concat
        lemma15 q nq=t with equal→refl finab nq=t 
        ... | refl = refl
 
-    closed-in-concat← : contain (M-Concat A B) x ≡ true → Concat (contain A) (contain B) x ≡ true
+    closed-in-concat← : RegularLanguageF.contain (M-Concat A B) x ≡ true → Concat (contain A) (contain B) x ≡ true
     closed-in-concat← C with subset-construction-lemma← (CNFA-exist A B) NFA (equal? finab (case1 (astart A))) x C 
     ... | CC = lemma10 CC
 

@@ -228,23 +228,23 @@ test113 = accept test112 a-start ( ca ∷ cf ∷ ca ∷ cb ∷ cb ∷ [] )
 open import regex
 open import Relation.Nullary using (¬_; Dec; yes; no)
 
-Σ2-cmp : (x y : Σ2 ) → Dec (x ≡ y)
-Σ2-cmp ca ca = yes refl
-Σ2-cmp ca cb = no (λ ())
-Σ2-cmp ca cc = no (λ ())    
-Σ2-cmp ca cf = no (λ ())    
-Σ2-cmp cb ca =  no (λ ())
-Σ2-cmp cb cb = yes refl
-Σ2-cmp cb cc =  no (λ ())
-Σ2-cmp cb cf =  no (λ ())
-Σ2-cmp cc ca =  no (λ ())
-Σ2-cmp cc cb =  no (λ ())
-Σ2-cmp cc cc = yes refl
-Σ2-cmp cc cf =  no (λ ())
-Σ2-cmp cf ca =  no (λ ())
-Σ2-cmp cf cb =  no (λ ())
-Σ2-cmp cf cc =  no (λ ())
-Σ2-cmp cf cf = yes refl
+Σ2-cmp : (x y : Σ2 ) → Dec0 (x ≡ y)
+Σ2-cmp ca ca = yes0 refl
+Σ2-cmp ca cb = no0 (λ ())
+Σ2-cmp ca cc = no0 (λ ())    
+Σ2-cmp ca cf = no0 (λ ())    
+Σ2-cmp cb ca =  no0 (λ ())
+Σ2-cmp cb cb = yes0 refl
+Σ2-cmp cb cc =  no0 (λ ())
+Σ2-cmp cb cf =  no0 (λ ())
+Σ2-cmp cc ca =  no0 (λ ())
+Σ2-cmp cc cb =  no0 (λ ())
+Σ2-cmp cc cc = yes0 refl
+Σ2-cmp cc cf =  no0 (λ ())
+Σ2-cmp cf ca =  no0 (λ ())
+Σ2-cmp cf cb =  no0 (λ ())
+Σ2-cmp cf cc =  no0 (λ ())
+Σ2-cmp cf cf = yes0 refl
 
 Σ2-any :  Regex Σ2
 Σ2-any = < ca > || < cb > || < cc > || < cf >

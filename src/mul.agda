@@ -29,8 +29,8 @@ lemmm01 = suc (suc zero) + suc (suc zero)
 +-comm (suc x) (suc y) = begin
    suc (suc x + y)   ≡⟨ cong suc (+-comm (suc x) y) ⟩
    suc (y + suc x)   ≡⟨ refl  ⟩
-   suc (suc (y + x))  ≡⟨ cong suc (cong suc (+-comm y x )) ⟩
-   suc (suc (x + y))  ≡⟨ refl ⟩
+   suc (suc (y + x)) ≡⟨ cong suc (cong suc (+-comm y x )) ⟩
+   suc (suc (x + y)) ≡⟨ refl ⟩
    suc (x + suc y)   ≡⟨ cong suc (+-comm x (suc y) ) ⟩
    suc (suc y + x)  ∎ where open ≡-Reasoning
 

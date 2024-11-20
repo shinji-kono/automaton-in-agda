@@ -11,6 +11,7 @@ open import Relation.Binary.PropositionalEquality
 open import logic
 open import nat
 open import Data.Nat.Properties hiding ( _≟_ )
+open import Data.List
 
 -- open import Relation.Binary.HeterogeneousEquality as HE using (_≅_ ) 
 
@@ -27,7 +28,6 @@ record FiniteSet ( Q : Set ) : Set  where
      exists : ( Q → Bool ) → Bool
      exists p = exists1 finite ≤-refl p 
 
-     open import Data.List
      list1 : (m : ℕ ) → m Data.Nat.≤ finite → (Q → Bool) → List Q 
      list1  zero  _ _ = []
      list1 ( suc m ) m<n p with p (Q←F (fromℕ< {m} {finite} m<n)) in eq
@@ -47,23 +47,22 @@ record FiniteSet ( Q : Set ) : Set  where
      injectF←Q p q eq = subst₂ (λ j k → j ≡ k ) (finiso→  _) (finiso→ _) (cong Q←F eq)
 
 --
--- we cannot use (Q : P → Bool) → FiniteSet P , because we need functional extensionality which is not available in cubical compatability mode
---   of course we can Cubial Agda
+-- we cannot use (Q : P → Bool) → FiniteSet Q , because we need functional extensionality which is not available in cubical compatability mode
 --
 record FiniteSetF ( Q F : Set ) : Set  where
      field
         fin : FiniteSet F
-        Q←F : F → Q → Bool
+        Q←F : F → (Q → Bool)
         F←Q : (Q → Bool) → F
         finiso→ : (f : Q → Bool ) → (q : Q) → Q←F ( F←Q f ) q ≡ f q
         finiso← : (f : F ) {g : Q → Bool} → ((q : Q) → g q ≡ Q←F f q) → F←Q g  ≡ f 
+
      finite = FiniteSet.finite fin
      exists1 : (m : ℕ ) → m Data.Nat.≤ finite  → ((Q → Bool) → Bool) → Bool
      exists1 m lt f  = FiniteSet.exists1 fin m lt (λ q → f (Q←F q))
      exists : ( (Q → Bool) → Bool ) → Bool
      exists f = FiniteSet.exists fin (λ q → f (Q←F q))
 
-     open import Data.List
      list1 : (m : ℕ ) → m Data.Nat.≤ finite → ((Q → Bool) → Bool) → List (Q → Bool) 
      list1 m lt f = map Q←F (FiniteSet.list1 fin m lt (λ q → f (Q←F q)) )
      to-list : ( (Q → Bool) → Bool ) → List (Q → Bool)
@@ -89,8 +88,3 @@ record FiniteSetF ( Q F : Set ) : Set  where
          Q←F (F←Q g) x ≡⟨ finiso→ _ _  ⟩  
          g x ≡⟨ EQ x ⟩  
          Q←F f x  ∎ ) where open ≡-Reasoning
-
-
-
-
-
