@@ -1,4 +1,5 @@
-{-# OPTIONS --cubical-compatible --safe #-}
+-- {-# OPTIONS bical-compatible --safe #-}
+-- {-# OPTIONS --cubical-compatible --safe #-}
 
 module non-regular where
 
@@ -317,23 +318,21 @@ lemmaNN r Rg = tann {TA.x TAnn} (TA.non-nil-y TAnn ) (TA.xyz=is TAnn) (tr-accept
                     count1 x + count1 (y ++ z)  ≡⟨ cong (λ k → count1 x + k) (distr1 y z) ⟩
                     count1 x + (count1 y + count1 z)  ≡⟨ solve +-0-monoid ⟩
                     count1 x + count1 y + count1 z ∎ where open ≡-Reasoning
-               -- this takes very long time to check and needs 10GB
                bb22 : count0 y ≡ count1 y
                bb22 = begin
-                    count0 y ≡⟨ ? ⟩
---                     count0 y ≡⟨ sym ( +-cancelʳ-≡  (count1 z  + count0 x + count0 y + count0 z) (count1 y) (count0 y)  (+-cancelˡ-≡ _ (count1 x + count1 y) (
---                        begin 
---                        count1 x + count1 y + (count1 y + (count1 z + count0 x + count0 y + count0 z))  ≡⟨ solve +-0-monoid  ⟩
---                        (count1 x + count1 y + count1 y + count1 z)  + (count0 x + count0 y + count0 z) ≡⟨ sym (cong₂ _+_ nn21 (sym nn20)) ⟩
---                        (count0 x + count0 y + count0 y + count0 z)  + (count1 x + count1 y + count1 z) ≡⟨  +-comm _ (count1 x + count1 y + count1 z) ⟩
---                        (count1 x + count1 y + count1 z) + (count0 x + count0 y + count0 y + count0 z)    ≡⟨  solve +-0-monoid ⟩
---                         count1 x + count1 y + (count1 z + (count0 x + count0 y)) + count0 y + count0 z    
---                             ≡⟨  cong (λ k → count1 x + count1 y + (count1 z + k) + count0 y + count0 z) (+-comm (count0 x) _) ⟩
---                         count1 x + count1 y + (count1 z + (count0 y + count0 x)) + count0 y + count0 z    ≡⟨ solve +-0-monoid ⟩
---                         count1 x + count1 y + ((count1 z + count0 y) + count0 x) + count0 y + count0 z    
---                             ≡⟨  cong (λ k → count1 x + count1 y + (k + count0 x) + count0 y + count0 z    ) (+-comm (count1 z) _) ⟩
---                         count1 x + count1 y + (count0 y + count1 z + count0 x) + count0 y + count0 z    ≡⟨  solve +-0-monoid ⟩
---                         count1 x + count1 y + (count0 y + (count1 z + count0 x + count0 y + count0 z))    ∎ ))) ⟩
+                    count0 y ≡⟨ sym ( +-cancelʳ-≡  (count1 z  + count0 x + count0 y + count0 z) (count1 y) (count0 y)  
+                        (+-cancelˡ-≡ (count1 x + count1 y) _ _ (begin
+                          (count1 x + count1 y) + (count1 y + (count1 z + count0 x + count0 y + count0 z))  ≡⟨  solve +-0-monoid ⟩ 
+                          (count1 x + count1 y + count1 y + count1 z)  + (count0 x + count0 y + count0 z) ≡⟨ sym (cong₂ _+_ nn21 (sym nn20)) ⟩
+                          (count0 x + count0 y + count0 y + count0 z)  + (count1 x + count1 y + count1 z) ≡⟨  +-comm _ (count1 x + count1 y + count1 z) ⟩
+                          (count1 x + count1 y + count1 z) + (count0 x + count0 y + count0 y + count0 z)    ≡⟨  solve +-0-monoid ⟩
+                           count1 x + count1 y + (count1 z + (count0 x + count0 y)) + count0 y + count0 z    
+                             ≡⟨  cong (λ k → count1 x + count1 y + (count1 z + k) + count0 y + count0 z) (+-comm (count0 x) _) ⟩
+                           count1 x + count1 y + (count1 z + (count0 y + count0 x)) + count0 y + count0 z    ≡⟨ solve +-0-monoid ⟩
+                           count1 x + count1 y + ((count1 z + count0 y) + count0 x) + count0 y + count0 z    
+                             ≡⟨  cong (λ k → count1 x + count1 y + (k + count0 x) + count0 y + count0 z    ) (+-comm (count1 z) _) ⟩
+                           count1 x + count1 y + (count0 y + count1 z + count0 x) + count0 y + count0 z    ≡⟨  solve +-0-monoid ⟩
+                          (count1 x + count1 y) + (count0 y + (count1 z + count0 x + count0 y + count0 z))   ∎ ) )) ⟩
                     count1 y ∎ where open ≡-Reasoning
                --
                --  y contains i0 and i1 , so we have i1 → i0 transition in y ++ y
