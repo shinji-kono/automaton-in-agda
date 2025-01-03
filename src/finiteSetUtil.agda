@@ -241,8 +241,7 @@ fin-∨-finite fa fb =  fin-∨2-finite (FiniteSet.finite fa) fb
 open import Data.Product hiding ( map )
 
 fin-× : {A B : Set} → FiniteSet A → FiniteSet B → FiniteSet (A × B)
-fin-× {A} {B}  fa fb with FiniteSet→Fin fa
-... | a=f = iso-fin (fin-×-f a ) iso-1 where
+fin-× {A} {B}  fa fb = iso-fin (fin-×-f a ) iso-1 where
    a = FiniteSet.finite fa
    b = FiniteSet.finite fb
    iso-1 : Bijection (Fin a × B) ( A × B )
@@ -275,34 +274,12 @@ fin-× {A} {B}  fa fb with FiniteSet→Fin fa
 open _∧_
 
 fin-∧ : {A B : Set} → FiniteSet A → FiniteSet B → FiniteSet (A ∧ B)
-fin-∧ {A} {B} fa fb with FiniteSet→Fin fa    -- same thing for our tool
-... | a=f = iso-fin (fin-×-f a ) iso-1 where
-   a = FiniteSet.finite fa
-   b = FiniteSet.finite fb
-   iso-1 : Bijection (Fin a ∧ B) ( A ∧ B )
-   fun← iso-1 x = record { proj1 = FiniteSet.F←Q fa (proj1 x)  ; proj2 =  proj2 x}
-   fun→ iso-1 x = record { proj1 = FiniteSet.Q←F fa (proj1 x)  ; proj2 =  proj2 x}
-   fiso← iso-1 x  =  lemma  where
-     lemma : record { proj1 = FiniteSet.F←Q fa (FiniteSet.Q←F fa (proj1 x)) ; proj2 =  proj2 x} ≡ record {proj1 =  proj1 x ; proj2 =  proj2 x }
-     lemma = cong ( λ k → record {proj1 = k ;  proj2 = proj2 x } )  (FiniteSet.finiso← fa _ )
-   fiso→ iso-1 x = cong ( λ k → record {proj1 =  k ; proj2 =  proj2 x } )  (FiniteSet.finiso→ fa _ )
-
-   iso-2 : {a : ℕ } → Bijection (B ∨ (Fin a ∧ B)) (Fin (suc a) ∧ B)
-   fun← iso-2 (record { proj1 = x ; proj2 =  b }) with <-cmp 0 (toℕ x)
-   ... | tri< a ¬b ¬c = case2 ( record { proj1 = fin-1 x a ; proj2 =  b })
-   ... | tri≈ ¬a eq ¬c = case1 b
-   ... | tri> ¬a ¬b ()
-   fun→ iso-2 (case1 b) = record {proj1 =  zero ; proj2 =  b }
-   fun→ iso-2 (case2 (record { proj1 = a ; proj2 =  b })) = record { proj1 =  suc a ; proj2 =  b }
-   fiso← iso-2 (case1 x) = refl
-   fiso← iso-2 (case2 ⟪ x , b ⟫) = cong (λ k → case2 ⟪ k , b ⟫) (fin-1-sx x )
-   fiso→ iso-2 (record { proj1 = x ; proj2 =  b }) with <-cmp 0 (toℕ x)
-   ... | tri< a ¬b ¬c = cong (λ k → record {proj1 = k ; proj2 =  b}) (fin-1-xs x a)
-   ... | tri≈ ¬a eq ¬c = cong (λ k → record {proj1 = k ; proj2 =  b}) (toℕ-injective eq)
-   ... | tri> ¬a ¬b ()
-   fin-×-f : ( a  : ℕ ) → FiniteSet ((Fin a) ∧ B)
-   fin-×-f zero = record { Q←F = λ () ; F←Q = λ () ; finiso→ = λ () ; finiso← = λ () ; finite = 0 }
-   fin-×-f (suc a) = iso-fin ( fin-∨ fb ( fin-×-f a ) ) iso-2
+fin-∧ {A} {B} fa fb = iso-fin (fin-× fa fb) record {
+     fun← = λ x → (proj1 x , proj2 x)
+   ; fun→ = λ x → ⟪ proj₁ x , proj₂ x ⟫
+   ; fiso← = λ x → refl
+   ; fiso→ = λ x → refl
+   }
 
 -- import Data.Nat.DivMod
 

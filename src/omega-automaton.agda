@@ -1,4 +1,5 @@
-{-# OPTIONS --cubical-compatible --safe #-}
+{-# OPTIONS --cubical-compatible --safe --warning=noUnsupportedIndexedMatch #-}
+-- {-# OPTIONS --cubical-compatible --safe #-}
 module omega-automaton where
 
 open import Level renaming ( suc to succ ; zero to Zero )
@@ -247,3 +248,25 @@ flip-dec1 n = let open ≡-Reasoning in
 -- lemma4 = {!!}
 --
 --
+
+-- Fair scheduler
+--      P₀ .. Pn
+--       will be scheduled in a fair way
+--      []<> P₀ ∧ []<> P₁ ∧ ... []<> Pn
+
+sched-run : (i pn self : ℕ ) → i < pn → self < pn → Bool
+sched-run i pn self i<pn s<pn with i ≟ self
+... | yes y = true
+... | no y = false
+
+fair-scheduler : {Q Σ : Set } → ( pn : ℕ ) → (input : ( n i : ℕ ) → i < pn ) → Set
+fair-scheduler {Q} {Σ} pn input = fair-scheduler1 pn pn input where
+    task : automaton Q Σ
+    task = ?
+    fair-scheduler1 : {Q Σ : Set } → ( pn self : ℕ ) → (input : ( n i : ℕ ) → i < pn ) → Set
+    fair-scheduler1 {Q} {Σ} pn 0 input = Buchi record { δ = λ q i → sched-run ? pn 0 ? ? ; aend = λ q  → q }  ?
+    fair-scheduler1 pn (suc i) input = ?
+
+
+
+
