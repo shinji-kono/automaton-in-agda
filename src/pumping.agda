@@ -1,6 +1,4 @@
--- {-# OPTIONS  --allow-unsolved-metas #-}
 {-# OPTIONS --cubical-compatible --safe #-}
-
 
 module pumping where
 
@@ -70,7 +68,6 @@ tr→qs=is fa (i ∷ is) q (tnext .q tr) = cong suc (tr→qs=is fa is  (δ fa q 
 
 open Data.Maybe
 
--- open import Relation.Binary.HeterogeneousEquality as HE using (_≅_ )
 open import Relation.Binary.Definitions
 open import Data.Unit using (⊤ ; tt)
 open import Data.Nat.Properties
@@ -89,20 +86,6 @@ record TA1 { Q : Set } { Σ : Set  } (fa : Automaton Q  Σ ) (finq : FiniteSet Q
        trace-z    : Trace fa z  qd
        trace-yz   : Trace fa (y ++ z)  q
        q=qd : QDSEQ finq qd z trace-yz
-
---
--- using accept ≡ true may simplify the pumping-lemma
--- QDSEQ is too complex, should we generate (lengty y ≡ 0 → equal ) ∧  ...
---
--- record TA2 { Q : Set } { Σ : Set  } (fa : Automaton Q  Σ ) (finq : FiniteSet Q)  ( q qd : Q ) (is : List Σ)  : Set where
---    field
---        y z : List Σ
---        yz=is : y ++ z ≡ is
---        trace-z    : accept fa qd z ≡ true
---        trace-yz   : accept fa q (y ++ z)  ≡ true
---        q=qd  :  equal? finq qd q ≡ true  → Trace fa z q
---        ¬q=qd :  equal? finq qd q ≡ false → Trace fa z q ∧ Trace fa (y ++ z) q
---           -- head (tr→qs fa q trace-yz) ≡ just qd
 
 record TA { Q : Set } { Σ : Set  } (fa : Automaton Q  Σ )   ( q : Q ) (is : List Σ)  : Set where
     field
@@ -149,12 +132,6 @@ pumping-lemma {Q} {Σ} fa finq q qd is tr dup = tra-phase1 q is tr dup where
        tryz : Trace fa (i ∷ y1 ++ z1) qd
        tryz = tnext qd tryz0
        -- create Trace (y ++ y ++ z)
-       -- lemma01 : (a b : List Σ) → a ++ b ≡ [] → (a ≡ [] ) ∧ (b ≡ [])
-       -- lemma01 [] [] eq = ⟪ refl , refl ⟫
-       -- lemma01 [] (_ ∷ _) ()
-       -- lemma01 (_ ∷ _) b ()
-       -- list-decomp : {A : Set } → {a c : A } → {b d : List A } → a ∷ b ≡ c ∷ d → (a ≡ c) ∧ (b ≡ d)
-       -- list-decomp eq = ⟪ ∷-injectiveˡ eq , ∷-injectiveʳ eq ⟫  -- this is a cheat to avoid warning
        tra-05 : Trace fa (TA1.y ta ++ (i ∷ TA1.y ta) ++ TA1.z ta) (δ fa q i)
        tra-05 = tra-06 _ _ (TA1.trace-yz ta) (TA1.q=qd ta) where
             tra-06 : (y2 : List Σ) → (q : Q) → (tr : Trace fa (y2 ++ z1) q) → QDSEQ finq qd z1 tr  → Trace fa (y2 ++ (i ∷ y1) ++ z1) q

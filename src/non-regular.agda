@@ -1,11 +1,11 @@
--- {-# OPTIONS bical-compatible --safe #-}
--- {-# OPTIONS --cubical-compatible --safe #-}
+{-# OPTIONS --cubical-compatible --safe #-}
 
 module non-regular where
 
 open import Data.Nat
 open import Data.Empty
 open import Data.List
+open import Data.List.Properties
 open import Data.Maybe hiding ( map )
 open import Relation.Binary.PropositionalEquality hiding ( [_] )
 open import logic
@@ -75,7 +75,7 @@ t5 n = inputnn1 ( inputnn0 n  )  ≡ true
 import Level 
 
 cons-inject : {n : Level.Level } (A : Set n) { a b : A } {x1 x2 : List A} → a ∷ x1 ≡ b ∷ x2 → x1 ≡ x2
-cons-inject _ refl = refl
+cons-inject _ eq =  ∷-injectiveʳ eq
 
 append-[] : {A : Set} {x1 : List A } → x1 ++ [] ≡ x1
 append-[] {A} {[]} = refl
@@ -353,16 +353,27 @@ lemmaNN r Rg = tann {TA.x TAnn} (TA.non-nil-y TAnn ) (TA.xyz=is TAnn) (tr-accept
                             count1 y + count1 y ≡⟨ cong₂ _+_ (sym b) (sym b) ⟩
                             0 ∎ where open ≡-Reasoning
                     bb25 : (x y : List In2 ) →  0 < count1 x → 0 < count0 y → i1i0 (x ++ y)
-                    bb25 (i0 ∷ x₁) y 0<x 0<y with bb25 x₁ y 0<x 0<y
-                    ... | t = record { a = i0 ∷ i1i0.a t ; b = i1i0.b t ; i10 = cong (i0 ∷_) (i1i0.i10 t) }
-                    bb25 (i1 ∷ []) y 0<x 0<y = bb27 y 0<y where
-                        bb27 : (y : List In2 ) → 0 < count0 y → i1i0 (i1 ∷ y )
-                        bb27 (i0 ∷ y) 0<y = record { a = [] ; b = y ; i10 = refl }
-                        bb27 (i1 ∷ y) 0<y with bb27 y 0<y
-                        ... | t = record { a = i1 ∷ i1i0.a t ; b = i1i0.b t ; i10 = cong (i1 ∷_) (i1i0.i10 t) }
-                    bb25 (i1 ∷ i0 ∷ x₁) y 0<x 0<y = record { a = [] ; b = x₁ ++ y ; i10 = refl }
-                    bb25 (i1 ∷ i1 ∷ x₁) y (s≤s z≤n) 0<y with bb25 (i1 ∷ x₁) y (s≤s z≤n) 0<y
-                    ... | t = record { a = i1 ∷ i1i0.a t ; b = i1i0.b t ; i10 = cong (i1 ∷_) (i1i0.i10 t) }
+                    bb25 [] (x ∷ y) () 0<y
+                    bb25 (i ∷ x) y 0<x 0<y = bb28 i 0<x where
+                        bb28 : (i : In2) → 0 < count1 (i ∷ x)  → i1i0 (i ∷ x ++ y)
+                        bb28 i0 0<x1 = record { a = i0 ∷ i1i0.a t ; b = i1i0.b t ; i10 = cong (i0 ∷_) (i1i0.i10 t) } where
+                           t : i1i0 (x ++ y)
+                           t = bb25 x y 0<x1 0<y
+                        bb28 i1 0<x1 with <-∨ 0<x1
+                        ... | case1 0=cx = bb29 x (sym 0=cx) where
+                            bb29 : (x : List In2) → count1 x ≡ 0 →  i1i0 (i1 ∷ x ++ y)
+                            bb29 [] cx=0 = bb30 y 0<y where
+                                bb30 : (y : List In2) → 0 < count0 y → i1i0 (i1 ∷ y)
+                                bb30 [] ()
+                                bb30 (i0 ∷ y) 0<y = record { a = [] ; b = y ; i10 = refl }
+                                bb30 (i1 ∷ y) 0<y =  record { a = i1 ∷ i1i0.a bb31 ; b = i1i0.b bb31 ; i10 = cong (λ k → i1 ∷ k) (i1i0.i10 bb31 ) } where
+                                   bb31 : i1i0 (i1 ∷ y )
+                                   bb31 = bb30 y 0<y
+                            bb29 (i0 ∷ x) cx=0 = record { a = [] ; b = x ++ y ; i10 = refl }
+                            bb29 (i1 ∷ x) ()
+                        ... | case2 lt = record { a = i1 ∷ i1i0.a t ; b = i1i0.b t ; i10 = cong (i1 ∷_) (i1i0.i10 t) } where 
+                           t : i1i0 (x ++ y)
+                           t = bb25 x y lt 0<y
                bb24 : x ++ y ++ y ++ z ≡ (x ++ i1i0.a (bb23 bb22)) ++ i1 ∷ i0 ∷ i1i0.b (bb23 bb22) ++ z
                bb24 = begin
                     x ++ y ++ y ++ z ≡⟨ solve (++-monoid In2) ⟩

@@ -41,9 +41,20 @@ open _∧_
 
 open import prime
 
+div-n=0→m=0 : ( n m : ℕ ) → n ≡ 0 → Dividable n m → m ≡ 0 
+div-n=0→m=0 n m n=0 div = begin
+   m ≡⟨ sym (Dividable.is-factor div) ⟩
+   Dividable.factor div * n + 0   ≡⟨ cong (λ k → Dividable.factor div * k + 0) n=0 ⟩
+   Dividable.factor div * 0 + 0   ≡⟨ cong (λ k → k + 0) (*-comm (Dividable.factor div) 0) ⟩
+   0 + 0   ≡⟨⟩
+   0  ∎ where open ≡-Reasoning
+
 divdable^2 : ( n k : ℕ ) → 1 < k → 1 < n → Prime k → Dividable k ( n * n ) → Dividable k n
-divdable^2 zero (suc k) 1<k 1<n pk dn2 = ?
-divdable^2 (suc k) zero 1<k 1<n pk dn2 = ?
+divdable^2 zero (suc k) 1<k 1<n pk dn2 = ⊥-elim ( nat-<> (s≤s z≤n) 1<n )
+divdable^2 (suc k) zero 1<k 1<n pk dn2 = ⊥-elim ( nat-≡< (Dividable.is-factor dn2) ( begin
+   suc (Dividable.factor dn2 * zero + 0)  ≡⟨ cong (λ k → suc (k + 0)) (*-comm (Dividable.factor dn2) zero) ⟩ 
+   suc 0 ≤⟨ s≤s z≤n ⟩
+   suc (k + k * suc k) ∎ ) ) where open ≤-Reasoning
 divdable^2 zero zero () 1<n pk dn2
 divdable^2 (suc n) (suc k) 1<k 1<n pk dn2 with decD {suc k} {suc n} 1<k
 ... | yes0 y = y
@@ -148,21 +159,22 @@ r3 p p>0 r rr = r4 where
     d2 = Dividable.factor (proj2 (GCD.gcd-dividable i j)) 
     ri=id :  ( i j : ℕ) → (0<i : 0 < i ) → (0<j : 0 < j)  
         →  Rational.i (mkRational i j 0<j) ≡ Dividable.factor (proj1 (GCD.gcd-dividable i j))
-    ri=id = ?
---   ri=id (suc i₁) 0 0<i 0<j₁ = ?
---   ri=id (suc i₁) (suc j₁) 0<i 0<j₁ = ?
+    ri=id zero j () 0<j
+    ri=id (suc i) zero 0<i ()
+    ri=id (suc i) (suc j) 0<i 0<j = refl
     ri=jd :  ( i j : ℕ) → (0<i : 0 < i ) → (0<j : 0 < j)  
        →  Rational.j (mkRational i j 0<j) ≡ Dividable.factor (proj2 (GCD.gcd-dividable i j))
-    ri=jd = ?
---   ri=jd (suc i₁) (suc j₁) 0<i 0<j₁ = ?
+    ri=jd zero j () 0<j
+    ri=jd (suc i) zero 0<i ()
+    ri=jd (suc i) (suc j) 0<i 0<j = refl
     r0=id :  ( i j : ℕ) → (0=i : 0 ≡ i ) → (0<j : 0 < j)  
        →  Rational.i (mkRational i j 0<j) ≡ 0
-    r0=id = ?
---   r0=id  0 j eq 0<j = ?
+    r0=id .0 zero refl ()
+    r0=id .0 (suc j) refl 0<j = refl
     r0=jd :  ( i j : ℕ) → (0=i : 0 ≡ i ) → (0<j : 0 < j)  
        →  Rational.j (mkRational i j 0<j) ≡ 1
-    r0=jd = ?
---   r0=jd  0 j eq 0<j = ?
+    r0=jd i zero 0=i ()
+    r0=jd .0 (suc j) refl 0<j = refl
     d : ℕ
     d = gcd i j
     r7 : i > 0 → d > 0
@@ -178,7 +190,7 @@ r3 p p>0 r rr = r4 where
       d1 ∎ where open ≡-Reasoning
     r4 : p * Rational.j r * Rational.j r ≡ Rational.i r * Rational.i r
     r4 with <-cmp (Rational.i r * Rational.i r) 0
-    ... | tri< a b¬ ¬c = ?
+    ... | tri< a b¬ ¬c = ⊥-elim (nat-≤> a (s≤s z≤n) )
     ... | tri≈ ¬a b ¬c = ⊥-elim (nat-≡< (begin
         0 ≡⟨ sym (r0=id i j (sym b) 0<j ) ⟩
         Rational.i (mkRational (Rational.i r * Rational.i r) (Rational.j r * Rational.j r) _ ) ≡⟨ sym rr ⟩
@@ -187,22 +199,22 @@ r3 p p>0 r rr = r4 where
         p ∎ ) p>0 ) where open ≡-Reasoning
     ... | tri> ¬a ¬b c = begin
       p * Rational.j r * Rational.j r  ≡⟨ *-cancel-left (r6 c) ( begin
-      d2 * ((p * Rational.j r) * Rational.j r)  ≡⟨ sym (*-assoc d2 _ _) ⟩
-      (d2 * ( p *  Rational.j r )) * Rational.j r ≡⟨ cong (λ k → k *  Rational.j r) (sym (*-assoc d2 _ _ )) ⟩
-      (d2 * p) * Rational.j r * Rational.j r ≡⟨ cong (λ k → k *  Rational.j r * Rational.j r) (r8 c) ⟩
-      d1 * Rational.j r * Rational.j r  ≡⟨ *-cancel-left (r7 c) ( begin 
-      d * ((d1 * Rational.j r) * Rational.j r)  ≡⟨ cong (λ k → d * k ) (*-assoc d1 _ _ )⟩
-      d * (d1 * (Rational.j r * Rational.j r))  ≡⟨ sym (*-assoc d _ _) ⟩
-      (d * d1) * (Rational.j r * Rational.j r)  ≡⟨ cong (λ k → k * j) (*-comm d _ ) ⟩
-      (d1 * d) * j  ≡⟨  cong (λ k → k * j) (+-comm 0 (d1 * d)  ) ⟩
-      (d1 * d + 0) * j  ≡⟨ cong (λ k → k * j ) (Dividable.is-factor  (proj1 (GCD.gcd-dividable i j)) ) ⟩
-      i * j ≡⟨ *-comm i j ⟩
-      j * i ≡⟨ cong (λ k → k * i ) (sym (Dividable.is-factor (proj2 (GCD.gcd-dividable i j))) ) ⟩
-      (d2 * GCD.gcd i j + 0) * i ≡⟨  cong (λ k → k * i ) (+-comm (d2 * d )  0) ⟩
-      (d2 * d) * i ≡⟨ cong (λ k → k * i ) (*-comm d2 _ ) ⟩
-      (d * d2) * i ≡⟨ *-assoc d _ _ ⟩
-      d * (d2 * (Rational.i r * Rational.i r)) ∎ )  ⟩
-      d2 * (Rational.i r * Rational.i r) ∎ ) ⟩
+          d2 * ((p * Rational.j r) * Rational.j r)  ≡⟨ sym (*-assoc d2 _ _) ⟩
+          (d2 * ( p *  Rational.j r )) * Rational.j r ≡⟨ cong (λ k → k *  Rational.j r) (sym (*-assoc d2 _ _ )) ⟩
+          (d2 * p) * Rational.j r * Rational.j r ≡⟨ cong (λ k → k *  Rational.j r * Rational.j r) (r8 c) ⟩
+          d1 * Rational.j r * Rational.j r  ≡⟨ *-cancel-left (r7 c) ( begin 
+              d * ((d1 * Rational.j r) * Rational.j r)  ≡⟨ cong (λ k → d * k ) (*-assoc d1 _ _ )⟩
+              d * (d1 * (Rational.j r * Rational.j r))  ≡⟨ sym (*-assoc d _ _) ⟩
+              (d * d1) * (Rational.j r * Rational.j r)  ≡⟨ cong (λ k → k * j) (*-comm d _ ) ⟩
+              (d1 * d) * j  ≡⟨  cong (λ k → k * j) (+-comm 0 (d1 * d)  ) ⟩
+              (d1 * d + 0) * j  ≡⟨ cong (λ k → k * j ) (Dividable.is-factor  (proj1 (GCD.gcd-dividable i j)) ) ⟩
+              i * j ≡⟨ *-comm i j ⟩
+              j * i ≡⟨ cong (λ k → k * i ) (sym (Dividable.is-factor (proj2 (GCD.gcd-dividable i j))) ) ⟩
+              (d2 * GCD.gcd i j + 0) * i ≡⟨  cong (λ k → k * i ) (+-comm (d2 * d )  0) ⟩
+              (d2 * d) * i ≡⟨ cong (λ k → k * i ) (*-comm d2 _ ) ⟩
+              (d * d2) * i ≡⟨ *-assoc d _ _ ⟩
+              d * (d2 * (Rational.i r * Rational.i r)) ∎ )  ⟩
+          d2 * (Rational.i r * Rational.i r) ∎ ) ⟩
       Rational.i r * Rational.i r  ∎ where open ≡-Reasoning
 
 -- data _≤_ : (i j : ℕ) → Set where
@@ -210,20 +222,19 @@ r3 p p>0 r rr = r4 where
 --    s≤s : {i j : ℕ} → i ≤ j → (suc i) ≤ (suc j)
 
 *<-2 : {x y z : ℕ} → z > 0  → x < y → z * x < z * y   
-*<-2 = ?
---   *<-2 {zero} {suc y} {suc z} (s≤s z>0) x<y = begin
---      suc (z * zero) ≡⟨ cong suc (*-comm z _) ⟩ 
---      suc (zero * z) ≡⟨ refl ⟩ 
---      suc zero ≤⟨ s≤s z≤n ⟩ 
---      suc (y + z * suc y) ∎ where open ≤-Reasoning
---   *<-2 {x} {y} {suc zero} (s≤s z>0) x<y = begin
---      suc (x + zero) ≡⟨ cong suc (+-comm x _) ⟩
---      suc x  ≤⟨ x<y ⟩
---      y  ≡⟨ +-comm zero _ ⟩
---      y + zero  ∎ where open ≤-Reasoning
---   *<-2 {x} {y} {suc (suc z)} (s≤s z>0) x<y = begin
---      suc (x + (x + z * x))  <⟨ +-mono-≤-< x<y (*<-2 {x} {y} {suc z} (s≤s z≤n) x<y) ⟩
---      y + (y + z * y)  ∎ where open ≤-Reasoning
+*<-2 {zero} {suc y} {suc z} z<0 x<y = begin
+   suc (z * zero) ≡⟨ cong suc (*-comm z _) ⟩ 
+   suc (zero * z) ≡⟨ refl ⟩ 
+   suc zero ≤⟨ s≤s z≤n ⟩ 
+   suc (y + z * suc y) ∎ where open ≤-Reasoning
+*<-2 {x} {y} {suc zero} z<0 x<y = begin
+   suc (x + zero) ≡⟨ cong suc (+-comm x _) ⟩
+   suc x  ≤⟨ x<y ⟩
+   y  ≡⟨ +-comm zero _ ⟩
+   y + zero  ∎ where open ≤-Reasoning
+*<-2 {x} {y} {suc (suc z)} z<0 x<y = begin
+   suc (x + (x + z * x))  <⟨ +-mono-≤-< x<y (*<-2 {x} {y} {suc z} (s≤s z≤n) x<y) ⟩
+   y + (y + z * y)  ∎ where open ≤-Reasoning
 
 r15 : {p : ℕ} → p > 1 → p < p * p
 r15 {p} p>1 = subst (λ k → k < p * p ) m*1=m (*<-2 (<-trans a<sa p>1) p>1 )
@@ -240,7 +251,7 @@ root-prime-irrational1 p pr r div  with <-cmp (Rational.j r) 1
      r00 = r3 p (<-trans a<sa (Prime.p>1 pr )) r div
      r06 : i ≡ 0
      r06 with <-cmp i 0
-     ... | tri< a ¬b c¬ = ?
+     ... | tri< a ¬b c¬ = ⊥-elim ( nat-≤> a (s≤s z≤n) )
      ... | tri≈ ¬a b ¬c = b
      ... | tri> ¬a ¬b c = ⊥-elim ( nat-≤> c a )
      r05 : p * j * j ≡ 0 
@@ -301,7 +312,7 @@ root-prime-irrational1 p pr r div | tri≈ ¬a b ¬c = ⊥-elim (nat-≡< r04 (r
      ... | tri< a ¬b ¬c = ⊥-elim ( nat-≡< (sym r11) p>0 ) where
           r10 : i ≡ 0
           r10 with <-cmp i 0
-          ... | tri< a b¬ ¬c = ?
+          ... | tri< a b¬ ¬c = ⊥-elim ( nat-≤> a (s≤s z≤n) )
           ... | tri≈ ¬a b ¬c = b
           ... | tri> ¬a ¬b c = ⊥-elim (nat-≤> c a )
           r11 : p ≡ 0

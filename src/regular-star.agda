@@ -53,7 +53,7 @@ M-Star : {Σ : Set} → (A : RegularLanguage Σ ) → RegularLanguage Σ
 M-Star {Σ} A  = record {
        states = states A  → Bool
      ; astart = Star-NFA-start A 
-     ; afin = fin→  (afin A)
+     ; afin = ? -- fin→  (afin A)
      ; automaton = subset-construction (SNFA-exist A ) (Star-NFA A ) 
    } 
        

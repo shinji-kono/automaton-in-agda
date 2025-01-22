@@ -44,8 +44,8 @@ sometimes P = record { at = λ t → (s : Sometime) → P }
 TLtest00 : {t : ℕ } (P : Set n) → at (always P) t → at (now P) t 
 TLtest00 P all refl = all
 
-TLtest01 : {t : ℕ } (P : Set n) → ¬ ( (t : ℕ ) →  (at (sometimes (¬ P) ) t )) →  at (always P) t
-TLtest01 {t} P ns = ⊥-elim ( ns (λ s sm p → ? ) )
+-- TLtest01 : {t : ℕ } (P : Set n) → ¬ ( (t : ℕ ) →  (at (sometimes (¬ P) ) t )) →  at (always P) t
+-- TLtest01 {t} P ns = ⊥-elim ( ns (λ s sm p → ? ) )
 
 data LTTL ( V : Set )  : Set where
     s :  V → LTTL V                       -- proppsitional variable p is true on this time
@@ -184,15 +184,15 @@ SQP1 {V} dec (q-not P) v t = q-not ( SQP1 dec P v t )
 SQP1 {V} dec (P q\/ Q) v t = SQP1 {V} dec  P v t q\/ SQP1 {V} dec  Q v t 
 SQP1 {V} dec (P q/\ Q) v t = SQP1 {V} dec  P v t q/\ SQP1 {V} dec  Q v t 
 
-{-# TERMINATING #-}
+-- {-# TERMINATING #-}
 MQPTL : { V : Set } → (ℕ → V → Bool) → ℕ → ((x y : V) → Dec ( x ≡ y))     →  QPTL V  → Set
 MQPTL σ i dec (qt x) = x ≡ true
 MQPTL σ i dec (qs x) = σ i x ≡ true
 MQPTL σ i dec (q○ x) = MQPTL σ (suc i) dec x  
-MQPTL σ i dec (q□ P) = (j : ℕ) → i ≤ j → MQPTL  σ j dec P
+MQPTL σ i dec (q□ P) = (j : ℕ) → i ≤ j → ? -- MQPTL  σ j dec P
 MQPTL σ i dec (q⋄ P) = ¬ ( MQPTL σ i dec (q□ (q-not P) ))
 MQPTL σ i dec (q-not P) = ¬ ( MQPTL σ i dec P )
-MQPTL σ i dec (q-exists x P) = MQPTL σ i dec ( SQP1 dec P x true q\/  (SQP1 dec P x false)) 
+MQPTL σ i dec (q-exists x P) = ? -- MQPTL σ i dec ( SQP1 dec P x true q\/  (SQP1 dec P x false)) 
 MQPTL σ i dec (P q\/ Q) = MQPTL σ i dec P ∧ MQPTL σ i dec Q 
 MQPTL σ i dec (P q/\ Q) = MQPTL σ i dec P ∨ MQPTL σ i dec Q 
 
