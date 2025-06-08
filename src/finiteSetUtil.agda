@@ -240,8 +240,7 @@ fin-∨-finite fa fb =  fin-∨2-finite (FiniteSet.finite fa) fb
 
 open import Data.Product hiding ( map )
 
-fin-× : {A B : Set} → FiniteSet A → FiniteSet B → FiniteSet (A × B)
-fin-× {A} {B}  fa fb = iso-fin (fin-×-f a ) iso-1 where
+module FiniteProduct {A B : Set} (fa : FiniteSet A ) (fb : FiniteSet B ) where
    a = FiniteSet.finite fa
    b = FiniteSet.finite fb
    iso-1 : Bijection (Fin a × B) ( A × B )
@@ -270,6 +269,33 @@ fin-× {A} {B}  fa fb = iso-fin (fin-×-f a ) iso-1 where
    fin-×-f : ( a  : ℕ ) → FiniteSet ((Fin a) × B)
    fin-×-f zero = record { Q←F = λ () ; F←Q = λ () ; finiso→ = λ () ; finiso← = λ () ; finite = 0 }
    fin-×-f (suc a) = iso-fin ( fin-∨ fb ( fin-×-f a ) ) iso-2
+
+fin-× : {A B : Set} → FiniteSet A → FiniteSet B → FiniteSet (A × B)
+fin-× {A} {B}  fa fb = iso-fin (fin-×-f a ) iso-1 where
+   open FiniteProduct fa fb
+
+fin-×-finite : {A B : Set} → (fa : FiniteSet A ) (fb : FiniteSet B ) → FiniteSet.finite (fin-× fa fb) ≡ FiniteSet.finite fa * FiniteSet.finite fb
+fin-×-finite {A} {B} fa fb = lem00 (FiniteSet.finite fa) where
+   open FiniteProduct fa fb
+   lem00 : ( a  : ℕ ) →  FiniteSet.finite (fin-×-f a) ≡ a * FiniteSet.finite fb
+   lem00 zero = refl
+   lem00 (suc a) = lem02 where
+       lem01 : FiniteSet.finite (fin-∨ (fin-×-f a) fb) ≡  FiniteSet.finite (fin-×-f a) + FiniteSet.finite fb
+       lem01 = fin-∨-finite (fin-×-f a) fb
+       lem02 : FiniteSet.finite (fin-×-f (suc a)) ≡ suc a * FiniteSet.finite fb
+       lem02 = begin
+           FiniteSet.finite (fin-×-f (suc a)) ≡⟨⟩
+           FiniteSet.finite (iso-fin ( fin-∨ fb ( fin-×-f a ) ) iso-2 ) ≡⟨⟩
+           FiniteSet.finite (fin-∨ fb (fin-×-f a) ) ≡⟨ fin-∨-finite fb _  ⟩
+           FiniteSet.finite fb + FiniteSet.finite (fin-×-f a)  ≡⟨ +-comm (FiniteSet.finite fb) _  ⟩
+           FiniteSet.finite (fin-×-f a) + FiniteSet.finite fb   ≡⟨ sym  (fin-∨-finite (fin-×-f a) fb  ) ⟩
+           FiniteSet.finite (fin-∨ (fin-×-f a) fb) ≡⟨ lem01 ⟩
+           FiniteSet.finite (fin-×-f a) + FiniteSet.finite fb  ≡⟨ cong (λ k → k + FiniteSet.finite fb) (lem00 a) ⟩
+           (a * FiniteSet.finite fb) + FiniteSet.finite fb  ≡⟨ +-comm _ (FiniteSet.finite fb)  ⟩
+           FiniteSet.finite fb + a * FiniteSet.finite fb  ≡⟨⟩
+           suc a * FiniteSet.finite fb ∎ where
+              open ≡-Reasoning
+          
 
 open _∧_
 

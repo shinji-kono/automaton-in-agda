@@ -141,6 +141,11 @@ lemmm02 = refl
    (x * y) + (x * z) ≡⟨ sym (cong₂ (λ j k → j + k) (∙≡* x y ) (∙≡* x z)) ⟩
    (x ∙ y) + (x ∙ z) ∎ where open ≡-Reasoning
 
+-- open import  Data.Empty
+-- open import  Relation.Nullary
+
+-- ∙≡*1 : ¬ _∙_  ≡ _*_
+-- ∙≡*1 eq = ? 
 
 
 
